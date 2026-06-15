@@ -2,7 +2,7 @@
 """
 Build a standalone axon.exe with PyInstaller for Inno Setup packaging.
 
-Stages bundled .axon assets (skills, docs, locales), compiles main.py to a
+Stages bundled .axon assets (skills, docs, locales), compiles cli.py to a
 single executable, and prints the output path for installer.iss.
 """
 
@@ -94,10 +94,16 @@ def collect_hidden_imports() -> list[str]:
         "axon_runtime",
         "skills.tools",
         "skills.tasks",
-        "skills.registry",
-        "skills.file_read",
-        "skills.system_info",
         "skills.base",
+        "session_store",
+        "runtime_policy",
+        "pricing",
+        "approval_bridge",
+        "audit_log",
+        "mcp_client",
+        "axon_doctor",
+        "ui.repl",
+        "ui.headless",
         "ui.axon_completer",
         "ui.branding",
         "ui.completer",
@@ -164,7 +170,7 @@ def run_pyinstaller(*, clean: bool) -> Path:
     SPEC_DIR.mkdir(parents=True, exist_ok=True)
 
     cmd = [
-        str(ROOT / "main.py"),
+        str(ROOT / "cli.py"),
         "--name=axon",
         "--onefile",
         "--console",

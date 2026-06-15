@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -21,9 +22,10 @@ from skills.tools import (
 )
 from skills_manager import SkillManager, load_project_memory
 from agent_manager import load_agent_prompt
+from mcp_client import get_mcp_tool_schemas
 from task_manager import task_manager
 
-import time
+from pricing import estimate_cost
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_MODEL = "meta-llama/llama-3.1-8b-instruct"
@@ -34,9 +36,9 @@ SUPPORTED_IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".gif", ".webp", 
 
 AXON_SYSTEM_PROMPT_BASE = (
     "You are AXON, an agentic command-line AI assistant with access to tools. "
-    "Use read_file to inspect files, write_file to create or update files, "
-    "execute_shell to run terminal commands when needed, and web_search for "
-    "current events or fresh documentation. "
+    "Use read_file, list_dir, glob_files, and search_code to explore codebases. "
+    "Prefer apply_patch for small edits and write_file for new files or full rewrites. "
+    "Use execute_shell for builds/tests when needed, and web_search for current docs. "
     "Users can load images with /image for multimodal vision models — analyze "
     "images carefully when they appear in the conversation. "
     "Markdown skills (SKILL.md) can be invoked as tools — when a skill returns "
@@ -51,17 +53,28 @@ AXON_SYSTEM_PROMPT_BASE = (
 )
 
 ToolNotifyCallback = Callable[[str, str], Awaitable[None]]
+StreamTokenCallback = Callable[[str], Awaitable[None]]
+StreamLifecycleCallback = Callable[[], Awaitable[None]]
 
 TOTAL_TOKENS: int = 0
 TOTAL_COST: float = 0.0
 SESSION_STARTED_AT: float = time.time()
 
 
-def record_token_usage(total_tokens: int) -> None:
+def record_token_usage(
+    total_tokens: int,
+    *,
+    model: str = "",
+    prompt_tokens: int = 0,
+    completion_tokens: int = 0,
+) -> None:
     global TOTAL_TOKENS, TOTAL_COST
     tokens = max(int(total_tokens or 0), 0)
     TOTAL_TOKENS += tokens
-    TOTAL_COST += tokens * COST_PER_TOKEN
+    if model and (prompt_tokens or completion_tokens):
+        TOTAL_COST += estimate_cost(model, prompt_tokens, completion_tokens)
+    else:
+        TOTAL_COST += tokens * COST_PER_TOKEN
 
 
 def reset_session_counters() -> None:
@@ -96,6 +109,14 @@ class LLMResult:
         return self.error or "Unknown error"
 
 
+@dataclass
+class _ApiStreamResult:
+    content: str
+    tool_calls: list[dict[str, Any]]
+    usage: object | None
+    cancelled: bool = False
+
+
 class LLMManager:
     """AXON LLM client with OpenRouter tool-calling agent loop."""
 
@@ -118,6 +139,10 @@ class LLMManager:
         self._client = self._build_client(self._api_key)
         self._approve = approve
         self._on_tool: ToolNotifyCallback | None = None
+        self._on_stream_token: StreamTokenCallback | None = None
+        self._on_stream_start: StreamLifecycleCallback | None = None
+        self._on_stream_end: StreamLifecycleCallback | None = None
+        self._cancel_requested = False
 
     def set_session_system_prompt(self, text: str) -> None:
         self.session_system_prompt = text.strip()
@@ -184,6 +209,7 @@ class LLMManager:
             get_tools_schema()
             + get_task_tool_schemas()
             + self._skill_manager.get_tool_schemas()
+            + get_mcp_tool_schemas()
         )
 
     async def _dispatch_tool(
@@ -208,6 +234,26 @@ class LLMManager:
 
     def set_tool_callback(self, callback: ToolNotifyCallback | None) -> None:
         self._on_tool = callback
+
+    def set_stream_callbacks(
+        self,
+        *,
+        on_token: StreamTokenCallback | None = None,
+        on_start: StreamLifecycleCallback | None = None,
+        on_end: StreamLifecycleCallback | None = None,
+    ) -> None:
+        self._on_stream_token = on_token
+        self._on_stream_start = on_start
+        self._on_stream_end = on_end
+
+    def request_cancel(self) -> None:
+        self._cancel_requested = True
+
+    def clear_cancel(self) -> None:
+        self._cancel_requested = False
+
+    def _is_cancelled(self) -> bool:
+        return self._cancel_requested
 
     def reload_credentials(self) -> None:
         """Reload API key only — never overwrite an explicitly selected model."""
@@ -289,6 +335,45 @@ class LLMManager:
             }
         )
         return None
+
+    async def compact_context(self, keep_last: int = 6) -> tuple[bool, str]:
+        if len(self.messages) <= keep_last + 1:
+            return False, "Nothing to compact yet."
+
+        system_msg = self.messages[0]
+        middle = self.messages[1:-keep_last]
+        tail = self.messages[-keep_last:]
+        if not middle:
+            return False, "Nothing to compact yet."
+
+        summary_prompt = (
+            "Summarize the following conversation turns into concise bullet points "
+            "for future context. Preserve decisions, file paths, and open tasks.\n\n"
+            + json.dumps(middle, ensure_ascii=False)[:12000]
+        )
+
+        try:
+            response = await asyncio.to_thread(
+                self._client.chat.completions.create,
+                model=self.model,
+                messages=[{"role": "user", "content": summary_prompt}],
+            )
+            usage = self._parse_usage(response.usage)
+            if usage:
+                record_token_usage(usage.total_tokens)
+            summary = (response.choices[0].message.content or "").strip()
+        except Exception as exc:
+            return False, f"Compact failed — {exc}"
+
+        if not summary:
+            return False, "Compact produced an empty summary."
+
+        self.messages = [
+            system_msg,
+            {"role": "system", "content": f"Compacted conversation summary:\n{summary}"},
+            *tail,
+        ]
+        return True, f"Compacted {len(middle)} messages into summary."
 
     def send_message(self, user_text: str) -> LLMResult:
         self.reload_credentials()
@@ -551,39 +636,63 @@ class LLMManager:
                 ),
             )
 
+        self.clear_cancel()
         self.messages.append({"role": "user", "content": user_text})
         last_usage: TokenUsage | None = None
         tool_steps = 0
 
         try:
             for round_index in range(MAX_TOOL_ROUNDS):
-                use_tools = round_index < MAX_TOOL_ROUNDS - 1
-                response = await asyncio.to_thread(
-                    self._call_api,
-                    tools=self._get_all_tool_schemas() if use_tools else None,
-                )
-                last_usage = self._accumulate_usage(last_usage, response.usage)
-
-                choice = response.choices[0] if response.choices else None
-                if choice is None:
+                if self._is_cancelled():
+                    self._rollback_last_user_message()
                     return LLMResult(
                         content="",
                         model=self.model,
-                        error="AXON: Empty response from API.",
+                        error="AXON: Generation cancelled.",
                         usage=last_usage,
                         tool_steps=tool_steps,
                     )
 
-                message = choice.message
-                tool_calls = getattr(message, "tool_calls", None) or []
+                use_tools = round_index < MAX_TOOL_ROUNDS - 1
+                stream_result = await asyncio.to_thread(
+                    self._call_api_stream,
+                    tools=self._get_all_tool_schemas() if use_tools else None,
+                )
+                last_usage = self._accumulate_usage(last_usage, stream_result.usage)
 
-                if tool_calls:
-                    self.messages.append(self._serialize_assistant_message(message))
-                    for tool_call in tool_calls:
+                if stream_result.cancelled:
+                    self._rollback_last_user_message()
+                    return LLMResult(
+                        content="",
+                        model=self.model,
+                        error="AXON: Generation cancelled.",
+                        usage=last_usage,
+                        tool_steps=tool_steps,
+                    )
+
+                if stream_result.tool_calls:
+                    self.messages.append(
+                        {
+                            "role": "assistant",
+                            "content": stream_result.content or None,
+                            "tool_calls": stream_result.tool_calls,
+                        }
+                    )
+                    for tool_call in stream_result.tool_calls:
+                        if self._is_cancelled():
+                            self._rollback_last_user_message()
+                            return LLMResult(
+                                content="",
+                                model=self.model,
+                                error="AXON: Generation cancelled.",
+                                usage=last_usage,
+                                tool_steps=tool_steps,
+                            )
                         tool_steps += 1
-                        fn = tool_call.function
-                        tool_name = fn.name
-                        arguments = parse_tool_arguments(fn.arguments or "{}")
+                        tool_name = tool_call["function"]["name"]
+                        arguments = parse_tool_arguments(
+                            tool_call["function"].get("arguments") or "{}"
+                        )
                         if self._on_tool is not None:
                             detail = json.dumps(arguments, ensure_ascii=False)[:120]
                             await self._on_tool(tool_name, detail)
@@ -591,13 +700,13 @@ class LLMManager:
                         self.messages.append(
                             {
                                 "role": "tool",
-                                "tool_call_id": tool_call.id,
+                                "tool_call_id": tool_call["id"],
                                 "content": result,
                             }
                         )
                     continue
 
-                content = (message.content or "").strip()
+                content = (stream_result.content or "").strip()
                 if content:
                     self.messages.append({"role": "assistant", "content": content})
                     return LLMResult(
@@ -658,6 +767,96 @@ class LLMManager:
                 tool_steps=tool_steps,
             )
 
+    def _call_api_stream(
+        self,
+        *,
+        tools: list[dict[str, Any]] | None = None,
+    ) -> _ApiStreamResult:
+        kwargs: dict[str, Any] = {
+            "model": self.model,
+            "messages": self.messages,
+            "stream": True,
+        }
+        if tools:
+            kwargs["tools"] = tools
+            kwargs["tool_choice"] = "auto"
+
+        stream = self._client.chat.completions.create(**kwargs)
+        content_parts: list[str] = []
+        tool_acc: dict[int, dict[str, str]] = {}
+        usage_obj: object | None = None
+        loop = None
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            pass
+
+        async def _emit_start() -> None:
+            if self._on_stream_start:
+                await self._on_stream_start()
+
+        async def _emit_token(token: str) -> None:
+            if self._on_stream_token:
+                await self._on_stream_token(token)
+
+        async def _emit_end() -> None:
+            if self._on_stream_end:
+                await self._on_stream_end()
+
+        def _schedule(coro: Any) -> None:
+            if loop and loop.is_running():
+                asyncio.run_coroutine_threadsafe(coro, loop)
+
+        _schedule(_emit_start())
+
+        for chunk in stream:
+            if self._is_cancelled():
+                return _ApiStreamResult("", [], usage_obj, cancelled=True)
+
+            if getattr(chunk, "usage", None):
+                usage_obj = chunk.usage
+
+            if not chunk.choices:
+                continue
+
+            delta = chunk.choices[0].delta
+            if delta.content:
+                content_parts.append(delta.content)
+                _schedule(_emit_token(delta.content))
+
+            for tc in delta.tool_calls or []:
+                idx = tc.index
+                if idx not in tool_acc:
+                    tool_acc[idx] = {"id": "", "name": "", "arguments": ""}
+                if tc.id:
+                    tool_acc[idx]["id"] = tc.id
+                if tc.function:
+                    if tc.function.name:
+                        tool_acc[idx]["name"] = tc.function.name
+                    if tc.function.arguments:
+                        tool_acc[idx]["arguments"] += tc.function.arguments
+
+        _schedule(_emit_end())
+
+        content = "".join(content_parts)
+        tool_calls: list[dict[str, Any]] = []
+        for idx in sorted(tool_acc):
+            entry = tool_acc[idx]
+            if not entry["name"]:
+                continue
+            tool_calls.append(
+                {
+                    "id": entry["id"] or f"call_{idx}",
+                    "type": "function",
+                    "function": {
+                        "name": entry["name"],
+                        "arguments": entry["arguments"],
+                    },
+                }
+            )
+
+        return _ApiStreamResult(content, tool_calls, usage_obj)
+
     def _call_api(self, *, tools: list[dict[str, Any]] | None = None) -> Any:
         kwargs: dict[str, Any] = {
             "model": self.model,
@@ -676,7 +875,12 @@ class LLMManager:
     ) -> TokenUsage | None:
         parsed = self._parse_usage(usage)
         if parsed is not None:
-            record_token_usage(parsed.total_tokens)
+            record_token_usage(
+                parsed.total_tokens,
+                model=self.model,
+                prompt_tokens=parsed.prompt_tokens,
+                completion_tokens=parsed.completion_tokens,
+            )
         if previous is None:
             return parsed
         if parsed is None:

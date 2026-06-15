@@ -10,6 +10,7 @@ import websockets
 from websockets.server import WebSocketServerProtocol
 
 from llm_client import SESSION_STARTED_AT, TOTAL_COST, TOTAL_TOKENS
+from approval_bridge import resolve_approval
 from runtime_policy import (
     load_runtime_policy,
     policy_for_client,
@@ -218,6 +219,25 @@ class AxonBridge:
                     )
                     continue
 
+                if msg_type == "approval_response":
+                    approval_id = str(data.get("id", ""))
+                    decision = str(data.get("decision", "deny"))
+                    pin = str(data.get("pin", ""))
+                    policy = load_runtime_policy()
+                    if policy.require_desktop_confirmation:
+                        if pin != policy.bridge_pin:
+                            await websocket.send(
+                                json.dumps(
+                                    {
+                                        "type": "error",
+                                        "content": "Invalid PIN for desktop-confirmed approval",
+                                    }
+                                )
+                            )
+                            continue
+                    resolve_approval(approval_id, decision)
+                    continue
+
                 if msg_type == "chat":
                     if not load_runtime_policy().web_control_enabled:
                         await websocket.send(
@@ -299,6 +319,75 @@ class AxonBridge:
             {
                 "type": "approval_request",
                 "tool": tool_name,
+                "detail": detail,
+            }
+        )
+
+    async def broadcast_stream_start(
+        self,
+        message_id: str,
+        *,
+        source: str = "terminal",
+    ) -> None:
+        await self.broadcast(
+            {
+                "type": "stream_start",
+                "id": message_id,
+                "source": source,
+            }
+        )
+
+    async def broadcast_stream_delta(
+        self,
+        message_id: str,
+        delta: str,
+    ) -> None:
+        if not delta:
+            return
+        await self.broadcast(
+            {
+                "type": "stream_delta",
+                "id": message_id,
+                "delta": delta,
+            }
+        )
+
+    async def broadcast_stream_end(
+        self,
+        message_id: str,
+        text: str,
+        *,
+        source: str = "terminal",
+    ) -> None:
+        await self.broadcast(
+            {
+                "type": "stream_end",
+                "id": message_id,
+                "text": text,
+                "source": source,
+            }
+        )
+
+    async def broadcast_plan_update(self, tasks: list[dict[str, object]], goal: str = "") -> None:
+        await self.broadcast(
+            {
+                "type": "plan_update",
+                "goal": goal,
+                "tasks": tasks,
+            }
+        )
+
+    async def broadcast_tool_event(
+        self,
+        tool_name: str,
+        status: str,
+        detail: str = "",
+    ) -> None:
+        await self.broadcast(
+            {
+                "type": "tool_event",
+                "tool": tool_name,
+                "status": status,
                 "detail": detail,
             }
         )

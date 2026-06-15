@@ -22,6 +22,9 @@ SLASH_COMMANDS = [
     "/create-agent",
     "/delegate",
     "/system",
+    "/sessions",
+    "/resume",
+    "/save",
 ]
 
 AXON_COMMANDS: dict[str, str] = {
@@ -30,7 +33,7 @@ AXON_COMMANDS: dict[str, str] = {
     "/clear": "Clear chat context (keeps system prompt)",
     "/cost": "Show session cost and token usage",
     "/usage": "Alias for /cost",
-    "/compact": "Compact conversation context (coming soon)",
+    "/compact": "Summarize older messages to free context window",
     "/model": "Switch model — e.g. /model anthropic/claude-3.5-sonnet",
     "/plan": "Plan Mode — /plan <description> to break work into steps",
     "/image": "Load image for vision — /image <path> [prompt]",
@@ -43,6 +46,9 @@ AXON_COMMANDS: dict[str, str] = {
     "/create-agent": "Scaffold a sub-agent in .axon/agents/",
     "/delegate": "Delegate task to sub-agent — /delegate <name> <task>",
     "/system": "Session/global system prompt — /system session|global|edit|clear",
+    "/sessions": "List saved chat sessions",
+    "/resume": "Resume session — /resume <id>",
+    "/save": "Save current session — /save [title]",
 }
 
 

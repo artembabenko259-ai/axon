@@ -48,6 +48,7 @@ interface BridgeContextValue {
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8765";
 const SESSION_START_KEY = "axon-cli-session-start";
 const BRIDGE_TOKEN_KEY = "axon-bridge-token";
+const CHAT_MESSAGES_KEY = "axon-web-chat";
 
 async function resolveBridgeToken(): Promise<string> {
   if (typeof window === "undefined") return "";
@@ -119,6 +120,11 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   const [uptimeLabel, setUptimeLabel] = useState("00:00:00");
   const [tokenSeries, setTokenSeries] = useState<number[]>([]);
   const [uptimeSeries, setUptimeSeries] = useState<number[]>([]);
+  const [pendingApproval, setPendingApproval] = useState<{
+    id: string;
+    tool: string;
+    detail: string;
+  } | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const seenIds = useRef<Set<string>>(new Set());
@@ -208,6 +214,8 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
           model?: string;
           tool?: string;
           detail?: string;
+          delta?: string;
+          status?: string;
           policy?: { bridge_token?: string };
         };
 
@@ -251,13 +259,22 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
         }
 
         if (data.type === "approval_request") {
-          appendMessage({
-            id: `approval-${Date.now()}`,
-            role: "system",
-            content: `⚠ Confirm in AXON terminal: ${data.tool ?? "tool"} — ${data.detail ?? ""}`,
-            source: "terminal",
-            timestamp: Date.now(),
-          });
+          const approvalId = data.id;
+          if (approvalId) {
+            setPendingApproval({
+              id: approvalId,
+              tool: data.tool ?? "tool",
+              detail: data.detail ?? "",
+            });
+          } else {
+            appendMessage({
+              id: `approval-${Date.now()}`,
+              role: "system",
+              content: `⚠ Confirm in AXON terminal: ${data.tool ?? "tool"} — ${data.detail ?? ""}`,
+              source: "terminal",
+              timestamp: Date.now(),
+            });
+          }
           return;
         }
 
@@ -266,6 +283,53 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
             id: `err-${Date.now()}`,
             role: "system",
             content: data.content ?? "Bridge error",
+            source: "terminal",
+            timestamp: Date.now(),
+          });
+          return;
+        }
+
+        if (data.type === "stream_start") {
+          const id = data.id ?? `stream-${Date.now()}`;
+          seenIds.current.add(id);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id,
+              role: "assistant",
+              content: "",
+              source: data.source ?? "terminal",
+              timestamp: Date.now(),
+            },
+          ]);
+          return;
+        }
+
+        if (data.type === "stream_delta" && data.id) {
+          const delta = data.delta ?? "";
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === data.id ? { ...m, content: m.content + delta } : m,
+            ),
+          );
+          return;
+        }
+
+        if (data.type === "stream_end" && data.id) {
+          const text = data.text ?? "";
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === data.id ? { ...m, content: text || m.content } : m,
+            ),
+          );
+          return;
+        }
+
+        if (data.type === "tool_event") {
+          appendMessage({
+            id: `tool-${Date.now()}`,
+            role: "system",
+            content: `[${data.status ?? "event"}] ${data.tool ?? "tool"}${data.detail ? ` — ${data.detail}` : ""}`,
             source: "terminal",
             timestamp: Date.now(),
           });
@@ -377,6 +441,34 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     seenIds.current.clear();
   }, []);
 
+  const respondApproval = useCallback(
+    (decision: "once" | "session" | "deny") => {
+      if (!pendingApproval) return;
+      sendRaw({
+        type: "approval_response",
+        id: pendingApproval.id,
+        decision,
+      });
+      setPendingApproval(null);
+    },
+    [pendingApproval, sendRaw],
+  );
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem(CHAT_MESSAGES_KEY);
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as ChatMessage[];
+      if (Array.isArray(parsed)) setMessages(parsed);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem(CHAT_MESSAGES_KEY, JSON.stringify(messages));
+  }, [messages]);
+
   const value = useMemo(
     () => ({
       messages,
@@ -405,7 +497,42 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <BridgeContext.Provider value={value}>{children}</BridgeContext.Provider>
+    <BridgeContext.Provider value={value}>
+      {children}
+      {pendingApproval ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-md rounded-xl border border-white/10 bg-[#0a0a0a] p-5 shadow-2xl">
+            <h3 className="text-sm font-semibold text-white">Approve tool</h3>
+            <p className="mt-2 text-xs text-[#a1a1aa]">
+              {pendingApproval.tool} — {pendingApproval.detail}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn-vercel-primary text-xs"
+                onClick={() => respondApproval("once")}
+              >
+                Allow once
+              </button>
+              <button
+                type="button"
+                className="rounded-full border border-white/20 px-3 py-1.5 text-xs text-white"
+                onClick={() => respondApproval("session")}
+              >
+                Session
+              </button>
+              <button
+                type="button"
+                className="rounded-full border border-red-500/40 px-3 py-1.5 text-xs text-red-300"
+                onClick={() => respondApproval("deny")}
+              >
+                Deny
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </BridgeContext.Provider>
   );
 }
 

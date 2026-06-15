@@ -2,12 +2,23 @@ from __future__ import annotations
 
 import json
 import secrets
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from axon_runtime import user_data_dir
 
 POLICY_PATH = user_data_dir() / "runtime_policy.json"
+
+DEFAULT_TOOL_POLICY: dict[str, str] = {
+    "read_file": "auto",
+    "list_dir": "auto",
+    "glob_files": "auto",
+    "search_code": "auto",
+    "web_search": "auto",
+    "write_file": "ask",
+    "execute_shell": "ask",
+    "apply_patch": "ask",
+}
 
 
 @dataclass
@@ -30,6 +41,15 @@ class RuntimePolicy:
     bridge_token: str = ""
     # Short PIN for pairing display (optional extra check)
     bridge_pin: str = ""
+    tool_policy: dict[str, str] = field(default_factory=dict)
+
+    def resolved_tool_policy(self) -> dict[str, str]:
+        merged = dict(DEFAULT_TOOL_POLICY)
+        merged.update(self.tool_policy or {})
+        return merged
+
+    def tool_mode(self, tool_name: str) -> str:
+        return self.resolved_tool_policy().get(tool_name, "ask")
 
     def ensure_secrets(self) -> None:
         if not self.bridge_token:
@@ -68,6 +88,11 @@ def load_runtime_policy() -> RuntimePolicy:
         bridge_auth_enabled=bool(raw.get("bridge_auth_enabled", True)),
         bridge_token=str(raw.get("bridge_token", "")),
         bridge_pin=str(raw.get("bridge_pin", "")),
+        tool_policy={
+            str(k): str(v)
+            for k, v in (raw.get("tool_policy") or {}).items()
+            if str(v) in {"auto", "ask", "deny"}
+        },
     )
     if policy.bridge_auth_enabled:
         policy.ensure_secrets()
@@ -96,6 +121,7 @@ def policy_for_client() -> dict[str, object]:
         "bridge_auth_enabled": policy.bridge_auth_enabled,
         "bridge_token": policy.bridge_token,
         "bridge_pin": policy.bridge_pin,
+        "tool_policy": policy.resolved_tool_policy(),
         "policy_path": str(POLICY_PATH),
     }
 

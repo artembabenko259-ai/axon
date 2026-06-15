@@ -4,13 +4,13 @@ cd /d "%~dp0"
 
 where py >nul 2>&1
 if %ERRORLEVEL%==0 (
-    py -3 "%~dp0main.py" %*
+    py -3 "%~dp0cli.py" %*
     exit /b %ERRORLEVEL%
 )
 
 where python >nul 2>&1
 if %ERRORLEVEL%==0 (
-    python "%~dp0main.py" %*
+    python "%~dp0cli.py" %*
     exit /b %ERRORLEVEL%
 )
 

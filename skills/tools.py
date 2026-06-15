@@ -1,14 +1,19 @@
 from __future__ import annotations
 
 import json
+import re
 import shlex
+import shutil
 import subprocess
 import sys
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any, Literal
 
+from audit_log import log_tool_event, scan_secrets
 from backup_manager import backup_manager
+from request_context import get_request_source
+from runtime_policy import load_runtime_policy
 from rich.panel import Panel
 from rich.text import Text
 
@@ -20,7 +25,20 @@ MAX_FILE_SIZE = 64 * 1024
 SHELL_TIMEOUT_SECONDS = 60
 MAX_PANEL_OUTPUT = 4000
 
-REQUIRES_APPROVAL = frozenset({"write_file", "execute_shell"})
+SHELL_DENY_PATTERNS: list[tuple[str, str]] = [
+    (r"rm\s+-rf", "recursive force delete"),
+    (r"\bformat\s+[a-z]:", "disk format"),
+    (r"del\s+/f", "forced delete"),
+    (r"Remove-Item\s+.+-Recurse\s+-Force", "PowerShell recursive delete"),
+]
+
+REQUIRES_APPROVAL = frozenset({"write_file", "execute_shell", "apply_patch"})
+
+IGNORE_DIR_NAMES = frozenset(
+    {".git", "node_modules", "__pycache__", ".venv", "venv", "dist", "build", ".axon"}
+)
+MAX_GLOB_RESULTS = 200
+MAX_SEARCH_RESULTS = 100
 
 # Tool names (or "tool:detail" prefixes) approved for the rest of the CLI session.
 approved_session_tools: set[str] = set()
@@ -112,6 +130,83 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_dir",
+            "description": "List files and directories at a path.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Directory path."},
+                    "recursive": {
+                        "type": "boolean",
+                        "description": "List recursively (max depth 4).",
+                    },
+                },
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "glob_files",
+            "description": "Find files matching a glob pattern under a directory.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "pattern": {
+                        "type": "string",
+                        "description": "Glob pattern, e.g. **/*.py",
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "Root directory to search from.",
+                    },
+                },
+                "required": ["pattern", "path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_code",
+            "description": "Search for a regex pattern in codebase files.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "pattern": {"type": "string", "description": "Regex pattern."},
+                    "path": {
+                        "type": "string",
+                        "description": "Directory or file to search.",
+                    },
+                },
+                "required": ["pattern", "path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "apply_patch",
+            "description": (
+                "Apply a unified diff patch to a file. Requires user approval."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filepath": {"type": "string", "description": "Target file path."},
+                    "patch": {
+                        "type": "string",
+                        "description": "Unified diff hunk(s) for the file.",
+                    },
+                },
+                "required": ["filepath", "patch"],
+            },
+        },
+    },
 ]
 
 
@@ -155,6 +250,10 @@ def tool_display_label(tool_name: str) -> str:
         "execute_shell": "Shell",
         "write_file": "Write",
         "read_file": "Read",
+        "list_dir": "List",
+        "glob_files": "Glob",
+        "search_code": "Grep",
+        "apply_patch": "Patch",
         "web_search": "Search",
         "create_plan": "Plan",
         "complete_task": "Task",
@@ -216,6 +315,15 @@ def build_result_panel(tool_name: str, detail: str, output: str) -> Panel:
     )
 
 
+def _is_path_allowed(path: Path) -> bool:
+    try:
+        cwd = Path.cwd().resolve()
+        resolved = path.resolve()
+        return resolved == cwd or cwd in resolved.parents
+    except OSError:
+        return False
+
+
 def _resolve_safe_path(filepath: str) -> Path | str:
     raw = filepath.strip()
     if not raw:
@@ -225,9 +333,14 @@ def _resolve_safe_path(filepath: str) -> Path | str:
         return "Error: path traversal ('..') is not allowed."
 
     try:
-        return Path(raw).resolve()
+        path = Path(raw).resolve()
     except (OSError, ValueError) as exc:
         return f"Error: invalid path — {exc}"
+
+    if not _is_path_allowed(path):
+        return f"Error: path outside workspace — {path}"
+
+    return path
 
 
 def read_file(filepath: str) -> str:
@@ -255,6 +368,10 @@ def read_file(filepath: str) -> str:
 
 def write_file(filepath: str, content: str) -> str:
     """Write content to a file."""
+    secrets = scan_secrets(content)
+    if secrets:
+        return f"Error: blocked write — possible secrets detected: {', '.join(secrets)}"
+
     path = _resolve_safe_path(filepath)
     if isinstance(path, str):
         return path
@@ -303,11 +420,167 @@ def web_search(query: str) -> str:
         return f"Error during web search — {exc}"
 
 
+def list_dir(path: str, recursive: bool = False) -> str:
+    root = _resolve_safe_path(path)
+    if isinstance(root, str):
+        return root
+    if not root.is_dir():
+        return f"Error: not a directory — {root}"
+
+    lines: list[str] = []
+
+    def _walk(directory: Path, depth: int) -> None:
+        if depth > 4:
+            return
+        try:
+            entries = sorted(directory.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower()))
+        except OSError as exc:
+            lines.append(f"Error reading {directory}: {exc}")
+            return
+        for entry in entries:
+            if entry.name in IGNORE_DIR_NAMES:
+                continue
+            prefix = "  " * depth
+            suffix = "/" if entry.is_dir() else ""
+            lines.append(f"{prefix}{entry.name}{suffix}")
+            if recursive and entry.is_dir():
+                _walk(entry, depth + 1)
+
+    _walk(root, 0)
+    return "\n".join(lines) if lines else "(empty directory)"
+
+
+def glob_files(pattern: str, path: str) -> str:
+    root = _resolve_safe_path(path)
+    if isinstance(root, str):
+        return root
+    if not root.is_dir():
+        return f"Error: not a directory — {root}"
+
+    try:
+        matches = sorted(root.glob(pattern))[:MAX_GLOB_RESULTS]
+    except (OSError, ValueError) as exc:
+        return f"Error: invalid glob — {exc}"
+
+    if not matches:
+        return f"No files matched '{pattern}' under {root}"
+
+    lines = [str(p.relative_to(root)) for p in matches]
+    note = ""
+    if len(matches) >= MAX_GLOB_RESULTS:
+        note = f"\n[truncated at {MAX_GLOB_RESULTS} results]"
+    return "\n".join(lines) + note
+
+
+def search_code(pattern: str, path: str) -> str:
+    target = _resolve_safe_path(path)
+    if isinstance(target, str):
+        return target
+
+    rg = shutil.which("rg")
+    if rg:
+        cmd = [rg, "-n", "--no-heading", "-S", pattern, str(target)]
+        try:
+            proc = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=SHELL_TIMEOUT_SECONDS,
+            )
+            output = (proc.stdout or "").strip()
+            if not output:
+                return f"No matches for /{pattern}/ in {target}"
+            lines = output.splitlines()[:MAX_SEARCH_RESULTS]
+            body = "\n".join(lines)
+            if len(output.splitlines()) > MAX_SEARCH_RESULTS:
+                body += f"\n[truncated at {MAX_SEARCH_RESULTS} matches]"
+            return body
+        except (subprocess.TimeoutExpired, OSError) as exc:
+            return f"Error running ripgrep — {exc}"
+
+    try:
+        regex = re.compile(pattern)
+    except re.error as exc:
+        return f"Error: invalid regex — {exc}"
+
+    matches: list[str] = []
+    files = [target] if target.is_file() else target.rglob("*")
+    for file_path in files:
+        if not file_path.is_file():
+            continue
+        if any(part in IGNORE_DIR_NAMES for part in file_path.parts):
+            continue
+        try:
+            text = file_path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for line_no, line in enumerate(text.splitlines(), start=1):
+            if regex.search(line):
+                try:
+                    rel = file_path.relative_to(Path.cwd())
+                except ValueError:
+                    rel = file_path
+                matches.append(f"{rel}:{line_no}:{line[:200]}")
+                if len(matches) >= MAX_SEARCH_RESULTS:
+                    return "\n".join(matches) + f"\n[truncated at {MAX_SEARCH_RESULTS} matches]"
+    return "\n".join(matches) if matches else f"No matches for /{pattern}/ in {target}"
+
+
+def apply_patch(filepath: str, patch: str) -> str:
+    path = _resolve_safe_path(filepath)
+    if isinstance(path, str):
+        return path
+
+    if not path.is_file():
+        return f"Error: file not found — {path}"
+
+    original = path.read_text(encoding="utf-8", errors="replace")
+    lines = original.splitlines(keepends=True)
+    patch_text = patch.replace("\r\n", "\n")
+
+    ops: list[tuple[str, str]] = []
+    for raw in patch_text.splitlines():
+        if raw.startswith("@@") or raw.startswith("---") or raw.startswith("+++"):
+            continue
+        if raw and raw[0] in " -+":
+            ops.append((raw[0], raw[1:]))
+
+    out: list[str] = []
+    src_i = 0
+    src = [ln.rstrip("\n") for ln in lines]
+    for op, text in ops:
+        if op == " ":
+            if src_i < len(src) and src[src_i] == text:
+                out.append(src[src_i] + "\n")
+                src_i += 1
+            elif src_i < len(src):
+                return f"Error: context mismatch at line {src_i + 1}"
+            else:
+                out.append(text + "\n")
+        elif op == "-":
+            if src_i < len(src) and src[src_i] == text:
+                src_i += 1
+            else:
+                return f"Error: delete mismatch at line {src_i + 1}"
+        elif op == "+":
+            out.append(text + "\n")
+    out.extend(ln + "\n" for ln in src[src_i:])
+
+    backup_manager.set_workspace(Path.cwd())
+    backup_manager.backup_if_exists(path)
+    path.write_text("".join(out), encoding="utf-8")
+    return f"Successfully patched {path}"
+
+
 def execute_shell(command: str) -> str:
     """Execute a shell command and return stdout/stderr."""
     cmd = command.strip()
     if not cmd:
         return "Error: command is required."
+
+    for pattern, label in SHELL_DENY_PATTERNS:
+        if re.search(pattern, cmd, re.IGNORECASE):
+            return f"Error: blocked command pattern ({label})"
 
     try:
         if sys.platform == "win32":
@@ -347,6 +620,8 @@ def _approval_detail(tool_name: str, args: dict[str, Any]) -> str:
         return str(args.get("command", "")).strip()
     if tool_name == "write_file":
         return str(args.get("filepath", "")).strip()
+    if tool_name == "apply_patch":
+        return str(args.get("filepath", "")).strip()
     return json.dumps(args, ensure_ascii=False)[:120]
 
 
@@ -362,7 +637,30 @@ def _run_tool_sync(tool_name: str, args: dict[str, Any]) -> str:
         return execute_shell(str(args.get("command", "")))
     if tool_name == "web_search":
         return web_search(str(args.get("query", "")))
+    if tool_name == "list_dir":
+        return list_dir(str(args.get("path", ".")), bool(args.get("recursive", False)))
+    if tool_name == "glob_files":
+        return glob_files(str(args.get("pattern", "")), str(args.get("path", ".")))
+    if tool_name == "search_code":
+        return search_code(str(args.get("pattern", "")), str(args.get("path", ".")))
+    if tool_name == "apply_patch":
+        return apply_patch(
+            str(args.get("filepath", "")),
+            str(args.get("patch", "")),
+        )
     return f"Error: unknown tool '{tool_name}'."
+
+
+def _needs_approval(tool_name: str) -> bool:
+    policy = load_runtime_policy()
+    if policy.autonomy_enabled:
+        return False
+    mode = policy.tool_mode(tool_name)
+    if mode == "auto":
+        return False
+    if mode == "deny":
+        return True
+    return tool_name in REQUIRES_APPROVAL
 
 
 async def execute_tool(
@@ -371,18 +669,35 @@ async def execute_tool(
     approve: ApprovalCallback | None = None,
 ) -> str:
     """Dispatch a tool call, requesting approval for dangerous operations."""
+    policy = load_runtime_policy()
+    if policy.tool_mode(tool_name) == "deny":
+        return f"Error: tool '{tool_name}' is denied by runtime policy."
+
     detail = _approval_detail(tool_name, arguments)
 
-    if tool_name in REQUIRES_APPROVAL and not is_session_approved(tool_name, detail):
+    if _needs_approval(tool_name) and not is_session_approved(tool_name, detail):
         if approve is None:
             return "User denied permission (no approval handler configured)"
         decision = await approve(tool_name, detail)
         if decision == "deny":
+            log_tool_event(
+                tool=tool_name,
+                detail=detail,
+                source=get_request_source(),
+                outcome="denied",
+            )
             return "User denied permission"
         if decision == "session":
             grant_session_approval(tool_name, detail)
 
     result = _run_tool_sync(tool_name, arguments)
+
+    log_tool_event(
+        tool=tool_name,
+        detail=detail,
+        source=get_request_source(),
+        outcome="ok" if not result.startswith("Error") else "error",
+    )
 
     if tool_name in REQUIRES_APPROVAL and _on_tool_result is not None:
         await _on_tool_result(tool_name, detail, result)

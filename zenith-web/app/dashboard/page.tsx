@@ -6,6 +6,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { LogsConsole } from "@/components/dashboard/LogsConsole";
 import { ModelSelector } from "@/components/dashboard/ModelSelector";
 import { StatusCards } from "@/components/dashboard/StatusCards";
+import { ToolTracePanel } from "@/components/dashboard/ToolTracePanel";
 import { ModelMarketplace } from "@/components/marketplace/ModelMarketplace";
 import { AgentOrb } from "@/components/ui/AgentOrb";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -115,6 +116,10 @@ export default function DashboardPage() {
               <motion.div layout>
                 <ModelMarketplace />
               </motion.div>
+            </StaggerItem>
+
+            <StaggerItem>
+              <ToolTracePanel />
             </StaggerItem>
 
             <StaggerItem>

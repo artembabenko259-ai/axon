@@ -1,85 +1,104 @@
 # AXON CLI
 
-A modular terminal REPL with minimalist split-pane UI, AI chat via OpenRouter, streaming Markdown output, and a pluggable Skills system for function calling.
+Agentic terminal REPL with OpenRouter tool-calling, markdown skills, plan mode, sub-agents, git helpers, and a Zenith web control panel.
 
 **Version:** 1.0.0
 
-## UI
-
-- **AXON branding** — pyfiglet ASCII logo with subtle gradient on startup
-- **Sticky layout** — logo and status line fixed at top, `❯` prompt pinned at bottom
-- **Split-pane** — scrollable chat between header and input
-- **Status line** — `Version | Model | Status` updates live in the header
-- **Themeable** — swap `CLITheme` in `ui/theme.py` without touching core logic
-
-```
-CLI/
-├── main.py
-├── bridge.py           # WebSocket bridge (CLI ↔ web dashboard)
-├── controller.py       # REPL loop + layout orchestration
-├── commands.py
-├── llm_client.py
-├── zenith-web/         # Next.js web control panel (package name: axon-web)
-├── ui/
-│   ├── theme.py        # CLITheme palette (swap to reskin)
-│   ├── renderer.py     # UIRenderer split-pane layout
-│   └── protocol.py     # UIOutput protocol
-└── skills/
-```
-
-## Setup
+## Quick start
 
 ```bash
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env and set your OPENROUTER_API_KEY
+# Set OPENROUTER_API_KEY in .env or via http://localhost:3000/config
+
+axon          # interactive REPL (same as axon repl)
+python cli.py # equivalent
+python main.py # backward-compatible
 ```
 
-## Usage
-
-```bash
-python main.py
-```
-
-AXON runs a simple terminal REPL: type a message, get an AI response, and see token usage for cost tracking.
-
-Optional commands: `/help`, `/model <name>`, `/exit`
-
-## Advanced UI mode
-
-The `controller.py` module provides the full split-pane Rich UI (optional, not used by default `main.py`).
-
-## Commands
+## CLI commands
 
 | Command | Description |
 |---------|-------------|
-| `/help` | List available commands |
-| `/model <name>` | Switch the active AI model |
-| `/clear` | Clear the chat pane |
-| `/skills` | List loaded skills |
-| `/exit` | Exit the REPL |
+| `axon` / `axon repl` | Interactive REPL with WebSocket bridge |
+| `axon -p "task"` | Headless single prompt (CI/scripts) |
+| `axon doctor` | Environment checks |
+| `axon web` | Start Zenith dashboard (`npm run dev`) |
 
-Any input that does not start with `/` is sent to the AI as a chat message.
-
-## Default Model
-
-`meta-llama/llama-3.1-8b-instruct` (change with `/model <name>`).
-
-## Skills
-
-Built-in skills:
-
-- **system_info** — Returns OS, machine, Python version, and local time.
-- **file_read** — Reads a file by path (max 64 KB).
-
-Skills are exposed to the LLM via OpenAI function-calling format and executed automatically during chat.
-
-## Web Dashboard
+### Headless
 
 ```bash
-cd zenith-web
-npm install
-npm run dev
+axon -p "summarize README.md" --cwd ./project
+axon -p "fix tests" --json --yes
 ```
 
-The CLI starts a WebSocket bridge on `ws://127.0.0.1:8765` for real-time chat sync with the web panel.
+## Slash commands (REPL)
+
+| Command | Description |
+|---------|-------------|
+| `/help` | List commands |
+| `/exit` | Quit |
+| `/clear` | Clear context |
+| `/model <name>` | Switch model |
+| `/cost` `/usage` | Session tokens and cost |
+| `/compact` | Summarize old context |
+| `/plan <desc>` | Plan mode |
+| `execute` / `go` / `run` | Execute active plan |
+| `/image <path>` | Load image for vision models |
+| `/create-skill` `/gen-skill` | Create markdown skills |
+| `/create-agent` `/delegate` | Sub-agents |
+| `/review` `/commit` `/undo` | Git workflows |
+| `/docs` | Generate live docs |
+| `/system` | Session/global system prompts |
+| `/sessions` `/resume` `/save` | Session persistence |
+
+Chain commands with `&`: `/clear & /plan refactor auth`
+
+## Tools
+
+Built-in agent tools: `read_file`, `write_file`, `execute_shell`, `web_search`, `list_dir`, `search_code`, `glob_files`, `apply_patch`, plus plan tools and markdown skills.
+
+## Web dashboard
+
+```bash
+axon web
+# or: cd zenith-web && npm install && npm run dev
+```
+
+Open http://localhost:3000 — chat, dashboard, config, runtime policy (autonomy, bridge token).
+
+Bridge: `ws://127.0.0.1:8765` (localhost only).
+
+## Project layout
+
+```
+CLI/
+├── cli.py              # Unified entrypoint
+├── main.py             # Backward-compatible shim
+├── ui/repl.py          # Interactive REPL
+├── llm_client.py       # Agent loop + OpenRouter
+├── bridge.py           # WebSocket hub
+├── runtime_policy.py   # Autonomy & security
+├── skills/             # Built-in tools
+├── zenith-web/         # Next.js control panel
+└── .axon/skills/       # User markdown skills
+```
+
+## Configuration
+
+- `config.json` — API key, model (also editable in web UI)
+- `%APPDATA%\AXON\runtime_policy.json` — autonomy, web control, bridge token
+- `%APPDATA%\AXON\system_prompt.md` — global system prompt
+- `.axon/memory.md` — project memory
+
+## Build (Windows)
+
+```bash
+build.bat
+```
+
+Produces standalone `axon.exe` via PyInstaller + Inno Setup.
+
+## Legacy
+
+Legacy `controller.py` / `commands.py` stacks were removed — use `axon` / `ui/repl.py`.
