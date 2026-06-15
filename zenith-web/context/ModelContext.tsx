@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -86,6 +87,7 @@ export function ModelProvider({ children }: { children: ReactNode }) {
   const [customModels, setCustomModels] = useState<CustomModel[]>([]);
   const [isSwitching, setIsSwitching] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const lastUserPickRef = useRef<string | null>(null);
 
   useEffect(() => {
     setActiveModelId(loadActiveModel());
@@ -95,11 +97,13 @@ export function ModelProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (bridgeModel) {
-      setActiveModelId(bridgeModel);
-      localStorage.setItem(MODEL_STORAGE_KEY, bridgeModel);
-    }
-  }, [bridgeModel]);
+    if (!bridgeModel) return;
+    if (bridgeModel === activeModelId) return;
+    if (lastUserPickRef.current && bridgeModel === DEFAULT_MODEL) return;
+
+    setActiveModelId(bridgeModel);
+    localStorage.setItem(MODEL_STORAGE_KEY, bridgeModel);
+  }, [bridgeModel, activeModelId]);
 
   const allModels = useMemo(() => {
     const custom = customModels.map(customToOption);
@@ -110,6 +114,9 @@ export function ModelProvider({ children }: { children: ReactNode }) {
 
   const setActiveModel = useCallback(
     (modelId: string) => {
+      if (modelId === activeModelId) return;
+
+      lastUserPickRef.current = modelId;
       setIsSwitching(true);
       setActiveModelId(modelId);
       localStorage.setItem(MODEL_STORAGE_KEY, modelId);
@@ -121,7 +128,7 @@ export function ModelProvider({ children }: { children: ReactNode }) {
       sendSetModel(modelId);
       setTimeout(() => setIsSwitching(false), 800);
     },
-    [sendSetModel],
+    [activeModelId, sendSetModel],
   );
 
   const toggleModelEnabled = useCallback((modelId: string) => {

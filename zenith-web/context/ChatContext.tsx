@@ -120,7 +120,6 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
             source: "terminal",
             timestamp: Date.now(),
           });
-          if (data.model) setActiveModel(data.model);
           return;
         }
 
@@ -188,7 +187,6 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     (model: string) => {
       const trimmed = model.trim();
       if (!trimmed) return;
-      setActiveModel(trimmed);
       sendRaw({ type: "set_model", model: trimmed });
     },
     [sendRaw],

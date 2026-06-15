@@ -2,14 +2,16 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sys
 from collections.abc import Awaitable, Callable
 from typing import Any
 
 import websockets
 from websockets.server import WebSocketServerProtocol
 
-WS_HOST = "localhost"
+WS_HOST = "127.0.0.1"
 WS_PORT = 8765
+_ADDR_IN_USE = frozenset({48, 98, 10048})
 
 ProcessChatHandler = Callable[[str, str], Awaitable[None]]
 SetModelHandler = Callable[[str], Awaitable[None]]
@@ -41,13 +43,28 @@ class AxonBridge:
         self._refresh_ui = refresh_ui
         self._current_model = current_model
 
-    async def start(self) -> Any:
-        self._server = await websockets.serve(
-            self.ws_handler,
-            WS_HOST,
-            WS_PORT,
-        )
-        return self._server
+    async def start(self) -> Any | None:
+        try:
+            self._server = await websockets.serve(
+                self.ws_handler,
+                WS_HOST,
+                WS_PORT,
+                reuse_address=True,
+            )
+            return self._server
+        except OSError as exc:
+            if exc.errno in _ADDR_IN_USE:
+                print(
+                    f"AXON: Port {WS_PORT} is already in use — "
+                    "another AXON instance is probably still running.\n"
+                    f"Close it first, or run:  taskkill /PID <pid> /F\n"
+                    f"Find PID with:  netstat -ano | findstr :{WS_PORT}\n"
+                    "CLI will start without the web dashboard bridge.",
+                    file=sys.stderr,
+                )
+                self._server = None
+                return None
+            raise
 
     async def stop(self) -> None:
         if self._server is None:
@@ -66,7 +83,6 @@ class AxonBridge:
                     {
                         "type": "connected",
                         "content": "AXON bridge connected",
-                        "model": self._current_model,
                     }
                 )
             )

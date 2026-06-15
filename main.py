@@ -2,304 +2,509 @@ from __future__ import annotations
 
 import asyncio
 import io
+import os
 import sys
 import uuid
-from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
+import colorama
 from dotenv import load_dotenv
-from prompt_toolkit.application import Application, get_app
-from prompt_toolkit.formatted_text import ANSI
-from prompt_toolkit.layout import Dimension as D
-from prompt_toolkit.layout import HSplit, Layout, Window
-from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.layout.menus import CompletionsMenu
-from prompt_toolkit.styles import Style
-from prompt_toolkit.widgets import TextArea
+from prompt_toolkit import PromptSession, print_formatted_text
+from prompt_toolkit.application import in_terminal, run_in_terminal
+from prompt_toolkit.application.current import get_app_or_none
+from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.formatted_text import ANSI, HTML
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.patch_stdout import patch_stdout
+from prompt_toolkit.styles import Style as PTStyle
 from rich.align import Align
-from rich.box import HORIZONTALS
 from rich.console import Console
+from rich.markdown import Markdown
 from rich.panel import Panel
-from rich.style import Style as RichStyle
-from rich.text import Text
+from rich.rule import Rule
 
 from bridge import AxonBridge
+from skills_manager import ensure_skills_workspace
+from skills.tasks import set_plan_render_callback
+from task_manager import task_manager
 from llm_client import (
     LLMManager,
     TOTAL_COST,
     TOTAL_TOKENS,
     reset_session_counters,
 )
-from ui.branding import build_gradient_logo, generate_logo_text
-from ui.completer import AXON_COMMANDS, AxonCommandCompleter
+from skills.tools import (
+    ApprovalDecision,
+    clear_session_approvals,
+    set_tool_result_callback,
+    tool_display_label,
+)
+from ui.branding import INSTRUCTIONS, VERSION, build_gradient_logo
+from ui.completer import AXON_COMMANDS
 from ui.theme import DEFAULT_THEME
 
-CHAT_PLACEHOLDER = "Ask AXON anything — type /help for commands\n"
+axon_commands = [
+    "/help",
+    "/exit",
+    "/clear",
+    "/cost",
+    "/compact",
+    "/model",
+    "/plan",
+]
+axon_completer = WordCompleter(axon_commands, ignore_case=True)
 
-AXON_STYLE = Style.from_dict(
-    {
-        "header": "bg:#0c0c0c",
-        "status-bar": "bg:#0c0c0c",
-        "chat": "bg:#09090b #e4e4e7",
-        "input": "bg:#111111 #e4e4e7",
-        "separator": "bg:#27272a",
-        "text-area.prompt": "bold #67e8f9",
-        "completion-menu": "bg:#18181b #a1a1aa",
-        "completion-menu.border": "#27272a",
-        "completion-menu.completion": "bg:#18181b #a1a1aa",
-        "completion-menu.completion.current": "bg:#27272a bold #67e8f9",
-        "completion-menu.meta.completion": "bg:#18181b #52525b italic",
-        "completion-menu.meta.completion.current": "bg:#27272a #71717a italic",
-    }
+colorama.just_fix_windows_console()
+
+if os.name == "nt":
+    os.system("")  # Enable VT100 ANSI processing on Windows PowerShell/CMD
+
+console = Console(force_terminal=True, color_system="truecolor")
+_string_io = io.StringIO()
+string_console = Console(
+    force_terminal=True,
+    color_system="truecolor",
+    file=_string_io,
 )
+MAX_TOOL_OUTPUT = 4000
 
 
-@dataclass
-class SessionState:
-    model: str
-    status: str = "Ready"
-
-    @property
-    def total_tokens(self) -> int:
-        return TOTAL_TOKENS
-
-    @property
-    def cost(self) -> float:
-        return TOTAL_COST
+def clear_terminal() -> None:
+    os.system("cls" if os.name == "nt" else "clear")
 
 
-def _terminal_width() -> int:
-    try:
-        return get_app().output.get_size().columns
-    except Exception:
-        return 100
+def _prompt_is_active() -> bool:
+    app = get_app_or_none()
+    return app is not None and app._is_running
 
 
-def _rich_to_ansi(renderable, width: int) -> str:
-    buffer = io.StringIO()
-    console = Console(
-        file=buffer,
-        force_terminal=True,
-        width=max(width, 40),
-        legacy_windows=True,
+def _rich_to_ansi(renderable: Any) -> str:
+    """Render a Rich object to an ANSI string via an in-memory buffer."""
+    _string_io.seek(0)
+    _string_io.truncate(0)
+    string_console.print(renderable)
+    return _string_io.getvalue()
+
+
+def safe_print(renderable: Any) -> None:
+    """Emit Rich output through prompt_toolkit's native ANSI parser."""
+    output = _rich_to_ansi(renderable)
+    if output:
+        print_formatted_text(ANSI(output))
+
+
+async def safe_async_print(renderable: Any) -> None:
+    """Async-safe emit: suspend prompt, print ANSI via prompt_toolkit, resume."""
+
+    def _emit() -> None:
+        safe_print(renderable)
+
+    app = get_app_or_none()
+    if app is not None and app._is_running and not app._running_in_terminal:
+        await run_in_terminal(_emit)
+    else:
+        _emit()
+
+
+def ask_permission(command_detail: str) -> str:
+    """Print the tool menu first, flush, then block on input."""
+    menu = (
+        f"\n<ansiyellow>[?] AXON wants to execute a command:</ansiyellow>\n"
+        f"<ansiyellow>{command_detail}</ansiyellow>\n"
+        f"<ansigreen>1. Allow once</ansigreen>\n"
+        f"<ansiyellow>2. Allow for this session</ansiyellow>\n"
+        f"<ansired>3. Reject</ansired>\n"
     )
-    console.print(renderable)
-    return buffer.getvalue()
+    print_formatted_text(HTML(menu))
+    sys.stdout.flush()
+    return input("Select (1/2/3): ").strip()
 
 
-def _build_header_ansi(state: SessionState, width: int) -> str:
-    logo = build_gradient_logo(DEFAULT_THEME, font="slant")
-    short_model = state.model.rsplit("/", 1)[-1]
-
-    status = Text()
-    status.append("Model: ", style=RichStyle(color="#71717a"))
-    status.append(short_model, style=RichStyle(color="#a1a1aa"))
-    status.append("   Cost: ", style=RichStyle(color="#71717a"))
-    status.append(f"${state.cost:.4f}", style=RichStyle(color="#67e8f9"))
-    status.append("   Tokens: ", style=RichStyle(color="#71717a"))
-    status.append(str(state.total_tokens), style=RichStyle(color="#a1a1aa"))
-    status.append("   Status: ", style=RichStyle(color="#71717a"))
-    status.append(state.status, style=RichStyle(color="#4ade80"))
-
-    body = Text()
-    body.append_text(logo)
-    body.append("\n")
-    body.append_text(status)
-
-    return _rich_to_ansi(
-        Panel(
-            Align.center(body),
-            box=HORIZONTALS,
-            border_style=RichStyle(color="#27272a"),
-            padding=(0, 1),
-        ),
-        width,
+def print_banner(model: str) -> None:
+    short_model = model.rsplit("/", 1)[-1]
+    console.print()
+    console.print(Align.center(build_gradient_logo(DEFAULT_THEME)))
+    console.print(
+        Align.center(
+            f"[dim]v{VERSION} · model: [cyan]{short_model}[/cyan] · {INSTRUCTIONS}[/dim]"
+        )
     )
+    console.print(Rule(style="dim"))
+    console.print()
 
 
 async def start_axon() -> None:
     load_dotenv()
 
-    llm_manager = LLMManager()
-    state = SessionState(model=llm_manager.model)
+    workspace = Path.cwd()
+    ensure_skills_workspace(workspace)
+
+    llm_manager = LLMManager(workspace=workspace)
     bridge = AxonBridge()
+    llm_lock = asyncio.Lock()
+    shutdown = asyncio.Event()
+    # When True, Rich output must go through safe_print (inside in_terminal).
+    background_render = {"active": False}
 
-    logo_lines = len([ln for ln in generate_logo_text().splitlines() if ln.strip()]) or 4
-    header_height = logo_lines + 4
-
-    def header_fragments():
-        return ANSI(_build_header_ansi(state, _terminal_width()))
-
-    chat_history = TextArea(
-        text=CHAT_PLACEHOLDER,
-        read_only=True,
-        scrollbar=True,
-        focusable=False,
-        wrap_lines=True,
-        style="class:chat",
-    )
-
-    user_input = TextArea(
-        text="",
-        prompt="❯ ",
-        multiline=False,
-        completer=AxonCommandCompleter(),
+    session = PromptSession(
+        completer=axon_completer,
         complete_while_typing=True,
-        wrap_lines=True,
-        style="class:input",
+        history=FileHistory(str(Path.home() / ".axon_history")),
+        style=PTStyle.from_dict({"prompt": f"{DEFAULT_THEME.accent} bold"}),
     )
-    user_input.window.height = D.exact(1)
 
-    def refresh_ui() -> None:
-        try:
-            get_app().invalidate()
-        except Exception:
-            pass
+    async def emit(renderable: Any) -> None:
+        if background_render["active"]:
+            safe_print(renderable)
+        elif _prompt_is_active():
+            await safe_async_print(renderable)
+        else:
+            console.print(renderable)
+
+    async def request_approval(tool_name: str, detail: str) -> ApprovalDecision:
+        label = tool_display_label(tool_name)
+        display_detail = detail.strip() or "(no details)"
+        command_detail = f"{label}: {display_detail}"
+
+        def _ask() -> ApprovalDecision:
+            choice = ask_permission(command_detail)
+            while choice not in {"1", "2", "3"}:
+                print_formatted_text(
+                    HTML("<ansired>Invalid choice. Enter 1, 2, or 3.</ansired>\n")
+                )
+                sys.stdout.flush()
+                choice = input("Select (1/2/3): ").strip()
+
+            decision_map: dict[str, ApprovalDecision] = {
+                "1": "once",
+                "2": "session",
+                "3": "deny",
+            }
+            decision = decision_map[choice]
+            if decision == "deny":
+                print_formatted_text(
+                    HTML("<ansired>[X] Execution denied by user.</ansired>\n")
+                )
+                sys.stdout.flush()
+            return decision
+
+        app = get_app_or_none()
+        if background_render["active"] or (
+            app is not None and app._is_running and app._running_in_terminal
+        ):
+            return _ask()
+        if _prompt_is_active():
+            return await run_in_terminal(_ask)
+        return _ask()
+
+    async def on_tool_result(tool_name: str, detail: str, output: str) -> None:
+        label = tool_display_label(tool_name)
+        display_detail = detail.strip() or "(no details)"
+        body = (output or "(no output)").strip()
+        if len(body) > MAX_TOOL_OUTPUT:
+            body = f"{body[:MAX_TOOL_OUTPUT]}\n… (truncated)"
+
+        if tool_name == "execute_shell":
+            title = f"[✓] Shell {display_detail}"
+        elif tool_name == "write_file":
+            title = f"[✓] Write {display_detail}"
+        else:
+            title = f"[✓] {label} {display_detail}"
+
+        await emit(Panel(body, title=title, border_style="green", padding=(0, 1)))
+
+    llm_manager.set_approval_callback(request_approval)
+    set_tool_result_callback(on_tool_result)
+
+    async def render_plan_board() -> None:
+        await emit(task_manager.build_plan_panel())
+
+    set_plan_render_callback(render_plan_board)
 
     async def sync_stats() -> None:
         await bridge.broadcast_stats(TOTAL_TOKENS, TOTAL_COST)
 
-    async def apply_model(model: str, *, announce_cli: bool = True) -> None:
+    async def apply_model(
+        model: str,
+        *,
+        announce_cli: bool = True,
+        background: bool = False,
+    ) -> None:
         llm_manager.set_model(model)
-        state.model = model
-        bridge._current_model = model
+        bridge._current_model = llm_manager.model
         if announce_cli:
-            chat_history.text += f"AXON: Model set to {model}\n"
+            message = f"[dim]AXON: Model set to [cyan]{model}[/cyan][/dim]\n"
+            if background:
+                await safe_async_print(message)
+            else:
+                console.print(message)
         await bridge.broadcast_model(model)
-        refresh_ui()
+
+    async def run_llm(stripped: str, *, background: bool = False):
+        async def on_tool(tool_name: str, detail: str) -> None:
+            await emit(f"[dim]↳ using tool [cyan]{tool_name}[/cyan][/dim]")
+
+        llm_manager.set_tool_callback(on_tool)
+
+        if background:
+            await emit("[bold magenta]AXON is thinking...[/]")
+            llm_manager.reload_credentials()
+            result = await llm_manager.send_message_async(stripped)
+        else:
+            with console.status(
+                "[bold magenta]AXON is thinking...[/]",
+                spinner="dots",
+            ):
+                llm_manager.reload_credentials()
+                result = await llm_manager.send_message_async(stripped)
+
+        await emit("\n[bold green]✦ AXON:[/]")
+        if result.ok and result.content:
+            await emit(Markdown(result.content))
+        else:
+            await emit(f"[red]{result.display_text}[/]")
+        await emit(
+            f"[dim]Cost: ${TOTAL_COST:.4f} | Tokens: {TOTAL_TOKENS}[/dim]\n"
+        )
+
+        if result.usage:
+            await sync_stats()
+        return result
+
+    async def run_plan_mode(description: str, *, background: bool = False) -> None:
+        await emit(f"\n[bold cyan]❯ You:[/]\n/plan {description}")
+        await emit("[bold magenta]📋 Entering Plan Mode — building task board...[/]")
+
+        async with llm_lock:
+            try:
+                result = await llm_manager.send_plan_async(description)
+                await emit("\n[bold green]✦ AXON:[/]")
+                if result.ok and result.content:
+                    await emit(Markdown(result.content))
+                else:
+                    await emit(f"[red]{result.display_text}[/]")
+                if task_manager.has_plan():
+                    await emit(
+                        "[dim]Type [cyan]execute[/] to start working through the plan.[/dim]\n"
+                    )
+                await emit(
+                    f"[dim]Cost: ${TOTAL_COST:.4f} | Tokens: {TOTAL_TOKENS}[/dim]\n"
+                )
+                if result.usage:
+                    await sync_stats()
+            except Exception as exc:
+                await emit(f"\n[bold red]✦ AXON:[/] [ERROR]: {exc}\n")
+
+    async def run_execute_mode(*, background: bool = False) -> None:
+        if not task_manager.has_plan():
+            await emit("[yellow]No active plan. Use /plan <description> first.[/]\n")
+            return
+
+        await emit("\n[bold cyan]❯ You:[/]\nexecute")
+        await emit("[bold magenta]▶ Executing plan...[/]")
+        if not background:
+            await render_plan_board()
+
+        async with llm_lock:
+            try:
+                result = await llm_manager.send_execute_async()
+                await emit("\n[bold green]✦ AXON:[/]")
+                if result.ok and result.content:
+                    await emit(Markdown(result.content))
+                else:
+                    await emit(f"[red]{result.display_text}[/]")
+                await emit(
+                    f"[dim]Cost: ${TOTAL_COST:.4f} | Tokens: {TOTAL_TOKENS}[/dim]\n"
+                )
+                if result.usage:
+                    await sync_stats()
+                if task_manager.all_done():
+                    await emit("[green][✓] All plan tasks completed.[/]\n")
+            except Exception as exc:
+                await emit(f"\n[bold red]✦ AXON:[/] [ERROR]: {exc}\n")
+
+    async def execute_slash_command(stripped: str, *, background: bool = False) -> bool:
+        """Handle slash commands locally — returns True if handled (no LLM call)."""
+        if not stripped.startswith("/"):
+            return False
+
+        parts = stripped.split(maxsplit=1)
+        cmd = parts[0].lower()
+        args = parts[1] if len(parts) > 1 else ""
+
+        if cmd == "/exit":
+            await emit("[dim]AXON: Goodbye.[/dim]")
+            shutdown.set()
+            return True
+
+        if cmd == "/help":
+            lines = [
+                f"  [cyan]{name:<10}[/] {desc}"
+                for name, desc in AXON_COMMANDS.items()
+            ]
+            await emit("[bold]AXON Commands[/bold]\n" + "\n".join(lines) + "\n")
+            return True
+
+        if cmd == "/clear":
+            reset_session_counters()
+            clear_session_approvals()
+            task_manager.clear()
+            llm_manager.messages = [llm_manager.messages[0]]
+            llm_manager.reload_skills()
+            await sync_stats()
+            await emit("[green][✓] Context cleared.[/]\n")
+            return True
+
+        if cmd in {"/cost", "/usage"}:
+            await emit(
+                f"[dim]Cost: [cyan]${TOTAL_COST:.4f}[/cyan] · "
+                f"Tokens: [cyan]{TOTAL_TOKENS}[/cyan][/dim]\n"
+            )
+            return True
+
+        if cmd == "/compact":
+            await emit(
+                "[dim][i] Compacting context... (Feature coming soon)[/][/dim]\n"
+            )
+            return True
+
+        if cmd == "/model":
+            if args.strip():
+                await apply_model(args.strip(), background=background)
+                await emit("[green][✓] Model changed.[/]\n")
+            else:
+                await emit(
+                    f"[dim]Current model: [cyan]{llm_manager.model}[/cyan][/dim]\n"
+                )
+            return True
+
+        await emit(f"[yellow]AXON: Unknown command {cmd}. Type /help.[/]\n")
+        return True
 
     async def process_user_message(text: str, source: str = "terminal") -> None:
-        stripped = text.strip()
-        if not stripped:
-            return
+        background = source == "web"
 
-        if stripped.startswith("/"):
-            parts = stripped.split(maxsplit=1)
-            cmd = parts[0].lower()
-            args = parts[1] if len(parts) > 1 else ""
+        async def _handle() -> None:
+            stripped = text.strip()
+            if not stripped:
+                return
 
-            if cmd == "/exit":
+            if stripped.startswith("/"):
+                if stripped.lower().startswith("/plan"):
+                    description = stripped[5:].strip()
+                    if description:
+                        await run_plan_mode(description, background=background)
+                    else:
+                        await emit("[yellow]Usage: /plan <description>[/]\n")
+                    return
+                await execute_slash_command(stripped, background=background)
+                return
+
+            lowered = stripped.lower()
+            if lowered in {"execute", "go", "run"} and task_manager.has_plan():
+                await run_execute_mode(background=background)
+                return
+
+            if background:
+                await emit(f"\n[bold blue]🌐 Web User:[/]\n{stripped}")
+            else:
+                await emit(f"\n[bold cyan]❯ You:[/]\n{stripped}")
+
+            if source == "terminal":
+                await bridge.broadcast_chat(
+                    role="user",
+                    text=stripped,
+                    source="terminal",
+                    message_id=f"terminal-user-{uuid.uuid4().hex[:8]}",
+                )
+
+            async with llm_lock:
                 try:
-                    get_app().exit()
-                except Exception:
-                    pass
-                return
+                    result = await run_llm(stripped, background=background)
+                    await bridge.broadcast_chat(
+                        role="assistant",
+                        text=result.display_text,
+                        source=source,
+                        message_id=f"{source}-axon-{uuid.uuid4().hex[:8]}",
+                    )
+                except Exception as exc:
+                    error_text = f"[ERROR]: {exc}"
+                    await emit(f"\n[bold red]✦ AXON:[/] {error_text}\n")
+                    await bridge.broadcast_chat(
+                        role="assistant",
+                        text=error_text,
+                        source=source,
+                    )
 
-            if cmd == "/help":
-                lines = [f"  {name:<10} {desc}" for name, desc in AXON_COMMANDS.items()]
-                chat_history.text += "AXON: Commands:\n" + "\n".join(lines) + "\n"
-                refresh_ui()
-                return
-
-            if cmd == "/clear":
-                chat_history.text = CHAT_PLACEHOLDER
-                reset_session_counters()
-                llm_manager.messages = [llm_manager.messages[0]]
-                await sync_stats()
-                refresh_ui()
-                return
-
-            if cmd == "/model":
-                if args.strip():
-                    await apply_model(args.strip())
-                else:
-                    chat_history.text += f"AXON: Current model: {llm_manager.model}\n"
-                    refresh_ui()
-                return
-
-            chat_history.text += f"AXON: Unknown command {cmd}. Type /help.\n"
-            refresh_ui()
-            return
-
-        prefix = "[Web] " if source == "web" else ""
-        chat_history.text += f"\n{prefix}❯ {stripped}\n"
-
-        if source == "terminal":
-            await bridge.broadcast_chat(
-                role="user",
-                text=stripped,
-                source="terminal",
-                message_id=f"terminal-user-{uuid.uuid4().hex[:8]}",
-            )
-
-        state.status = "Thinking..."
-        chat_history.text += "AXON: Thinking...\n"
-        refresh_ui()
-
-        try:
-            llm_manager.reload_credentials()
-            state.model = llm_manager.model
-            result = await llm_manager.send_message_async(stripped)
-
-            chat_history.text = chat_history.text.replace("AXON: Thinking...\n", "")
-            chat_history.text += f"AXON: {result.display_text}\n"
-
-            if result.usage:
-                await sync_stats()
-
-            state.status = "Ready" if result.ok else "Error"
-
-            await bridge.broadcast_chat(
-                role="assistant",
-                text=result.display_text,
-                source=source,
-                message_id=f"{source}-axon-{uuid.uuid4().hex[:8]}",
-            )
-        except Exception as exc:
-            chat_history.text = chat_history.text.replace("AXON: Thinking...\n", "")
-            error_text = f"[ERROR]: {str(exc)}"
-            chat_history.text += f"{error_text}\n"
-            state.status = "Error"
-            await bridge.broadcast_chat(role="assistant", text=error_text, source=source)
-        finally:
-            refresh_ui()
+        if background:
+            async with in_terminal():
+                background_render["active"] = True
+                try:
+                    await _handle()
+                finally:
+                    background_render["active"] = False
+        else:
+            await _handle()
 
     bridge.configure(
         process_chat=process_user_message,
-        set_model=lambda model: apply_model(model, announce_cli=True),
-        refresh_ui=refresh_ui,
-        current_model=state.model,
+        set_model=lambda model: apply_model(
+            model, announce_cli=True, background=True
+        ),
+        refresh_ui=lambda: None,
+        current_model=llm_manager.model,
     )
 
-    def accept_input(buff):
-        text = buff.text
-        if not text.strip():
-            return False
-        get_app().create_background_task(process_user_message(text, "terminal"))
-        return False
-
-    user_input.accept_handler = accept_input
-
-    root = HSplit(
-        [
-            Window(
-                FormattedTextControl(header_fragments, focusable=False),
-                height=D.exact(header_height),
-                style="class:header",
-            ),
-            chat_history,
-            Window(height=D.exact(1), char="─", style="class:separator"),
-            user_input,
-            CompletionsMenu(max_height=8, scroll_offset=1),
-        ]
-    )
-
-    layout = Layout(root, focused_element=user_input.window)
-    app = Application(
-        layout=layout,
-        style=AXON_STYLE,
-        full_screen=True,
-        mouse_support=True,
-        refresh_interval=0.12,
-    )
-
-    # websockets.serve runs concurrently on this event loop while the CLI is active
     ws_server = await bridge.start()
 
+    clear_terminal()
+    print_banner(llm_manager.model)
+
+    async def chat_loop() -> None:
+        while not shutdown.is_set():
+            try:
+                with patch_stdout():
+                    user_input = await session.prompt_async("AXON ❯ ")
+            except (EOFError, KeyboardInterrupt):
+                break
+
+            stripped = user_input.strip()
+            if not stripped:
+                continue
+
+            if stripped.lower().startswith("/plan"):
+                description = stripped[5:].strip()
+                if not description:
+                    await emit("[yellow]Usage: /plan <description>[/]\n")
+                    continue
+                await run_plan_mode(description)
+                if shutdown.is_set():
+                    break
+                continue
+
+            if stripped.lower() in {"execute", "go", "run"} and task_manager.has_plan():
+                await run_execute_mode()
+                if shutdown.is_set():
+                    break
+                continue
+
+            if stripped.startswith("/"):
+                await execute_slash_command(stripped)
+                if shutdown.is_set():
+                    break
+                continue
+
+            await process_user_message(user_input, "terminal")
+            if shutdown.is_set():
+                break
+
     try:
-        await app.run_async()
+        await chat_loop()
     finally:
-        ws_server.close()
-        await ws_server.wait_closed()
+        if ws_server is not None:
+            ws_server.close()
+            await ws_server.wait_closed()
 
 
 def main() -> None:

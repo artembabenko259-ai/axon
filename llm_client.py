@@ -1,28 +1,50 @@
 from __future__ import annotations
 
 import asyncio
+import json
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 from openai import APIConnectionError, APIError, APITimeoutError, OpenAI
 
-from config_store import get_model, get_openrouter_api_key
+from config_store import get_model, get_openrouter_api_key, save_model
+from skills.tasks import execute_task_tool, get_task_tool_schemas, is_task_tool
+from skills.tools import (
+    ApprovalCallback,
+    execute_tool,
+    get_tools_schema,
+    parse_tool_arguments,
+)
+from skills_manager import SkillManager
+from task_manager import task_manager
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_MODEL = "meta-llama/llama-3.1-8b-instruct"
 COST_PER_TOKEN = 0.000002
+MAX_TOOL_ROUNDS = 12
 
-AXON_SYSTEM_PROMPT = (
-    "You are AXON, a helpful command-line AI assistant. "
-    "Provide clear, concise answers."
+AXON_SYSTEM_PROMPT_BASE = (
+    "You are AXON, an agentic command-line AI assistant with access to tools. "
+    "Use read_file to inspect files, write_file to create or update files, and "
+    "execute_shell to run terminal commands when needed. "
+    "Markdown skills (SKILL.md) can be invoked as tools — when a skill returns "
+    "instructions, follow them strictly and use allowed built-in tools to "
+    "complete the user's request. "
+    "write_file and execute_shell require explicit user approval — if denied, "
+    "explain alternatives. When executing a plan, call complete_task after each "
+    "finished step. After using tools, always reply with a clear summary "
+    "for the user in plain language."
 )
 
-# Global session counters (CLI + WebSocket bridge)
+ToolNotifyCallback = Callable[[str, str], Awaitable[None]]
+
 TOTAL_TOKENS: int = 0
 TOTAL_COST: float = 0.0
 
 
 def record_token_usage(total_tokens: int) -> None:
-    """Accumulate tokens and estimated cost after each LLM response."""
     global TOTAL_TOKENS, TOTAL_COST
     tokens = max(int(total_tokens or 0), 0)
     TOTAL_TOKENS += tokens
@@ -48,6 +70,7 @@ class LLMResult:
     model: str
     usage: TokenUsage | None = None
     error: str | None = None
+    tool_steps: int = 0
 
     @property
     def ok(self) -> bool:
@@ -61,19 +84,63 @@ class LLMResult:
 
 
 class LLMManager:
-    """AXON LLM client — reads shared config.json before each request."""
+    """AXON LLM client with OpenRouter tool-calling agent loop."""
 
     def __init__(
         self,
         api_key: str | None = None,
         model: str | None = None,
+        approve: ApprovalCallback | None = None,
+        workspace: Path | None = None,
     ) -> None:
         self.model = model or get_model()
-        self.messages: list[dict[str, str]] = [
-            {"role": "system", "content": AXON_SYSTEM_PROMPT},
+        self._workspace = workspace or Path.cwd()
+        self._skill_manager = SkillManager(workspace=self._workspace)
+        self._skill_manager.reload()
+        self.messages: list[dict[str, Any]] = [
+            {"role": "system", "content": self._build_system_prompt()},
         ]
         self._api_key = api_key or get_openrouter_api_key()
         self._client = self._build_client(self._api_key)
+        self._approve = approve
+        self._on_tool: ToolNotifyCallback | None = None
+
+    def _build_system_prompt(self) -> str:
+        skills_block = self._skill_manager.skills_summary_for_system()
+        if skills_block:
+            return f"{AXON_SYSTEM_PROMPT_BASE}\n\n{skills_block}"
+        return AXON_SYSTEM_PROMPT_BASE
+
+    def reload_skills(self) -> int:
+        """Rescan `.axon/skills/` and refresh the system prompt."""
+        count = self._skill_manager.reload()
+        if self.messages and self.messages[0].get("role") == "system":
+            self.messages[0]["content"] = self._build_system_prompt()
+        return count
+
+    def _get_all_tool_schemas(self) -> list[dict[str, Any]]:
+        if task_manager.plan_mode:
+            return [
+                schema
+                for schema in get_task_tool_schemas()
+                if schema["function"]["name"] == "create_plan"
+            ]
+        return (
+            get_tools_schema()
+            + get_task_tool_schemas()
+            + self._skill_manager.get_tool_schemas()
+        )
+
+    async def _dispatch_tool(
+        self,
+        tool_name: str,
+        arguments: dict[str, Any],
+    ) -> str:
+        if is_task_tool(tool_name):
+            return await execute_task_tool(tool_name, arguments)
+        if self._skill_manager.is_skill_tool(tool_name):
+            return self._skill_manager.invoke_skill(tool_name, arguments)
+        return await execute_tool(tool_name, arguments, self._approve)
 
     def _build_client(self, api_key: str) -> OpenAI:
         return OpenAI(
@@ -81,29 +148,94 @@ class LLMManager:
             api_key=api_key or "missing-key",
         )
 
+    def set_approval_callback(self, approve: ApprovalCallback | None) -> None:
+        self._approve = approve
+
+    def set_tool_callback(self, callback: ToolNotifyCallback | None) -> None:
+        self._on_tool = callback
+
     def reload_credentials(self) -> None:
+        """Reload API key only — never overwrite an explicitly selected model."""
         key = get_openrouter_api_key()
-        model = get_model()
-
-        if model and model != self.model:
-            self.model = model
-
         if key != self._api_key:
             self._api_key = key
             self._client = self._build_client(key)
 
     def set_model(self, model: str) -> None:
-        self.model = model
+        """Set active model and persist to shared config."""
+        cleaned = model.strip()
+        if not cleaned:
+            return
+        self.model = cleaned
+        save_model(cleaned)
 
     def send_message(self, user_text: str) -> LLMResult:
         self.reload_credentials()
-        return self._send_message_impl(user_text)
+        self.reload_skills()
+        try:
+            return asyncio.run(self._agent_loop(user_text))
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            try:
+                return loop.run_until_complete(self._agent_loop(user_text))
+            finally:
+                loop.close()
 
     async def send_message_async(self, user_text: str) -> LLMResult:
         self.reload_credentials()
-        return await asyncio.to_thread(self._send_message_impl, user_text)
+        self.reload_skills()
+        return await self._agent_loop(user_text)
 
-    def _send_message_impl(self, user_text: str) -> LLMResult:
+    async def send_plan_async(self, description: str) -> LLMResult:
+        """Plan Mode — only create_plan tool, no execution."""
+        self.reload_credentials()
+        self.reload_skills()
+        task_manager.goal = description.strip()
+        task_manager.plan_mode = True
+        prompt = (
+            f"[Plan Mode] The user wants to: {description}\n\n"
+            "You are in Plan Mode. DO NOT execute any actions yet "
+            "(no read_file, write_file, execute_shell, or skills). "
+            "Your ONLY goal right now is to use the create_plan tool to break "
+            "this down into 3-5 logical steps."
+        )
+        try:
+            return await self._agent_loop(prompt)
+        finally:
+            task_manager.plan_mode = False
+
+    async def send_execute_async(self) -> LLMResult:
+        """Execute an existing plan step-by-step."""
+        self.reload_credentials()
+        self.reload_skills()
+        if not task_manager.has_plan():
+            return LLMResult(
+                content="",
+                model=self.model,
+                error="AXON: No active plan. Use /plan <description> first.",
+            )
+
+        task_manager.execution_mode = True
+        next_task = next(
+            (task for task in task_manager.tasks if task.status != "done"),
+            None,
+        )
+        next_label = (
+            f"{next_task.id}. {next_task.name}" if next_task else "all tasks done"
+        )
+        prompt = (
+            "[Execute Mode] The user approved plan execution.\n"
+            "Work through the plan step by step using available tools.\n"
+            "After completing each step, you MUST call complete_task(task_id).\n"
+            f"Start with: {next_label}\n\n"
+            f"Current plan:\n{task_manager.get_plan_markdown()}"
+        )
+        try:
+            return await self._agent_loop(prompt)
+        finally:
+            task_manager.execution_mode = False
+
+    async def _agent_loop(self, user_text: str) -> LLMResult:
         if not self._api_key:
             return LLMResult(
                 content="",
@@ -115,11 +247,78 @@ class LLMManager:
             )
 
         self.messages.append({"role": "user", "content": user_text})
+        last_usage: TokenUsage | None = None
+        tool_steps = 0
 
         try:
-            response = self._client.chat.completions.create(
+            for round_index in range(MAX_TOOL_ROUNDS):
+                use_tools = round_index < MAX_TOOL_ROUNDS - 1
+                response = await asyncio.to_thread(
+                    self._call_api,
+                    tools=self._get_all_tool_schemas() if use_tools else None,
+                )
+                last_usage = self._accumulate_usage(last_usage, response.usage)
+
+                choice = response.choices[0] if response.choices else None
+                if choice is None:
+                    return LLMResult(
+                        content="",
+                        model=self.model,
+                        error="AXON: Empty response from API.",
+                        usage=last_usage,
+                        tool_steps=tool_steps,
+                    )
+
+                message = choice.message
+                tool_calls = getattr(message, "tool_calls", None) or []
+
+                if tool_calls:
+                    self.messages.append(self._serialize_assistant_message(message))
+                    for tool_call in tool_calls:
+                        tool_steps += 1
+                        fn = tool_call.function
+                        tool_name = fn.name
+                        arguments = parse_tool_arguments(fn.arguments or "{}")
+                        if self._on_tool is not None:
+                            detail = json.dumps(arguments, ensure_ascii=False)[:120]
+                            await self._on_tool(tool_name, detail)
+                        result = await self._dispatch_tool(tool_name, arguments)
+                        self.messages.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": tool_call.id,
+                                "content": result,
+                            }
+                        )
+                    continue
+
+                content = (message.content or "").strip()
+                if content:
+                    self.messages.append({"role": "assistant", "content": content})
+                    return LLMResult(
+                        content=content,
+                        model=self.model,
+                        usage=last_usage,
+                        tool_steps=tool_steps,
+                    )
+
+                if tool_steps > 0:
+                    continue
+
+                return LLMResult(
+                    content="",
+                    model=self.model,
+                    error="AXON: Model returned an empty response.",
+                    usage=last_usage,
+                    tool_steps=tool_steps,
+                )
+
+            return LLMResult(
+                content="",
                 model=self.model,
-                messages=self.messages,
+                error=f"AXON: Exceeded maximum tool rounds ({MAX_TOOL_ROUNDS}).",
+                usage=last_usage,
+                tool_steps=tool_steps,
             )
         except APITimeoutError:
             self._rollback_last_user_message()
@@ -127,6 +326,7 @@ class LLMManager:
                 content="",
                 model=self.model,
                 error="AXON: Request timed out. Check your connection and try again.",
+                tool_steps=tool_steps,
             )
         except APIConnectionError:
             self._rollback_last_user_message()
@@ -134,6 +334,7 @@ class LLMManager:
                 content="",
                 model=self.model,
                 error="AXON: Could not connect to OpenRouter. Check your internet connection.",
+                tool_steps=tool_steps,
             )
         except APIError as exc:
             self._rollback_last_user_message()
@@ -141,33 +342,76 @@ class LLMManager:
                 content="",
                 model=self.model,
                 error=f"AXON: API error — {self._friendly_api_error(exc)}",
+                tool_steps=tool_steps,
             )
-        except Exception:
+        except Exception as exc:
             self._rollback_last_user_message()
             return LLMResult(
                 content="",
                 model=self.model,
-                error="AXON: An unexpected error occurred. Please try again.",
+                error=f"AXON: Unexpected error — {exc}",
+                tool_steps=tool_steps,
             )
 
-        choice = response.choices[0] if response.choices else None
-        content = (choice.message.content or "").strip() if choice else ""
+    def _call_api(self, *, tools: list[dict[str, Any]] | None = None) -> Any:
+        kwargs: dict[str, Any] = {
+            "model": self.model,
+            "messages": self.messages,
+        }
+        if tools:
+            kwargs["tools"] = tools
+            kwargs["tool_choice"] = "auto"
 
-        if content:
-            self.messages.append({"role": "assistant", "content": content})
+        return self._client.chat.completions.create(**kwargs)
 
-        usage = self._parse_usage(response.usage)
-        if usage is not None:
-            record_token_usage(usage.total_tokens)
-
-        return LLMResult(
-            content=content,
-            model=self.model,
-            usage=usage,
+    def _accumulate_usage(
+        self,
+        previous: TokenUsage | None,
+        usage: object | None,
+    ) -> TokenUsage | None:
+        parsed = self._parse_usage(usage)
+        if parsed is not None:
+            record_token_usage(parsed.total_tokens)
+        if previous is None:
+            return parsed
+        if parsed is None:
+            return previous
+        return TokenUsage(
+            prompt_tokens=previous.prompt_tokens + parsed.prompt_tokens,
+            completion_tokens=previous.completion_tokens + parsed.completion_tokens,
+            total_tokens=previous.total_tokens + parsed.total_tokens,
         )
 
+    @staticmethod
+    def _serialize_assistant_message(message: Any) -> dict[str, Any]:
+        tool_calls = getattr(message, "tool_calls", None) or []
+
+        if tool_calls:
+            payload: dict[str, Any] = {
+                "role": "assistant",
+                "tool_calls": [
+                    {
+                        "id": tc.id,
+                        "type": "function",
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments,
+                        },
+                    }
+                    for tc in tool_calls
+                ],
+            }
+            if message.content:
+                payload["content"] = message.content
+            return payload
+
+        return {
+            "role": "assistant",
+            "content": message.content or "",
+        }
+
     def _rollback_last_user_message(self) -> None:
-        if self.messages and self.messages[-1]["role"] == "user":
+        if self.messages and self.messages[-1].get("role") == "user":
             self.messages.pop()
 
     @staticmethod

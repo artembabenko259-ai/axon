@@ -54,3 +54,8 @@ def get_openrouter_api_key() -> str:
 def get_model() -> str:
     config = load_config()
     return (config.get("model") or DEFAULT_MODEL).strip() or DEFAULT_MODEL
+
+
+def save_model(model: str) -> None:
+    """Persist the active model selection to config.json."""
+    save_config({"model": model.strip()})
