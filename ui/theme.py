@@ -20,22 +20,31 @@ class CLITheme:
     success: str = "#4ade80"
     warning: str = "#fbbf24"
     prompt_symbol: str = "❯"
-    status_ready: str = "Ready"
-    status_idle: str = "Ready"
+    status_ready: str = "READY"
+    status_thinking: str = "THINKING"
+    toolbar_bg: str = "#050505"
+    toolbar_text: str = "#3f3f46"
     font_dim: str = "dim"
+
+    @property
+    def assistant_label(self) -> str:
+        return f"[bold {self.accent}]✦ AXON[/]"
+
+    @property
+    def user_label(self) -> str:
+        return f"[bold {self.user_prompt}]❯ You[/]"
 
     @property
     def prompt_markup(self) -> str:
         return f"[{self.accent}]{self.prompt_symbol}[/]"
 
     @property
-    def status_template(self) -> str:
+    def toolbar_markup(self) -> str:
         return (
-            f"[{self.text_muted}]Version[/] [{self.text_primary}]{{version}}[/] "
-            f"[{self.text_muted}]│[/] "
-            f"[{self.text_muted}]Model[/] [{self.accent_soft}]{{model}}[/] "
-            f"[{self.text_muted}]│[/] "
-            f"[{self.text_muted}]Status[/] [{{status_style}}]{{status}}[/]"
+            f"[{self.toolbar_text}] AXON [/] [{self.border_subtle}]│[/] "
+            f"[{self.toolbar_text}]Model:[/] [bold {self.accent_soft}]{{model}}[/] [{self.border_subtle}]│[/] "
+            f"[{self.toolbar_text}]Cost:[/] [bold {self.success}]${{cost:.4f}}[/] [{self.border_subtle}]│[/] "
+            f"[{self.toolbar_text}]Status:[/] [{{status_style}}]{{status}}[/]"
         )
 
 

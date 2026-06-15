@@ -12,6 +12,11 @@ SLASH_COMMANDS = [
     "/compact",
     "/model",
     "/plan",
+    "/image",
+    "/create-skill",
+    "/review",
+    "/undo",
+    "/commit",
 ]
 
 AXON_COMMANDS: dict[str, str] = {
@@ -23,6 +28,11 @@ AXON_COMMANDS: dict[str, str] = {
     "/compact": "Compact conversation context (coming soon)",
     "/model": "Switch model — e.g. /model anthropic/claude-3.5-sonnet",
     "/plan": "Plan Mode — /plan <description> to break work into steps",
+    "/image": "Load image for vision — /image <path> [prompt]",
+    "/create-skill": "Interactive wizard to create a new SKILL.md",
+    "/review": "Review current git diff for bugs and code smells",
+    "/undo": "Restore last file overwritten by write_file",
+    "/commit": "AI-generated Conventional Commit with confirmation",
 }
 
 
@@ -39,7 +49,9 @@ class AxonCommandCompleter(Completer):
         if not text.startswith("/"):
             return
 
-        if " " in text.strip() and not text.strip().startswith(("/model", "/plan")):
+        if " " in text.strip() and not text.strip().startswith(
+            ("/model", "/plan", "/image")
+        ):
             return
 
         word = text.split()[-1] if text.endswith(" ") else text
@@ -52,6 +64,46 @@ class AxonCommandCompleter(Completer):
                     display=command,
                     display_meta=description,
                 )
+
+        if word.startswith("/com") and "/commit" not in word:
+            yield Completion(
+                "/commit",
+                start_position=-len(word),
+                display="/commit",
+                display_meta=AXON_COMMANDS["/commit"],
+            )
+
+        if word.startswith("/und") and "/undo" not in word:
+            yield Completion(
+                "/undo",
+                start_position=-len(word),
+                display="/undo",
+                display_meta=AXON_COMMANDS["/undo"],
+            )
+
+        if word.startswith("/cre") and "/create-skill" not in word:
+            yield Completion(
+                "/create-skill",
+                start_position=-len(word),
+                display="/create-skill",
+                display_meta=AXON_COMMANDS["/create-skill"],
+            )
+
+        if word.startswith("/rev") and "/review" not in word:
+            yield Completion(
+                "/review",
+                start_position=-len(word),
+                display="/review",
+                display_meta=AXON_COMMANDS["/review"],
+            )
+
+        if word.startswith("/ima") and "/image" not in word:
+            yield Completion(
+                "/image ",
+                start_position=-len(word),
+                display="/image ",
+                display_meta=AXON_COMMANDS["/image"],
+            )
 
         if word.startswith("/pla") and "/plan" not in word:
             yield Completion(

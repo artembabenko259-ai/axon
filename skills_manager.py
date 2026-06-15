@@ -117,6 +117,21 @@ def skills_root(workspace: Path | None = None) -> Path:
     return (workspace or Path.cwd()) / ".axon" / "skills"
 
 
+def project_memory_path(workspace: Path | None = None) -> Path:
+    return (workspace or Path.cwd()) / ".axon" / "memory.md"
+
+
+def load_project_memory(workspace: Path | None = None) -> str:
+    """Read `.axon/memory.md` for invisible project context injection."""
+    path = project_memory_path(workspace)
+    if not path.is_file():
+        return ""
+    try:
+        return path.read_text(encoding="utf-8", errors="replace").strip()
+    except OSError:
+        return ""
+
+
 def ensure_skills_workspace(workspace: Path | None = None) -> Path:
     """Create `.axon/skills/` with README and an example skill if missing."""
     root = skills_root(workspace)
@@ -133,6 +148,64 @@ def ensure_skills_workspace(workspace: Path | None = None) -> Path:
         example_skill.write_text(EXAMPLE_SKILL_CONTENT, encoding="utf-8")
 
     return root
+
+
+def sanitize_skill_name(name: str) -> str:
+    cleaned = TOOL_NAME_PATTERN.sub("-", name.strip().lower()).strip("-")
+    return cleaned or "custom-skill"
+
+
+def create_skill_file(
+    name: str,
+    description: str,
+    shell_command: str = "",
+    *,
+    workspace: Path | None = None,
+) -> Path:
+    """Write a new `.axon/skills/<name>/SKILL.md` from wizard inputs."""
+    ensure_skills_workspace(workspace)
+    skill_name = sanitize_skill_name(name)
+    skill_dir = skills_root(workspace) / skill_name
+    skill_dir.mkdir(parents=True, exist_ok=True)
+    skill_path = skill_dir / "SKILL.md"
+
+    body_lines = [
+        f"# {skill_name.replace('-', ' ').title()}",
+        "",
+        description.strip() or "Follow the instructions below.",
+        "",
+    ]
+    if shell_command.strip():
+        body_lines.extend(
+            [
+                "## Live context (auto-injected)",
+                "",
+                f"!`{shell_command.strip()}`",
+                "",
+            ]
+        )
+    body_lines.extend(
+        [
+            "## Instructions",
+            "",
+            "1. Understand the user's request.",
+            "2. Use allowed tools as needed.",
+            "3. Respond with a clear, actionable summary.",
+        ]
+    )
+
+    content = (
+        "---\n"
+        f"name: {skill_name}\n"
+        f"description: {description.strip() or f'Run the {skill_name} skill'}\n"
+        "disable-model-invocation: false\n"
+        "allowed-tools: read_file, execute_shell\n"
+        "---\n\n"
+        + "\n".join(body_lines)
+        + "\n"
+    )
+    skill_path.write_text(content, encoding="utf-8")
+    return skill_path
 
 
 def parse_skill_file(path: Path) -> Skill | None:

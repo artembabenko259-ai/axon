@@ -8,6 +8,7 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any, Literal
 
+from backup_manager import backup_manager
 from rich.panel import Panel
 from rich.text import Text
 
@@ -91,6 +92,26 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "web_search",
+            "description": (
+                "Search the web for current events, fresh documentation, or facts "
+                "not in training data. Returns top results with titles and snippets."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query string.",
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    },
 ]
 
 
@@ -134,6 +155,7 @@ def tool_display_label(tool_name: str) -> str:
         "execute_shell": "Shell",
         "write_file": "Write",
         "read_file": "Read",
+        "web_search": "Search",
         "create_plan": "Plan",
         "complete_task": "Task",
         "update_task_status": "Task",
@@ -238,11 +260,50 @@ def write_file(filepath: str, content: str) -> str:
         return path
 
     try:
+        backup_manager.set_workspace(Path.cwd())
+        backup_path = backup_manager.backup_if_exists(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
+        if backup_path:
+            return (
+                f"Successfully wrote {len(content)} characters to {path} "
+                f"(backup: {backup_path.name})"
+            )
         return f"Successfully wrote {len(content)} characters to {path}"
     except OSError as exc:
         return f"Error: could not write file — {exc}"
+
+
+def web_search(query: str) -> str:
+    """Search the web via DuckDuckGo and return formatted top results."""
+    q = query.strip()
+    if not q:
+        return "Error: search query is required."
+
+    try:
+        from duckduckgo_search import DDGS
+    except ImportError:
+        return (
+            "Error: duckduckgo-search is not installed. "
+            "Run: pip install duckduckgo-search"
+        )
+
+    try:
+        lines: list[str] = []
+        with DDGS() as ddgs:
+            results = list(ddgs.text(q, max_results=5))
+        if not results:
+            return f"No web results found for: {q}"
+
+        for index, item in enumerate(results, start=1):
+            title = item.get("title") or "(no title)"
+            href = item.get("href") or item.get("link") or ""
+            body = item.get("body") or item.get("snippet") or ""
+            lines.append(f"{index}. {title}\n   {href}\n   {body}")
+
+        return f"Web search results for '{q}':\n\n" + "\n\n".join(lines)
+    except Exception as exc:
+        return f"Error during web search — {exc}"
 
 
 def execute_shell(command: str) -> str:
@@ -302,6 +363,8 @@ def _run_tool_sync(tool_name: str, args: dict[str, Any]) -> str:
         )
     if tool_name == "execute_shell":
         return execute_shell(str(args.get("command", "")))
+    if tool_name == "web_search":
+        return web_search(str(args.get("query", "")))
     return f"Error: unknown tool '{tool_name}'."
 
 

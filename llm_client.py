@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -17,18 +18,23 @@ from skills.tools import (
     get_tools_schema,
     parse_tool_arguments,
 )
-from skills_manager import SkillManager
+from skills_manager import SkillManager, load_project_memory
 from task_manager import task_manager
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_MODEL = "meta-llama/llama-3.1-8b-instruct"
 COST_PER_TOKEN = 0.000002
 MAX_TOOL_ROUNDS = 12
+MAX_IMAGE_BYTES = 20 * 1024 * 1024
+SUPPORTED_IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"})
 
 AXON_SYSTEM_PROMPT_BASE = (
     "You are AXON, an agentic command-line AI assistant with access to tools. "
-    "Use read_file to inspect files, write_file to create or update files, and "
-    "execute_shell to run terminal commands when needed. "
+    "Use read_file to inspect files, write_file to create or update files, "
+    "execute_shell to run terminal commands when needed, and web_search for "
+    "current events or fresh documentation. "
+    "Users can load images with /image for multimodal vision models — analyze "
+    "images carefully when they appear in the conversation. "
     "Markdown skills (SKILL.md) can be invoked as tools — when a skill returns "
     "instructions, follow them strictly and use allowed built-in tools to "
     "complete the user's request. "
@@ -106,16 +112,24 @@ class LLMManager:
         self._on_tool: ToolNotifyCallback | None = None
 
     def _build_system_prompt(self) -> str:
+        parts = [AXON_SYSTEM_PROMPT_BASE]
+        memory = load_project_memory(self._workspace)
+        if memory:
+            parts.append(f"Project Context:\n{memory}")
         skills_block = self._skill_manager.skills_summary_for_system()
         if skills_block:
-            return f"{AXON_SYSTEM_PROMPT_BASE}\n\n{skills_block}"
-        return AXON_SYSTEM_PROMPT_BASE
+            parts.append(skills_block)
+        return "\n\n".join(parts)
+
+    def refresh_system_prompt(self) -> None:
+        """Rebuild system message (memory, skills) without clearing chat."""
+        if self.messages and self.messages[0].get("role") == "system":
+            self.messages[0]["content"] = self._build_system_prompt()
 
     def reload_skills(self) -> int:
         """Rescan `.axon/skills/` and refresh the system prompt."""
         count = self._skill_manager.reload()
-        if self.messages and self.messages[0].get("role") == "system":
-            self.messages[0]["content"] = self._build_system_prompt()
+        self.refresh_system_prompt()
         return count
 
     def _get_all_tool_schemas(self) -> list[dict[str, Any]]:
@@ -169,6 +183,72 @@ class LLMManager:
         self.model = cleaned
         save_model(cleaned)
 
+    @staticmethod
+    def _image_media_type(path: Path) -> str:
+        mapping = {
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".gif": "image/gif",
+            ".webp": "image/webp",
+            ".bmp": "image/bmp",
+        }
+        return mapping.get(path.suffix.lower(), "image/jpeg")
+
+    def load_image_into_context(
+        self,
+        image_path: str,
+        prompt: str = "Analyze this image.",
+    ) -> str | None:
+        """Append an OpenAI-compatible vision user message. Returns error or None."""
+        raw = image_path.strip().strip("\"'")
+        if not raw:
+            return "AXON: Image path is required."
+
+        path = Path(raw).expanduser()
+        try:
+            path = path.resolve()
+        except OSError as exc:
+            return f"AXON: Invalid image path — {exc}"
+
+        if not path.is_file():
+            return f"AXON: Image not found — {path}"
+
+        if path.suffix.lower() not in SUPPORTED_IMAGE_SUFFIXES:
+            supported = ", ".join(sorted(SUPPORTED_IMAGE_SUFFIXES))
+            return f"AXON: Unsupported image type. Supported: {supported}"
+
+        try:
+            data = path.read_bytes()
+        except OSError as exc:
+            return f"AXON: Could not read image — {exc}"
+
+        if len(data) > MAX_IMAGE_BYTES:
+            return (
+                f"AXON: Image too large ({len(data)} bytes). "
+                f"Maximum is {MAX_IMAGE_BYTES} bytes."
+            )
+
+        encoded = base64.b64encode(data).decode("ascii")
+        media_type = self._image_media_type(path)
+        text = prompt.strip() or "Analyze this image."
+
+        self.messages.append(
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": text},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{media_type};base64,{encoded}",
+                        },
+                    },
+                ],
+            }
+        )
+        return None
+
     def send_message(self, user_text: str) -> LLMResult:
         self.reload_credentials()
         self.reload_skills()
@@ -181,10 +261,21 @@ class LLMManager:
             finally:
                 loop.close()
 
-    async def send_message_async(self, user_text: str) -> LLMResult:
+    async def send_message_async(
+        self,
+        user_text: str,
+        *,
+        file_context: str = "",
+    ) -> LLMResult:
         self.reload_credentials()
         self.reload_skills()
-        return await self._agent_loop(user_text)
+        payload = user_text
+        if file_context.strip():
+            payload = (
+                f"{user_text}\n\n---\n"
+                f"[Context attached by user]\n{file_context.strip()}"
+            )
+        return await self._agent_loop(payload)
 
     async def send_plan_async(self, description: str) -> LLMResult:
         """Plan Mode — only create_plan tool, no execution."""
@@ -234,6 +325,74 @@ class LLMManager:
             return await self._agent_loop(prompt)
         finally:
             task_manager.execution_mode = False
+
+    async def generate_commit_message_async(
+        self,
+        status: str,
+        diff: str,
+    ) -> LLMResult:
+        """Ask the LLM for a single Conventional Commit message (no tools)."""
+        self.reload_credentials()
+        commit_system = (
+            "Analyze this git diff and status. Generate a single, highly professional "
+            "Conventional Commit message (e.g., 'feat: added parser'). "
+            "Return ONLY the commit message, no explanations."
+        )
+        try:
+            response = await asyncio.to_thread(
+                self._client.chat.completions.create,
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": commit_system},
+                    {
+                        "role": "user",
+                        "content": (
+                            f"## git status\n{status}\n\n## git diff\n{diff}"
+                        ),
+                    },
+                ],
+            )
+            choice = response.choices[0] if response.choices else None
+            if choice is None:
+                return LLMResult(
+                    content="",
+                    model=self.model,
+                    error="AXON: Empty response while generating commit message.",
+                )
+
+            raw = (choice.message.content or "").strip()
+            message = raw.strip("`").strip()
+            if message.startswith("```"):
+                lines = message.splitlines()
+                message = "\n".join(
+                    line for line in lines if not line.strip().startswith("```")
+                ).strip()
+
+            usage = self._parse_usage(response.usage)
+            if usage is not None:
+                record_token_usage(usage.total_tokens)
+
+            if not message:
+                return LLMResult(
+                    content="",
+                    model=self.model,
+                    error="AXON: Model returned an empty commit message.",
+                    usage=usage,
+                )
+
+            return LLMResult(content=message, model=self.model, usage=usage)
+        except APIError as exc:
+            return LLMResult(
+                content="",
+                model=self.model,
+                error=f"AXON: API error — {self._friendly_api_error(exc)}",
+            )
+        except Exception as exc:
+            return LLMResult(
+                content="",
+                model=self.model,
+                error=f"AXON: Could not generate commit message — {exc}",
+            )
 
     async def _agent_loop(self, user_text: str) -> LLMResult:
         if not self._api_key:
