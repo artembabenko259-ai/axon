@@ -1,36 +1,45 @@
 # Winget Local Test Guide — Core.AXON (Inno Setup)
 
-Quick reference for testing the **Inno Setup** installer and Winget manifests locally.
+Quick reference for validating and testing Winget manifests locally.
 
-> The `winget/` folder must contain **only** the three `Core.AXON.*.yaml` files when running `winget validate` or `winget install --manifest`. Move this guide aside or copy YAML to a temp folder.
+## PR-ready path
+
+Files for [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs):
+
+```
+winget/manifests/c/Core/AXON/1.0.0/
+```
+
+Authoring copies (same content):
+
+```
+winget/Core.AXON.installer.yaml
+winget/Core.AXON.version.yaml
+winget/Core.AXON.defaultLocale.yaml
+```
+
+See **[SUBMIT.md](SUBMIT.md)** for the full PR checklist.
 
 ## Build first
 
-Run the one-click builder from the repo root:
-
 ```powershell
 .\build.bat
+python scripts\hash_setup.py --patch-manifest
 ```
-
-Or see **[BUILD_GUIDE.md](../BUILD_GUIDE.md)** for manual steps.
 
 ## Validate manifests
 
 ```powershell
-$mf = New-Item -ItemType Directory -Force -Path "$env:TEMP\core-axon-winget"
-Copy-Item winget\Core.AXON.*.yaml $mf
-winget validate --manifest $mf
+winget validate --manifest winget\manifests\c\Core\AXON\1.0.0
 ```
 
 ## Install via Winget (local manifest)
 
 ```powershell
-$mf = New-Item -ItemType Directory -Force -Path "$env:TEMP\core-axon-winget"
-Copy-Item winget\Core.AXON.*.yaml $mf
-winget install --manifest $mf
+winget install --manifest winget\manifests\c\Core\AXON\1.0.0
 ```
 
-Winget downloads `AXON_Setup_v1.0.0.exe` from `InstallerUrl` and runs it silently with:
+Winget downloads the installer from `InstallerUrl` and runs it silently with:
 
 ```
 /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-
@@ -40,7 +49,7 @@ Winget downloads `AXON_Setup_v1.0.0.exe` from `InstallerUrl` and runs it silentl
 
 ```powershell
 where axon
-axon
+axon doctor
 ```
 
 ## Uninstall
@@ -54,6 +63,9 @@ winget uninstall Core.AXON
 | Field | Value |
 |-------|-------|
 | PackageIdentifier | `Core.AXON` |
+| PackageVersion | `1.0.0` |
 | InstallerType | `inno` |
+| Scope | `user` |
 | Command | `axon` |
-| Schema | `1.6.0` |
+| Schema | `1.12.0` |
+| InstallerUrl | `https://runaxon.xyz/downloads/AXON_Setup_v1.0.0.exe` |

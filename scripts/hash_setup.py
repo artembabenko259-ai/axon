@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_SETUP = ROOT / "release" / "AXON_Setup_v1.0.0.exe"
 FALLBACK_SETUP = ROOT / "dist" / "setup" / "AXON_Setup_v1.0.0.exe"
 WINGET_INSTALLER = ROOT / "winget" / "Core.AXON.installer.yaml"
+WINGET_MANIFEST_DIR = ROOT / "winget" / "manifests" / "c" / "Core" / "AXON" / "1.0.0"
 
 
 def sha256_file(path: Path) -> str:
@@ -21,6 +22,16 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest().upper()
+
+
+def sync_manifest_dir() -> None:
+    if not WINGET_MANIFEST_DIR.is_dir():
+        return
+    for name in ("Core.AXON.installer.yaml", "Core.AXON.version.yaml", "Core.AXON.defaultLocale.yaml"):
+        source = ROOT / "winget" / name
+        if source.is_file():
+            target = WINGET_MANIFEST_DIR / name
+            target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 
 
 def patch_manifest(sha256: str) -> None:
@@ -32,6 +43,7 @@ def patch_manifest(sha256: str) -> None:
         count=1,
     )
     WINGET_INSTALLER.write_text(updated, encoding="utf-8")
+    sync_manifest_dir()
 
 
 def main() -> int:

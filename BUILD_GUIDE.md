@@ -130,25 +130,22 @@ This prints the SHA-256 and updates `winget/Core.AXON.installer.yaml`.
 
 ## Step 5 — Update Winget manifest URL
 
-Edit `winget/Core.AXON.installer.yaml`:
+Installer is hosted at:
 
 ```yaml
-InstallerUrl: https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO/releases/download/v1.0.0/AXON_Setup_v1.0.0.exe
+InstallerUrl: https://runaxon.xyz/downloads/AXON_Setup_v1.0.0.exe
 ```
 
-Upload `dist/setup/AXON_Setup_v1.0.0.exe` to that GitHub Release.
+After each build, run `python scripts/hash_setup.py --patch-manifest` to refresh SHA-256
+and sync `winget/manifests/c/Core/AXON/1.0.0/`.
 
 ---
 
 ## Step 6 — Validate & test Winget locally
 
-WinGet needs a **YAML-only** manifest folder:
-
 ```powershell
-$mf = New-Item -ItemType Directory -Force -Path "$env:TEMP\core-axon-winget"
-Copy-Item winget\Core.AXON.*.yaml $mf
-winget validate --manifest $mf
-winget install --manifest $mf
+winget validate --manifest winget\manifests\c\Core\AXON\1.0.0
+winget install --manifest winget\manifests\c\Core\AXON\1.0.0
 ```
 
 Uninstall test:
@@ -206,6 +203,6 @@ axon_runtime.py   # Frozen/install path helpers
 ## Submitting to microsoft/winget-pkgs
 
 1. Fork [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs)
-2. Add manifests under `manifests/c/Core/AXON/1.0.0/`
-3. Use the three files from `winget/` (rename to match repo conventions)
-4. Open a PR with the setup EXE hosted on a stable HTTPS URL
+2. Add manifests under `manifests/c/Core/AXON/1.0.0/` (copy from this repo)
+3. Open a PR — see `winget/SUBMIT.md` for the checklist and description template
+4. Comment `@wingetbot run` on the PR to re-trigger validation
