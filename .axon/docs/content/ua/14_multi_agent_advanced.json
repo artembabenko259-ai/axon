@@ -1,0 +1,242 @@
+{
+  "sections": [
+    {
+      "id": "multi-agent-advanced",
+      "title": "Multi-Agent Advanced",
+      "lead": "Specialist agents, chained workflows, and orchestration patterns.",
+      "chapter": 14,
+      "subsections": [
+        {
+          "id": "specialist-examples",
+          "title": "Specialist Agent Examples",
+          "eli5": "«Specialist Agent Examples» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Specialist Agent Examples»\n\n**specialists** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Specialist Agent Examples\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Specialist Agent Examples",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-specialist-examples",
+            "title": "[ANIMATION: Specialist Agent Examples]",
+            "description": "[ANIMATION: Hero panel for 'Specialist Agent Examples' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: specialist-examples]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: Specialist Agent Examples",
+              "markdown": "Мінімальний сценарій для **specialists**."
+            }
+          ]
+        },
+        {
+          "id": "chained-workflows",
+          "title": "Chained Workflows Config",
+          "eli5": "«Chained Workflows Config» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Chained Workflows Config»\n\n**workflows** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Chained Workflows Config\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Chained Workflows Config",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-chained-workflows",
+            "title": "[ANIMATION: Chained Workflows Config]",
+            "description": "[ANIMATION: Hero panel for 'Chained Workflows Config' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: chained-workflows]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: Chained Workflows Config",
+              "markdown": "Мінімальний сценарій для **workflows**."
+            }
+          ]
+        },
+        {
+          "id": "orchestration-patterns",
+          "title": "Orchestration Patterns",
+          "eli5": "«Orchestration Patterns» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Orchestration Patterns»\n\n**patterns** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Orchestration Patterns\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Orchestration Patterns",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-orchestration-patterns",
+            "title": "[ANIMATION: Orchestration Patterns]",
+            "description": "[ANIMATION: Hero panel for 'Orchestration Patterns' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: orchestration-patterns]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: Orchestration Patterns",
+              "markdown": "Мінімальний сценарій для **patterns**."
+            }
+          ]
+        },
+        {
+          "id": "planner-executor-reviewer",
+          "title": "Planner + Executor + Reviewer",
+          "eli5": "«Planner + Executor + Reviewer» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Planner + Executor + Reviewer»\n\n**PER** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Planner + Executor + Reviewer\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Planner + Executor + Reviewer",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-planner-executor-reviewer",
+            "title": "[ANIMATION: Planner + Executor + Reviewer]",
+            "description": "[ANIMATION: Hero panel for 'Planner + Executor + Reviewer' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: planner-executor-reviewer]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: Planner + Executor + Reviewer",
+              "markdown": "Мінімальний сценарій для **PER**."
+            }
+          ]
+        },
+        {
+          "id": "fan-out-pattern",
+          "title": "Fan-Out Pattern",
+          "eli5": "«Fan-Out Pattern» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Fan-Out Pattern»\n\n**fan out** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Fan-Out Pattern\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Fan-Out Pattern",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-fan-out-pattern",
+            "title": "[ANIMATION: Fan-Out Pattern]",
+            "description": "[ANIMATION: Hero panel for 'Fan-Out Pattern' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: fan-out-pattern]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: Fan-Out Pattern",
+              "markdown": "Мінімальний сценарій для **fan out**."
+            }
+          ]
+        },
+        {
+          "id": "agent-handoff",
+          "title": "Agent Handoff Files",
+          "eli5": "«Agent Handoff Files» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Agent Handoff Files»\n\n**handoff** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Agent Handoff Files\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Agent Handoff Files",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-agent-handoff",
+            "title": "[ANIMATION: Agent Handoff Files]",
+            "description": "[ANIMATION: Hero panel for 'Agent Handoff Files' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: agent-handoff]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: Agent Handoff Files",
+              "markdown": "Мінімальний сценарій для **handoff**."
+            }
+          ]
+        },
+        {
+          "id": "cost-per-agent",
+          "title": "Cost Per Agent",
+          "eli5": "«Cost Per Agent» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Cost Per Agent»\n\n**cost** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Cost Per Agent\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Cost Per Agent",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-cost-per-agent",
+            "title": "[ANIMATION: Cost Per Agent]",
+            "description": "[ANIMATION: Hero panel for 'Cost Per Agent' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: cost-per-agent]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: Cost Per Agent",
+              "markdown": "Мінімальний сценарій для **cost**."
+            }
+          ]
+        },
+        {
+          "id": "agent-registry",
+          "title": "Agent Registry",
+          "eli5": "«Agent Registry» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Agent Registry»\n\n**registry** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Agent Registry\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Agent Registry",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-agent-registry",
+            "title": "[ANIMATION: Agent Registry]",
+            "description": "[ANIMATION: Hero panel for 'Agent Registry' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: agent-registry]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: Agent Registry",
+              "markdown": "Мінімальний сценарій для **registry**."
+            }
+          ]
+        },
+        {
+          "id": "parallel-delegates",
+          "title": "Parallel Delegation",
+          "eli5": "«Parallel Delegation» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Parallel Delegation»\n\n**parallel** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Parallel Delegation\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Parallel Delegation",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-parallel-delegates",
+            "title": "[ANIMATION: Parallel Delegation]",
+            "description": "[ANIMATION: Hero panel for 'Parallel Delegation' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: parallel-delegates]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: Parallel Delegation",
+              "markdown": "Мінімальний сценарій для **parallel**."
+            }
+          ]
+        },
+        {
+          "id": "orchestration-checklist",
+          "title": "Orchestration Checklist",
+          "eli5": "«Orchestration Checklist» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Orchestration Checklist»\n\n**checklist** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Orchestration Checklist\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Orchestration Checklist",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-orchestration-checklist",
+            "title": "[ANIMATION: Orchestration Checklist]",
+            "description": "[ANIMATION: Hero panel for 'Orchestration Checklist' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: orchestration-checklist]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: Orchestration Checklist",
+              "markdown": "Мінімальний сценарій для **checklist**."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,697 @@
+{
+  "sections": [
+    {
+      "id": "skills-masterclass",
+      "title": "Skills Masterclass",
+      "lead": "YAML recipes, plumbing pipes, anatomy, and anti-patterns.",
+      "chapter": 2,
+      "subsections": [
+        {
+          "id": "yaml-recipe",
+          "title": "YAML Frontmatter — The Recipe Card",
+          "eli5": "Imagine YAML Frontmatter — The Recipe Card is like a labeled drawer in your workshop toolbox. The label says **yaml** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why YAML Frontmatter — The Recipe Card matters\n\nIn any AI-assisted development workflow, **yaml** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Skills Masterclass chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding yaml lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of yaml as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: YAML Frontmatter — The Recipe Card\n\nThis section walks through **yaml** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for yaml.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when yaml is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When YAML Frontmatter — The Recipe Card goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on yaml without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-yaml-recipe",
+              "title": "[ANIMATION: YAML Frontmatter — The Recipe Card]",
+              "description": "[ANIMATION: Hero panel for 'YAML Frontmatter — The Recipe Card' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: yaml-recipe]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-yaml-recipe-flow",
+              "title": "[ANIMATION: Data flow — YAML Frontmatter — The Recipe Card]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for yaml-recipe. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: YAML Frontmatter — The Recipe Card",
+              "markdown": "```text\n# Smallest useful invocation for yaml\nUser: demonstrate yaml-recipe\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: yaml-recipe-helper",
+              "markdown": "```markdown\n---\nname: yaml-recipe-helper\ndescription: Automate yaml\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then yaml-recipe",
+              "markdown": "```text\n/plan 'Improve yaml' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: YAML Frontmatter — The Recipe Card",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: YAML Frontmatter — The Recipe Card",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ],
+          "stepsTable": {
+            "title": "YAML Frontmatter — The Recipe Card — step trace",
+            "headers": {
+              "step": "Step",
+              "what": "What happens",
+              "who": "Who does it"
+            },
+            "rows": [
+              {
+                "step": "1",
+                "what": "User invokes YAML Frontmatter — The Recipe Card",
+                "who": "You"
+              },
+              {
+                "step": "2",
+                "what": "Parser routes to handler or LLM",
+                "who": "command_parser.py"
+              },
+              {
+                "step": "3",
+                "what": "Tools/memory/skills assembled",
+                "who": "llm_client.py"
+              },
+              {
+                "step": "4",
+                "what": "Destructive calls pause for approval",
+                "who": "main.py"
+              },
+              {
+                "step": "5",
+                "what": "Result streams to terminal + Zenith",
+                "who": "bridge.py"
+              }
+            ]
+          },
+          "sandbox": {
+            "title": "Try: YAML Frontmatter — The Recipe Card",
+            "placeholder": "demo yaml-recipe",
+            "initial": "$ axon\nAXON v1.0.0 — Ready\nType /help for commands\n",
+            "scenarios": {
+              "demo yaml-recipe": "✦ AXON\nDemonstrating YAML Frontmatter — The Recipe Card...\n[Tool trace visible]\nDone.",
+              "/help": "AXON Commands — /plan /execute /delegate /create-skill ...",
+              "*": "Try: yaml-recipe or ask about YAML Frontmatter — The Recipe Card"
+            }
+          }
+        },
+        {
+          "id": "plumbing",
+          "title": "The ! Command — Plumbing System",
+          "eli5": "Imagine The ! Command — Plumbing System is like a labeled drawer in your workshop toolbox. The label says **plumbing** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why The ! Command — Plumbing System matters\n\nIn any AI-assisted development workflow, **plumbing** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Skills Masterclass chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding plumbing lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of plumbing as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: The ! Command — Plumbing System\n\nThis section walks through **plumbing** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for plumbing.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when plumbing is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When The ! Command — Plumbing System goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on plumbing without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-plumbing",
+              "title": "[ANIMATION: The ! Command — Plumbing System]",
+              "description": "[ANIMATION: Hero panel for 'The ! Command — Plumbing System' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: plumbing]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-plumbing-flow",
+              "title": "[ANIMATION: Data flow — The ! Command — Plumbing System]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for plumbing. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: The ! Command — Plumbing System",
+              "markdown": "```text\n# Smallest useful invocation for plumbing\nUser: demonstrate plumbing\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: plumbing-helper",
+              "markdown": "```markdown\n---\nname: plumbing-helper\ndescription: Automate plumbing\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then plumbing",
+              "markdown": "```text\n/plan 'Improve plumbing' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: The ! Command — Plumbing System",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: The ! Command — Plumbing System",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ],
+          "sandbox": {
+            "title": "Try: The ! Command — Plumbing System",
+            "placeholder": "demo plumbing",
+            "initial": "$ axon\nAXON v1.0.0 — Ready\nType /help for commands\n",
+            "scenarios": {
+              "demo plumbing": "✦ AXON\nDemonstrating The ! Command — Plumbing System...\n[Tool trace visible]\nDone.",
+              "/help": "AXON Commands — /plan /execute /delegate /create-skill ...",
+              "*": "Try: plumbing or ask about The ! Command — Plumbing System"
+            }
+          }
+        },
+        {
+          "id": "before-after",
+          "title": "Before / After Skills",
+          "eli5": "Imagine Before / After Skills is like a labeled drawer in your workshop toolbox. The label says **comparison** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why Before / After Skills matters\n\nIn any AI-assisted development workflow, **comparison** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Skills Masterclass chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding comparison lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of comparison as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: Before / After Skills\n\nThis section walks through **comparison** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for comparison.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when comparison is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When Before / After Skills goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on comparison without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-before-after",
+              "title": "[ANIMATION: Before / After Skills]",
+              "description": "[ANIMATION: Hero panel for 'Before / After Skills' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: before-after]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-before-after-flow",
+              "title": "[ANIMATION: Data flow — Before / After Skills]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for before-after. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: Before / After Skills",
+              "markdown": "```text\n# Smallest useful invocation for comparison\nUser: demonstrate before-after\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: before-after-helper",
+              "markdown": "```markdown\n---\nname: before-after-helper\ndescription: Automate comparison\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then before-after",
+              "markdown": "```text\n/plan 'Improve comparison' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: Before / After Skills",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: Before / After Skills",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ],
+          "stepsTable": {
+            "title": "Before / After Skills — step trace",
+            "headers": {
+              "step": "Step",
+              "what": "What happens",
+              "who": "Who does it"
+            },
+            "rows": [
+              {
+                "step": "1",
+                "what": "User invokes Before / After Skills",
+                "who": "You"
+              },
+              {
+                "step": "2",
+                "what": "Parser routes to handler or LLM",
+                "who": "command_parser.py"
+              },
+              {
+                "step": "3",
+                "what": "Tools/memory/skills assembled",
+                "who": "llm_client.py"
+              },
+              {
+                "step": "4",
+                "what": "Destructive calls pause for approval",
+                "who": "main.py"
+              },
+              {
+                "step": "5",
+                "what": "Result streams to terminal + Zenith",
+                "who": "bridge.py"
+              }
+            ]
+          },
+          "sandbox": {
+            "title": "Try: Before / After Skills",
+            "placeholder": "demo before-after",
+            "initial": "$ axon\nAXON v1.0.0 — Ready\nType /help for commands\n",
+            "scenarios": {
+              "demo before-after": "✦ AXON\nDemonstrating Before / After Skills...\n[Tool trace visible]\nDone.",
+              "/help": "AXON Commands — /plan /execute /delegate /create-skill ...",
+              "*": "Try: before-after or ask about Before / After Skills"
+            }
+          },
+          "beforeAfter": {
+            "before": {
+              "title": "Without structured skills",
+              "content": "Repeated instructions each session.\nInconsistent tool use.\nHigh token waste."
+            },
+            "after": {
+              "title": "With AXON skills",
+              "content": "One SKILL.md invocation.\nPlumbing injects live data.\nPredictable output every time."
+            }
+          }
+        },
+        {
+          "id": "create-skill",
+          "title": "/create-skill Wizard",
+          "eli5": "Imagine /create-skill Wizard is like a labeled drawer in your workshop toolbox. The label says **create skill** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why /create-skill Wizard matters\n\nIn any AI-assisted development workflow, **create skill** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Skills Masterclass chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding create skill lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of create skill as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: /create-skill Wizard\n\nThis section walks through **create skill** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for create skill.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when create skill is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When /create-skill Wizard goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on create skill without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-create-skill",
+              "title": "[ANIMATION: /create-skill Wizard]",
+              "description": "[ANIMATION: Hero panel for '/create-skill Wizard' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: create-skill]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-create-skill-flow",
+              "title": "[ANIMATION: Data flow — /create-skill Wizard]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for create-skill. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: /create-skill Wizard",
+              "markdown": "```text\n# Smallest useful invocation for create skill\nUser: demonstrate create-skill\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: create-skill-helper",
+              "markdown": "```markdown\n---\nname: create-skill-helper\ndescription: Automate create skill\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then create-skill",
+              "markdown": "```text\n/plan 'Improve create skill' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: /create-skill Wizard",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: /create-skill Wizard",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ]
+        },
+        {
+          "id": "inline-shell",
+          "title": "Inline Shell Injection",
+          "eli5": "Imagine Inline Shell Injection is like a labeled drawer in your workshop toolbox. The label says **inline shell** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why Inline Shell Injection matters\n\nIn any AI-assisted development workflow, **inline shell** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Skills Masterclass chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding inline shell lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of inline shell as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: Inline Shell Injection\n\nThis section walks through **inline shell** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for inline shell.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when inline shell is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When Inline Shell Injection goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on inline shell without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-inline-shell",
+              "title": "[ANIMATION: Inline Shell Injection]",
+              "description": "[ANIMATION: Hero panel for 'Inline Shell Injection' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: inline-shell]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-inline-shell-flow",
+              "title": "[ANIMATION: Data flow — Inline Shell Injection]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for inline-shell. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: Inline Shell Injection",
+              "markdown": "```text\n# Smallest useful invocation for inline shell\nUser: demonstrate inline-shell\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: inline-shell-helper",
+              "markdown": "```markdown\n---\nname: inline-shell-helper\ndescription: Automate inline shell\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then inline-shell",
+              "markdown": "```text\n/plan 'Improve inline shell' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: Inline Shell Injection",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: Inline Shell Injection",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ],
+          "stepsTable": {
+            "title": "Inline Shell Injection — step trace",
+            "headers": {
+              "step": "Step",
+              "what": "What happens",
+              "who": "Who does it"
+            },
+            "rows": [
+              {
+                "step": "1",
+                "what": "User invokes Inline Shell Injection",
+                "who": "You"
+              },
+              {
+                "step": "2",
+                "what": "Parser routes to handler or LLM",
+                "who": "command_parser.py"
+              },
+              {
+                "step": "3",
+                "what": "Tools/memory/skills assembled",
+                "who": "llm_client.py"
+              },
+              {
+                "step": "4",
+                "what": "Destructive calls pause for approval",
+                "who": "main.py"
+              },
+              {
+                "step": "5",
+                "what": "Result streams to terminal + Zenith",
+                "who": "bridge.py"
+              }
+            ]
+          }
+        },
+        {
+          "id": "allowed-tools",
+          "title": "allowed-tools Field",
+          "eli5": "Imagine allowed-tools Field is like a labeled drawer in your workshop toolbox. The label says **tool allowlist** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why allowed-tools Field matters\n\nIn any AI-assisted development workflow, **tool allowlist** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Skills Masterclass chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding tool allowlist lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of tool allowlist as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: allowed-tools Field\n\nThis section walks through **tool allowlist** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for tool allowlist.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when tool allowlist is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When allowed-tools Field goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on tool allowlist without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-allowed-tools",
+              "title": "[ANIMATION: allowed-tools Field]",
+              "description": "[ANIMATION: Hero panel for 'allowed-tools Field' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: allowed-tools]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-allowed-tools-flow",
+              "title": "[ANIMATION: Data flow — allowed-tools Field]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for allowed-tools. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: allowed-tools Field",
+              "markdown": "```text\n# Smallest useful invocation for tool allowlist\nUser: demonstrate allowed-tools\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: allowed-tools-helper",
+              "markdown": "```markdown\n---\nname: allowed-tools-helper\ndescription: Automate tool allowlist\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then allowed-tools",
+              "markdown": "```text\n/plan 'Improve tool allowlist' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: allowed-tools Field",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: allowed-tools Field",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ]
+        },
+        {
+          "id": "hot-reload",
+          "title": "Hot Reload",
+          "eli5": "Imagine Hot Reload is like a labeled drawer in your workshop toolbox. The label says **reload** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why Hot Reload matters\n\nIn any AI-assisted development workflow, **reload** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Skills Masterclass chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding reload lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of reload as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: Hot Reload\n\nThis section walks through **reload** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for reload.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when reload is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When Hot Reload goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on reload without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-hot-reload",
+              "title": "[ANIMATION: Hot Reload]",
+              "description": "[ANIMATION: Hero panel for 'Hot Reload' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: hot-reload]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-hot-reload-flow",
+              "title": "[ANIMATION: Data flow — Hot Reload]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for hot-reload. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: Hot Reload",
+              "markdown": "```text\n# Smallest useful invocation for reload\nUser: demonstrate hot-reload\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: hot-reload-helper",
+              "markdown": "```markdown\n---\nname: hot-reload-helper\ndescription: Automate reload\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then hot-reload",
+              "markdown": "```text\n/plan 'Improve reload' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: Hot Reload",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: Hot Reload",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ],
+          "stepsTable": {
+            "title": "Hot Reload — step trace",
+            "headers": {
+              "step": "Step",
+              "what": "What happens",
+              "who": "Who does it"
+            },
+            "rows": [
+              {
+                "step": "1",
+                "what": "User invokes Hot Reload",
+                "who": "You"
+              },
+              {
+                "step": "2",
+                "what": "Parser routes to handler or LLM",
+                "who": "command_parser.py"
+              },
+              {
+                "step": "3",
+                "what": "Tools/memory/skills assembled",
+                "who": "llm_client.py"
+              },
+              {
+                "step": "4",
+                "what": "Destructive calls pause for approval",
+                "who": "main.py"
+              },
+              {
+                "step": "5",
+                "what": "Result streams to terminal + Zenith",
+                "who": "bridge.py"
+              }
+            ]
+          }
+        },
+        {
+          "id": "skill-anatomy",
+          "title": "Skill Anatomy",
+          "eli5": "Imagine Skill Anatomy is like a labeled drawer in your workshop toolbox. The label says **structure** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why Skill Anatomy matters\n\nIn any AI-assisted development workflow, **structure** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Skills Masterclass chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding structure lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of structure as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: Skill Anatomy\n\nThis section walks through **structure** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for structure.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when structure is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When Skill Anatomy goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on structure without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-skill-anatomy",
+              "title": "[ANIMATION: Skill Anatomy]",
+              "description": "[ANIMATION: Hero panel for 'Skill Anatomy' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: skill-anatomy]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-skill-anatomy-flow",
+              "title": "[ANIMATION: Data flow — Skill Anatomy]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for skill-anatomy. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: Skill Anatomy",
+              "markdown": "```text\n# Smallest useful invocation for structure\nUser: demonstrate skill-anatomy\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: skill-anatomy-helper",
+              "markdown": "```markdown\n---\nname: skill-anatomy-helper\ndescription: Automate structure\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then skill-anatomy",
+              "markdown": "```text\n/plan 'Improve structure' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: Skill Anatomy",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: Skill Anatomy",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ]
+        },
+        {
+          "id": "anti-patterns",
+          "title": "Skill Anti-Patterns",
+          "eli5": "Imagine Skill Anti-Patterns is like a labeled drawer in your workshop toolbox. The label says **mistakes** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why Skill Anti-Patterns matters\n\nIn any AI-assisted development workflow, **mistakes** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Skills Masterclass chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding mistakes lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of mistakes as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: Skill Anti-Patterns\n\nThis section walks through **mistakes** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for mistakes.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when mistakes is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When Skill Anti-Patterns goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on mistakes without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-anti-patterns",
+              "title": "[ANIMATION: Skill Anti-Patterns]",
+              "description": "[ANIMATION: Hero panel for 'Skill Anti-Patterns' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: anti-patterns]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-anti-patterns-flow",
+              "title": "[ANIMATION: Data flow — Skill Anti-Patterns]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for anti-patterns. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: Skill Anti-Patterns",
+              "markdown": "```text\n# Smallest useful invocation for mistakes\nUser: demonstrate anti-patterns\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: anti-patterns-helper",
+              "markdown": "```markdown\n---\nname: anti-patterns-helper\ndescription: Automate mistakes\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then anti-patterns",
+              "markdown": "```text\n/plan 'Improve mistakes' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: Skill Anti-Patterns",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: Skill Anti-Patterns",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ],
+          "stepsTable": {
+            "title": "Skill Anti-Patterns — step trace",
+            "headers": {
+              "step": "Step",
+              "what": "What happens",
+              "who": "Who does it"
+            },
+            "rows": [
+              {
+                "step": "1",
+                "what": "User invokes Skill Anti-Patterns",
+                "who": "You"
+              },
+              {
+                "step": "2",
+                "what": "Parser routes to handler or LLM",
+                "who": "command_parser.py"
+              },
+              {
+                "step": "3",
+                "what": "Tools/memory/skills assembled",
+                "who": "llm_client.py"
+              },
+              {
+                "step": "4",
+                "what": "Destructive calls pause for approval",
+                "who": "main.py"
+              },
+              {
+                "step": "5",
+                "what": "Result streams to terminal + Zenith",
+                "who": "bridge.py"
+              }
+            ]
+          }
+        },
+        {
+          "id": "master-checklist",
+          "title": "Master Checklist",
+          "eli5": "Imagine Master Checklist is like a labeled drawer in your workshop toolbox. The label says **checklist** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why Master Checklist matters\n\nIn any AI-assisted development workflow, **checklist** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Skills Masterclass chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding checklist lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of checklist as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: Master Checklist\n\nThis section walks through **checklist** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for checklist.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when checklist is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When Master Checklist goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on checklist without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-master-checklist",
+              "title": "[ANIMATION: Master Checklist]",
+              "description": "[ANIMATION: Hero panel for 'Master Checklist' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: master-checklist]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-master-checklist-flow",
+              "title": "[ANIMATION: Data flow — Master Checklist]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for master-checklist. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: Master Checklist",
+              "markdown": "```text\n# Smallest useful invocation for checklist\nUser: demonstrate master-checklist\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: master-checklist-helper",
+              "markdown": "```markdown\n---\nname: master-checklist-helper\ndescription: Automate checklist\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then master-checklist",
+              "markdown": "```text\n/plan 'Improve checklist' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: Master Checklist",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: Master Checklist",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

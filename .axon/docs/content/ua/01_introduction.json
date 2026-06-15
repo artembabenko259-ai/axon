@@ -1,0 +1,187 @@
+{
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "lead": "What AXON is, how to install it, and how the pieces fit together.",
+      "chapter": 1,
+      "subsections": [
+        {
+          "id": "what-is-axon",
+          "title": "What is AXON?",
+          "eli5": "«What is AXON?» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «What is AXON?»\n\n**core agent** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: What is AXON?\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: What is AXON?",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-what-is-axon",
+            "title": "[ANIMATION: What is AXON?]",
+            "description": "[ANIMATION: Hero panel for 'What is AXON?' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: what-is-axon]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "install",
+          "title": "Installation",
+          "eli5": "«Installation» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Installation»\n\n**setup** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Installation\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Installation",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-install",
+            "title": "[ANIMATION: Installation]",
+            "description": "[ANIMATION: Hero panel for 'Installation' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: install]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "quick-start",
+          "title": "Quick Start",
+          "eli5": "«Quick Start» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Quick Start»\n\n**first run** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Quick Start\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Quick Start",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-quick-start",
+            "title": "[ANIMATION: Quick Start]",
+            "description": "[ANIMATION: Hero panel for 'Quick Start' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: quick-start]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "architecture",
+          "title": "Architecture Overview",
+          "eli5": "«Architecture Overview» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Architecture Overview»\n\n**system design** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Architecture Overview\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Architecture Overview",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-architecture",
+            "title": "[ANIMATION: Architecture Overview]",
+            "description": "[ANIMATION: Hero panel for 'Architecture Overview' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: architecture]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "zenith",
+          "title": "Zenith Dashboard",
+          "eli5": "«Zenith Dashboard» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Zenith Dashboard»\n\n**web UI** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Zenith Dashboard\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Zenith Dashboard",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-zenith",
+            "title": "[ANIMATION: Zenith Dashboard]",
+            "description": "[ANIMATION: Hero panel for 'Zenith Dashboard' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: zenith]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "bridge",
+          "title": "WebSocket Bridge",
+          "eli5": "«WebSocket Bridge» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «WebSocket Bridge»\n\n**bridge.py** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: WebSocket Bridge\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: WebSocket Bridge",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-bridge",
+            "title": "[ANIMATION: WebSocket Bridge]",
+            "description": "[ANIMATION: Hero panel for 'WebSocket Bridge' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: bridge]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "memory-overview",
+          "title": "Memory Overview",
+          "eli5": "«Memory Overview» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Memory Overview»\n\n**memory.md** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Memory Overview\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Memory Overview",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-memory-overview",
+            "title": "[ANIMATION: Memory Overview]",
+            "description": "[ANIMATION: Hero panel for 'Memory Overview' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: memory-overview]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "tools-overview",
+          "title": "Tools Overview",
+          "eli5": "«Tools Overview» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Tools Overview»\n\n**tooling** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Tools Overview\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Tools Overview",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-tools-overview",
+            "title": "[ANIMATION: Tools Overview]",
+            "description": "[ANIMATION: Hero panel for 'Tools Overview' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: tools-overview]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "eli5-glossary",
+          "title": "ELI5 Glossary",
+          "eli5": "«ELI5 Glossary» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «ELI5 Glossary»\n\n**terms** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: ELI5 Glossary\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: ELI5 Glossary",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-eli5-glossary",
+            "title": "[ANIMATION: ELI5 Glossary]",
+            "description": "[ANIMATION: Hero panel for 'ELI5 Glossary' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: eli5-glossary]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "first-session",
+          "title": "Your First Session",
+          "eli5": "«Your First Session» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Your First Session»\n\n**walkthrough** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Your First Session\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Your First Session",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-first-session",
+            "title": "[ANIMATION: Your First Session]",
+            "description": "[ANIMATION: Hero panel for 'Your First Session' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: first-session]",
+            "trigger": "on-scroll-into-view"
+          }
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "title": "База знань AXON",
+    "lead": "Повний посібник — стисла українська версія.",
+    "bookSubtitle": "Project Bible · UA"
+  }
+}

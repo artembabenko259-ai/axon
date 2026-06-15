@@ -1,0 +1,345 @@
+{
+  "meta": {
+    "pageTitle": "Майстерність Skills",
+    "moduleLabel": "Модуль майстерності",
+    "title": "Повний посібник з Skills у AXON",
+    "lead": "Усе для проєктування, генерації, пайпінгу та налагодження markdown-скілів — програмованої пам'яті вашого локального агента.",
+    "badge": "Система Skills · Глибокий довідник",
+    "tocTitle": "На цій сторінці",
+    "backToBible": "Назад до AXON Bible"
+  },
+  "labels": {
+    "proTip": "Pro Tip",
+    "before": "До",
+    "after": "Після",
+    "troubleshootingHeaders": [
+      "#",
+      "Симптом",
+      "Причина",
+      "Виправлення"
+    ]
+  },
+  "toc": [
+    {
+      "id": "philosophy",
+      "label": "Базова філософія"
+    },
+    {
+      "id": "anatomy",
+      "label": "Анатомія скіла"
+    },
+    {
+      "id": "creation",
+      "label": "Створення за 3 кроки"
+    },
+    {
+      "id": "patterns",
+      "label": "Патерни та пайпінг"
+    },
+    {
+      "id": "troubleshooting",
+      "label": "Усунення несправностей"
+    },
+    {
+      "id": "try-it",
+      "label": "Спробуйте"
+    }
+  ],
+  "code": {
+    "deployStaging": "---\nname: deploy-staging\ndescription: Check staging cluster health and summarize pod status for the team\nusage: Invoke before releases or when staging looks unhealthy\ndisable-model-invocation: false\nallowed-tools: execute_shell, read_file, web_search\n---\n\n# Staging Deploy Health\n\n## Live context (auto-injected)\n!`kubectl get pods -n staging --no-headers 2>nul || echo \"(kubectl unavailable)\"`\n\nRecent deploy tag:\n!`git describe --tags --abbrev=0 2>nul || echo \"no tags\"`\n\n## Instructions\n\n1. Parse the pod list above. Flag CrashLoopBackOff, Pending, or 0/1 Ready.\n2. If kubectl failed, use execute_shell to diagnose (do not guess).\n3. Cross-check deployment/README.md with read_file if rollback is mentioned.\n4. Reply with: **Status**, **Risk level**, **Recommended next action**.",
+    "anatomyDiagram": "┌─────────────────────────────────────────────────────────────┐\n│  SKILL FILE  (.axon/skills/deploy-staging/SKILL.md)         │\n├─────────────────────────────────────────────────────────────┤\n│  ╔════════════════ YAML FRONTMATTER ════════════════════╗   │\n│  ║  name          → OpenRouter tool identifier          ║   │\n│  ║  description   → Shown in tools[] array to LLM       ║   │\n│  ║  usage         → Human/docs hint (optional)          ║   │\n│  ║  allowed-tools → Advisory list for the model         ║   │\n│  ║  disable-model-invocation → hide from tool list      ║   │\n│  ╚══════════════════════════════════════════════════════╝   │\n├─────────────────────────────────────────────────────────────┤\n│  ╔════════════════ MARKDOWN LOGIC LAYER ════════════════╗   │\n│  ║  # Headings, numbered steps, constraints             ║   │\n│  ║  !`shell commands`  → INLINE SHELL (eager eval)      ║   │\n│  ║  References to read_file / execute_shell / etc.      ║   │\n│  ╚══════════════════════════════════════════════════════╝   │\n└─────────────────────────────────────────────────────────────┘\n         │                              │\n         ▼                              ▼\n   SkillManager.reload()          invoke_skill()\n   → tool schema only            → full body + injected shell\n   → messages[0] summary         → appended as tool result",
+    "genSkillTrace": "❯ /gen-skill \"Create a skill that checks Docker container health and lists unhealthy ones\"\n\n🛠 Generating skill with AI...\n\n[✓] Skill \"docker-health\" created and loaded successfully. Use it with !docker-health.\n\n❯ Check my containers using the docker health skill\n✦ AXON: [Tool: docker_health] …",
+    "webResearchSkill": "---\nname: web-research-writer\ndescription: Search the web, synthesize findings, and save a markdown report\nallowed-tools: web_search, read_file, write_file\n---\n\n# Research Pipeline\n\n## Step 1 — Gather (you execute)\nUse web_search with the user's topic. Collect 3–5 authoritative sources.\n\n## Step 2 — Synthesize\nSummarize findings in structured markdown: Executive Summary, Key Points, Sources.\n\n## Step 3 — Persist\nWrite to research/<date>-<topic-slug>.md using write_file.\nAsk user approval before writing.",
+    "chainedSession": "❯ /gen-skill \"Web research writer that searches, summarizes, saves to research/\"\n[✓] Skill \"web-research-writer\" created and loaded successfully.\n\n❯ Use web-research-writer to research \"AXON agent skills 2026\" & /commit\n⛓ Running 2 chained commands…\n── Chain 1/2 ──\n[Tool: web_search] …\n[Tool: write_file] [?] Allow once? …\n── Chain 2/2 ──\n📝 Generating commit message…",
+    "skillTemplate": "---\nname: [Name]\ndescription: [What it does]\nusage: ![Name]\ndisable-model-invocation: false\nallowed-tools: read_file, execute_shell, web_search\n---\n\n# [Name] Skill\n\n## Live context\n!`[shell command for auto-injected context]`\n\n## Instructions\n1. [First step]\n2. [Second step]\n3. [Output format]"
+  },
+  "sections": [
+    {
+      "id": "philosophy",
+      "eyebrow": "Розділ I",
+      "title": "Базова філософія",
+      "lead": "Skills — не конфігураційні файли. Це спеціалізовані «нейрони» ШІ — модульна експертиза, яку агент викликає за потреби.",
+      "paragraphs": [
+        "«Чиста» LLM — блискучий універсал з амнезією. Кожну сесію вона знову вивчає конвенції репозиторію, ритуали деплою, філософію тестування та десятки дрібних workflow вашої команди. AXON не забиває системний промпт мегабайтами інструкцій, а дає моделі бібліотеку викликної експертизи на диску в .axon/skills/.",
+        "Уявіть skills як будівельні блоки в майстерні. Базовий агент AXON — майстер зі стандартним набором: read_file, write_file, execute_shell і web_search. Skills — готові плейбуки: «Коли питають про логи — спочатку ця команда, потім ці файли, відповідь у такому форматі». Модель не запам'ятовує плейбук при старті. Вона бачить імена та короткі описи в системному промпті й завантажує повні інструкції лише при виклику скіла — як рецепт з шухляди лише коли починають готувати.",
+        "Ця архітектура схожа на професійну кухню. Шеф (LLM) знає станції (tool schemas для skills). Кожна станція має папку рецептів (SKILL.md або .skill). Інгредієнти подаються just-in-time через inline shell injection — «труби», що вставляють живий вивід терміналу в рецепт до того, як шеф його прочитає."
+      ],
+      "beforeAfter": {
+        "before": {
+          "title": "Без Skills",
+          "content": "Користувач: «Підсумуй здоров'я staging-деплою».\n\nAXON мусить вгадати:\n• Які скрипти запускати\n• Де логи в цьому репо\n• Як команда називає середовища\n• kubectl, docker чи ssh\n\nРезультат: 4–6 раундів tool, різні відповіді, повторні пояснення щосесії. Зростають токени. Падає довіра."
+        },
+        "after": {
+          "title": "Зі Skills",
+          "content": "Користувач: «Запусти скил перевірки staging».\n\nAXON один раз викликає tool deploy-staging.\nТіло скіла вставляє контекст через !`kubectl get pods -n staging`\nІнструкції точно описують підсумок.\n\nРезультат: 1 invoke скіла + 1–2 tool. Один плейбук щоразу. Експертиза в git для всієї команди."
+        }
+      },
+      "proTip": {
+        "title": "Pro Tip — Ставтеся до Skills як до коду",
+        "body": "Тримайте кожен скил у git під .axon/skills/. Рев'юйте в pull request як CI-скрипти. Скил «як ми деплоїмо» цінніший за сотню чатів, що зникають після закриття терміналу."
+      },
+      "designPrinciple": {
+        "label": "Принцип проєктування",
+        "body": "AXON навмисно тримає тіла скілів поза системним промптом. У OpenRouter йдуть лише імена та короткі описи як tool schemas. Повні інструкції приходять як tool result при invoke_skill(). Контекст залишається компактним, плейбуки можуть бути глибокими — production-скили > 8 KB markdown не карають кожне повідомлення."
+      }
+    },
+    {
+      "id": "anatomy",
+      "eyebrow": "Розділ II",
+      "title": "Анатомія скіла",
+      "lead": "Два шари: YAML-метадані (етикетка на банці) та markdown-логіка (рецепт всередині).",
+      "intro": "Skills AXON — не Python-модулі й не JSON. Це markdown з YAML frontmatter: .axon/skills/<folder>/SKILL.md або .axon/skills/<name>.skill після /gen-skill. Frontmatter парсить легкий YAML-рідер у skills_manager.py без PyYAML. Тіло — сирий markdown, що стає payload інструкцій при активації.",
+      "codePanels": [
+        {
+          "label": "Повний приклад — deploy-staging",
+          "codeKey": "deployStaging"
+        },
+        {
+          "label": "ASCII — шари файлу скіла",
+          "codeKey": "anatomyDiagram"
+        }
+      ],
+      "subsectionTitle": "Візуальна схема анатомії",
+      "cards": [
+        {
+          "title": "Шар YAML — реєстрація",
+          "body": "Frontmatter — API-контракт. name стає sanitized tool name для OpenRouter. description — єдиний текст, який модель бачить до виклику скіла; пишіть як опис фічі, не як ім'я файлу. allowed-tools документується в invoke payload — це рекомендація, не жорстка пісочниця (нативні tools проходять approval окремо)."
+        },
+        {
+          "title": "Шар логіки — виконання",
+          "body": "Markdown-тіло — процедура. На відміну від Python-декораторів, логіка виражається кроками природною мовою та блоками !`command`. inject_shell_context() підставляє живий stdout до читання скіла LLM — менше раундів tool без «спочатку git status»."
+        }
+      ],
+      "proTip": {
+        "title": "Pro Tip — Ім'я vs папка",
+        "body": "Ім'я папки (git-status) і поле YAML name: можуть відрізнятися, але краще тримати їх узгодженими — менше плутанини в логах і /help. Для .skill skill_id береться з імені файлу."
+      }
+    },
+    {
+      "id": "creation",
+      "eyebrow": "Розділ III",
+      "title": "Створення за 3 кроки",
+      "lead": "З /gen-skill — від однієї фрази наміру до завантаженого скіла менше ніж за хвилину.",
+      "intro": "/create-skill — коли знаєте точні shell-команди. /gen-skill — для дослідження: опишіть результат, LLM чернетку YAML і markdown, збереження на диск і hot-reload без перезапуску AXON.",
+      "steps": [
+        {
+          "step": "01",
+          "title": "Опишіть скил",
+          "body": "Введіть /gen-skill з описом у лапках. Вкажіть входи, tools і формат відповіді. Приклад: /gen-skill \"Перевір npm-вразливості, підсумуй критичні CVE, запропонуй команди виправлення\""
+        },
+        {
+          "step": "02",
+          "title": "ШІ генерує та зберігає",
+          "body": "AXON надсилає опис у LLM зі skill-author промптом. Відповідь з markdown fence, перевірка name у YAML, запис у .axon/skills/<name>.skill"
+        },
+        {
+          "step": "03",
+          "title": "Hot reload",
+          "body": "llm_manager.reload_skills() пересканує каталог і перезбирає messages[0]. Новий tool доступний у наступному ході. Успіх: [✓] Skill \"<name>\" created and loaded successfully."
+        }
+      ],
+      "ioTable": {
+        "title": "Чого очікувати — входи та виходи",
+        "headers": [
+          "Етап",
+          "Ви даєте",
+          "AXON робить",
+          "Ви отримуєте"
+        ],
+        "rows": [
+          {
+            "cells": [
+              "Виклик",
+              "/gen-skill \"опис\"",
+              "Парсить лапки, викликає OpenRouter (без tools)",
+              "🛠 Generating skill with AI…"
+            ]
+          },
+          {
+            "cells": [
+              "Генерація",
+              "OPENROUTER_API_KEY у .env",
+              "LLM повертає SKILL у fence",
+              "Тихо (стежте за /cost)"
+            ]
+          },
+          {
+            "cells": [
+              "Валідація",
+              "—",
+              "extract_skill_code_block(), перевірка name:",
+              "Помилка якщо порожньо або без name"
+            ]
+          },
+          {
+            "cells": [
+              "Збереження",
+              "—",
+              "Запис .axon/skills/<name>.skill",
+              "Файл на диску, у git"
+            ]
+          },
+          {
+            "cells": [
+              "Reload",
+              "—",
+              "SkillManager.reload() + system prompt",
+              "[✓] Skill \"name\" created and loaded…"
+            ]
+          },
+          {
+            "cells": [
+              "Використання",
+              "Задача природною мовою",
+              "Модель викликає tool за sanitized name",
+              "Плейбук у tool result"
+            ]
+          }
+        ]
+      },
+      "codePanels": [
+        {
+          "label": "Трасування консолі — успішний /gen-skill",
+          "codeKey": "genSkillTrace"
+        }
+      ]
+    },
+    {
+      "id": "patterns",
+      "eyebrow": "Розділ IV",
+      "title": "Патерни експертів і пайпінг",
+      "lead": "Опануйте pipe з ! і backtick — eager-evaluation «труби» AXON для живого контексту.",
+      "intro": "Синтаксис !`command` — не shell-аліас і не те саме, що !skill-name у чаті. Це inline pipe: при invoke AXON виконує команду локально до того, як модель побачить тіло скіла, і вставляє stdout у markdown. Як mail-merge для терміналу — рецепт статичний, інгредієнти завжди свіжі.",
+      "proTip": {
+        "title": "Pro Tip — Межа безпеки",
+        "body": "Inline shell виконується без approval при invoke скіла. Ніколи не вставляйте ввід користувача в !`…`. Лише команди, які запустили б самі. Деструктивні операції — у execute_shell з approval gate."
+      },
+      "multiStepTitle": "Багатокроковий ланцюг: Пошук → Підсумок → Збереження",
+      "multiStepIntro": "Просунуті workflow поєднують скил (оркестрація), нативні tools (побічні ефекти) та ланцюги з &. Нижче — патерн research pipeline.",
+      "codePanels": [
+        {
+          "label": "Скил: web-research-writer.skill",
+          "codeKey": "webResearchSkill"
+        },
+        {
+          "label": "Сесія з ланцюгом у CLI",
+          "codeKey": "chainedSession"
+        }
+      ],
+      "pipingMentalModelTitle": "Ментальна модель пайпінгу",
+      "pipingTableMarkdown": "| Шар | Механізм | Коли виконується |\n|-----|----------|------------------|\n| `!`cmd`` | Inline shell pipe | Invoke скіла, до LLM |\n| Skill tool call | invoke_skill() | Модель обирає tool |\n| `execute_shell` | Нативний tool + approval | Модель у agent loop |\n| `&` chains | command_parser.py | Послідовні slash-команди |"
+    },
+    {
+      "id": "troubleshooting",
+      "eyebrow": "Розділ V",
+      "title": "Усунення несправностей і налагодження",
+      "lead": "Десять типових збоїв у production — і точні способи виправлення.",
+      "troubleshootingRows": [
+        {
+          "cells": [
+            "1",
+            "Скіла немає в списку tools",
+            "disable-model-invocation: true або помилка YAML",
+            "false; перевірте ---; UTF-8 без BOM"
+          ]
+        },
+        {
+          "cells": [
+            "2",
+            "/gen-skill — помилка API",
+            "Немає або невірний OPENROUTER_API_KEY",
+            "Ключ у .env або Zenith /config; /model"
+          ]
+        },
+        {
+          "cells": [
+            "3",
+            "Згенерований скил не зберігається",
+            "LLM не вказав name: у frontmatter",
+            "Повторіть з чітким описом або правте файл"
+          ]
+        },
+        {
+          "cells": [
+            "4",
+            "Скил є, AXON не знаходить",
+            "Невірний cwd",
+            "cd у корінь проєкту з .axon/"
+          ]
+        },
+        {
+          "cells": [
+            "5",
+            "!`cmd` показує (command error)",
+            "Різний shell на Windows і Unix",
+            "Портовані команди; тест у терміналі"
+          ]
+        },
+        {
+          "cells": [
+            "6",
+            "Таймаут inline shell",
+            "Команда > 30s SHELL_TIMEOUT",
+            "Скоротіть; важке — у execute_shell"
+          ]
+        },
+        {
+          "cells": [
+            "7",
+            "Модель ігнорує allowed-tools",
+            "Лише advisory, не enforced у _dispatch_tool",
+            "Документуйте; approval для запису"
+          ]
+        },
+        {
+          "cells": [
+            "8",
+            "Дублікати імен скілів",
+            "SKILL.md і .skill з одним ім'ям",
+            "Видаліть один; при reload перемагає останній"
+          ]
+        },
+        {
+          "cells": [
+            "9",
+            "Правки не видно в чаті",
+            "reload_skills не викликано після правки",
+            "Будь-яке повідомлення або /clear"
+          ]
+        },
+        {
+          "cells": [
+            "10",
+            "Тіло скіла обрізано",
+            "Вивід > 16 KB MAX_INLINE_OUTPUT",
+            "head/tail; підсумовуйте частинами"
+          ]
+        }
+      ],
+      "proTip": {
+        "title": "Pro Tip — Чеклист налагодження",
+        "body": "У терміналі: ls .axon/skills/. Прочитайте файл скіла. Викличте явним запитом з іменем скіла. Шукайте [Tool: skill_name] у консолі — підтвердження виклику."
+      }
+    },
+    {
+      "id": "try-it",
+      "eyebrow": "Розділ VI",
+      "title": "Інтерактивно — спробуйте",
+      "lead": "Відпрацюйте синтаксис. Введіть приклади команд у пісочницю нижче.",
+      "templateLabel": "Шаблон файлу скіла — скопіюйте структуру",
+      "sandbox": {
+        "title": "Пісочниця AXON Skills",
+        "placeholder": "Спробуйте: /gen-skill \"ідея скіла\"",
+        "initial": "$ axon\nAXON v1.0 — Пісочниця Skills Mastery\n\nВведіть команду для симуляції відповіді.\n",
+        "scenarios": {
+          "/gen-skill \"check git status and summarize\"": "🛠 Generating skill with AI...\n[✓] Skill \"git-status-helper\" created and loaded successfully. Use it with !git-status-helper.",
+          "/help": "  /gen-skill   ШІ-генерація скіла з опису\n  /create-skill   Майстер SKILL.md\n  /clear   Очистити контекст і перезавантажити skills",
+          "/create-skill": "🛠 Creating a new AXON skill\nSkill Name: _\n(інтерактивний майстер — повний потік у терміналі)",
+          "check git status": "✦ AXON: [Tool: git_status] Підсумок репозиторію...\nOn branch main. 2 files modified.",
+          "*": "AXON: Спробуйте /gen-skill \"ваша ідея\" або /help."
+        },
+        "footer": "Для живої генерації запустіть python main.py у корені проєкту з валідним ключем OpenRouter."
+      }
+    }
+  ]
+}

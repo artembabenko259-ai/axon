@@ -1,0 +1,182 @@
+{
+  "sections": [
+    {
+      "id": "troubleshooting",
+      "title": "Troubleshooting",
+      "lead": "ANSI on Windows, port 8765, API keys, model errors, and bridge reconnect.",
+      "chapter": 13,
+      "subsections": [
+        {
+          "id": "ansi-windows",
+          "title": "ANSI on Windows",
+          "eli5": "«ANSI on Windows» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «ANSI on Windows»\n\n**ansi** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: ANSI on Windows\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: ANSI on Windows",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-ansi-windows",
+            "title": "[ANIMATION: ANSI on Windows]",
+            "description": "[ANIMATION: Hero panel for 'ANSI on Windows' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: ansi-windows]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "port-8765",
+          "title": "Port 8765 Conflicts",
+          "eli5": "«Port 8765 Conflicts» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Port 8765 Conflicts»\n\n**port** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Port 8765 Conflicts\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Port 8765 Conflicts",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-port-8765",
+            "title": "[ANIMATION: Port 8765 Conflicts]",
+            "description": "[ANIMATION: Hero panel for 'Port 8765 Conflicts' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: port-8765]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "api-key",
+          "title": "API Key Issues",
+          "eli5": "«API Key Issues» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «API Key Issues»\n\n**api key** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: API Key Issues\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: API Key Issues",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-api-key",
+            "title": "[ANIMATION: API Key Issues]",
+            "description": "[ANIMATION: Hero panel for 'API Key Issues' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: api-key]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "model-errors",
+          "title": "Model Errors",
+          "eli5": "«Model Errors» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Model Errors»\n\n**model errors** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Model Errors\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Model Errors",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-model-errors",
+            "title": "[ANIMATION: Model Errors]",
+            "description": "[ANIMATION: Hero panel for 'Model Errors' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: model-errors]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "bridge-reconnect",
+          "title": "Bridge Reconnect",
+          "eli5": "«Bridge Reconnect» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Bridge Reconnect»\n\n**reconnect** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Bridge Reconnect\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Bridge Reconnect",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-bridge-reconnect",
+            "title": "[ANIMATION: Bridge Reconnect]",
+            "description": "[ANIMATION: Hero panel for 'Bridge Reconnect' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: bridge-reconnect]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "venv-issues",
+          "title": "Virtual Environment Issues",
+          "eli5": "«Virtual Environment Issues» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Virtual Environment Issues»\n\n**venv** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Virtual Environment Issues\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Virtual Environment Issues",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-venv-issues",
+            "title": "[ANIMATION: Virtual Environment Issues]",
+            "description": "[ANIMATION: Hero panel for 'Virtual Environment Issues' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: venv-issues]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "encoding-errors",
+          "title": "Encoding Errors",
+          "eli5": "«Encoding Errors» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Encoding Errors»\n\n**encoding** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Encoding Errors\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Encoding Errors",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-encoding-errors",
+            "title": "[ANIMATION: Encoding Errors]",
+            "description": "[ANIMATION: Hero panel for 'Encoding Errors' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: encoding-errors]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "timeout-errors",
+          "title": "Timeout Errors",
+          "eli5": "«Timeout Errors» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Timeout Errors»\n\n**timeout** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Timeout Errors\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Timeout Errors",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-timeout-errors",
+            "title": "[ANIMATION: Timeout Errors]",
+            "description": "[ANIMATION: Hero panel for 'Timeout Errors' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: timeout-errors]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "skill-not-found",
+          "title": "Skill Not Found",
+          "eli5": "«Skill Not Found» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Skill Not Found»\n\n**skill missing** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Skill Not Found\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Skill Not Found",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-skill-not-found",
+            "title": "[ANIMATION: Skill Not Found]",
+            "description": "[ANIMATION: Hero panel for 'Skill Not Found' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: skill-not-found]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "bridge-firewall",
+          "title": "Firewall & Bridge",
+          "eli5": "«Firewall & Bridge» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Firewall & Bridge»\n\n**firewall** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Firewall & Bridge\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Firewall & Bridge",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-bridge-firewall",
+            "title": "[ANIMATION: Firewall & Bridge]",
+            "description": "[ANIMATION: Hero panel for 'Firewall & Bridge' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: bridge-firewall]",
+            "trigger": "on-scroll-into-view"
+          }
+        }
+      ]
+    }
+  ]
+}

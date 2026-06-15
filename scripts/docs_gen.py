@@ -387,6 +387,14 @@ def generate_docs(workspace: Path | None = None) -> Path:
         encoding="utf-8",
     )
 
+    # Sync to docs_site portal for auto-generated section
+    site_data = project_root() / "docs_site" / "data"
+    site_data.mkdir(parents=True, exist_ok=True)
+    (site_data / "docs.json").write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
     template = template_path()
     if template.is_file():
         (out / "index.html").write_text(
@@ -428,6 +436,23 @@ def start_server_background(
     return proc
 
 
+def merge_knowledge_base(workspace: Path | None = None) -> dict[str, Path]:
+    """Merge .axon/docs/content chapter JSON into zenith-web/locales/."""
+    try:
+        scripts_dir = Path(__file__).resolve().parent
+        if str(scripts_dir) not in sys.path:
+            sys.path.insert(0, str(scripts_dir))
+        from merge_docs_content import merge_all
+
+        return merge_all(workspace or Path.cwd())
+    except FileNotFoundError as exc:
+        print(f"Knowledge base merge skipped: {exc}")
+        return {}
+    except Exception as exc:
+        print(f"Knowledge base merge warning: {exc}")
+        return {}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate AXON Live Docs")
     parser.add_argument("--workspace", type=Path, default=Path.cwd())
@@ -439,6 +464,16 @@ def main() -> int:
     workspace = args.workspace.resolve()
     out = generate_docs(workspace)
     print(f"Generated docs in {out}")
+
+    merged = merge_knowledge_base(workspace)
+    for lang, path in merged.items():
+        print(f"Merged knowledge base [{lang}] -> {path}")
+        if merged:
+            pages = json.loads(path.read_text(encoding="utf-8")).get("meta", {}).get(
+                "totalPages", "?"
+            )
+            if lang == "en":
+                print(f"AXON Bible: {pages} pages across {len(merged)} language(s)")
 
     if not args.no_serve:
         start_server_background(workspace, port=args.port)

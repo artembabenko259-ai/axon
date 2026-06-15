@@ -1,0 +1,182 @@
+{
+  "sections": [
+    {
+      "id": "memory-context",
+      "title": "Memory & Context",
+      "lead": "memory.md, @ mentions, file context, and context window management.",
+      "chapter": 9,
+      "subsections": [
+        {
+          "id": "memory-md",
+          "title": "memory.md",
+          "eli5": "«memory.md» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «memory.md»\n\n**memory** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: memory.md\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: memory.md",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-memory-md",
+            "title": "[ANIMATION: memory.md]",
+            "description": "[ANIMATION: Hero panel for 'memory.md' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: memory-md]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "at-mentions",
+          "title": "@ File Mentions",
+          "eli5": "«@ File Mentions» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «@ File Mentions»\n\n**mentions** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: @ File Mentions\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: @ File Mentions",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-at-mentions",
+            "title": "[ANIMATION: @ File Mentions]",
+            "description": "[ANIMATION: Hero panel for '@ File Mentions' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: at-mentions]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "file-context",
+          "title": "File Context Injection",
+          "eli5": "«File Context Injection» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «File Context Injection»\n\n**files** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: File Context Injection\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: File Context Injection",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-file-context",
+            "title": "[ANIMATION: File Context Injection]",
+            "description": "[ANIMATION: Hero panel for 'File Context Injection' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: file-context]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "context-window",
+          "title": "Context Window Budget",
+          "eli5": "«Context Window Budget» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Context Window Budget»\n\n**window** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Context Window Budget\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Context Window Budget",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-context-window",
+            "title": "[ANIMATION: Context Window Budget]",
+            "description": "[ANIMATION: Hero panel for 'Context Window Budget' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: context-window]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "context-injection",
+          "title": "Injection Order",
+          "eli5": "«Injection Order» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Injection Order»\n\n**injection** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Injection Order\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Injection Order",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-context-injection",
+            "title": "[ANIMATION: Injection Order]",
+            "description": "[ANIMATION: Hero panel for 'Injection Order' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: context-injection]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "context-pruning",
+          "title": "Context Pruning",
+          "eli5": "«Context Pruning» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Context Pruning»\n\n**pruning** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Context Pruning\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Context Pruning",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-context-pruning",
+            "title": "[ANIMATION: Context Pruning]",
+            "description": "[ANIMATION: Hero panel for 'Context Pruning' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: context-pruning]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "at-syntax",
+          "title": "@ Syntax Variants",
+          "eli5": "«@ Syntax Variants» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «@ Syntax Variants»\n\n**syntax** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: @ Syntax Variants\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: @ Syntax Variants",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-at-syntax",
+            "title": "[ANIMATION: @ Syntax Variants]",
+            "description": "[ANIMATION: Hero panel for '@ Syntax Variants' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: at-syntax]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "context-priority",
+          "title": "Context Priority",
+          "eli5": "«Context Priority» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Context Priority»\n\n**priority** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Context Priority\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Context Priority",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-context-priority",
+            "title": "[ANIMATION: Context Priority]",
+            "description": "[ANIMATION: Hero panel for 'Context Priority' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: context-priority]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "token-budget",
+          "title": "Token Budget Tips",
+          "eli5": "«Token Budget Tips» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Token Budget Tips»\n\n**tokens** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Token Budget Tips\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Token Budget Tips",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-token-budget",
+            "title": "[ANIMATION: Token Budget Tips]",
+            "description": "[ANIMATION: Hero panel for 'Token Budget Tips' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: token-budget]",
+            "trigger": "on-scroll-into-view"
+          }
+        },
+        {
+          "id": "context-debugging",
+          "title": "Debugging Context",
+          "eli5": "«Debugging Context» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Debugging Context»\n\n**debug** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Debugging Context\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Debugging Context",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-context-debugging",
+            "title": "[ANIMATION: Debugging Context]",
+            "description": "[ANIMATION: Hero panel for 'Debugging Context' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: context-debugging]",
+            "trigger": "on-scroll-into-view"
+          }
+        }
+      ]
+    }
+  ]
+}

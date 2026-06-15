@@ -1,0 +1,242 @@
+{
+  "sections": [
+    {
+      "id": "web-vision",
+      "title": "Web & Vision",
+      "lead": "web_search, DuckDuckGo, /image, vision models, and multimodal flows.",
+      "chapter": 10,
+      "subsections": [
+        {
+          "id": "web-search",
+          "title": "web_search Tool",
+          "eli5": "«web_search Tool» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «web_search Tool»\n\n**web search** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: web_search Tool\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: web_search Tool",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-web-search",
+            "title": "[ANIMATION: web_search Tool]",
+            "description": "[ANIMATION: Hero panel for 'web_search Tool' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: web-search]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: web_search Tool",
+              "markdown": "Мінімальний сценарій для **web search**."
+            }
+          ]
+        },
+        {
+          "id": "duckduckgo",
+          "title": "DuckDuckGo Integration",
+          "eli5": "«DuckDuckGo Integration» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «DuckDuckGo Integration»\n\n**ddg** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: DuckDuckGo Integration\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: DuckDuckGo Integration",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-duckduckgo",
+            "title": "[ANIMATION: DuckDuckGo Integration]",
+            "description": "[ANIMATION: Hero panel for 'DuckDuckGo Integration' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: duckduckgo]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: DuckDuckGo Integration",
+              "markdown": "Мінімальний сценарій для **ddg**."
+            }
+          ]
+        },
+        {
+          "id": "slash-image",
+          "title": "/image Command",
+          "eli5": "«/image Command» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «/image Command»\n\n**image cmd** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: /image Command\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: /image Command",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-slash-image",
+            "title": "[ANIMATION: /image Command]",
+            "description": "[ANIMATION: Hero panel for '/image Command' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: slash-image]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: /image Command",
+              "markdown": "Мінімальний сценарій для **image cmd**."
+            }
+          ]
+        },
+        {
+          "id": "vision-models",
+          "title": "Vision Models",
+          "eli5": "«Vision Models» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Vision Models»\n\n**vision** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Vision Models\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Vision Models",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-vision-models",
+            "title": "[ANIMATION: Vision Models]",
+            "description": "[ANIMATION: Hero panel for 'Vision Models' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: vision-models]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: Vision Models",
+              "markdown": "Мінімальний сценарій для **vision**."
+            }
+          ]
+        },
+        {
+          "id": "multimodal",
+          "title": "Multimodal Workflows",
+          "eli5": "«Multimodal Workflows» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Multimodal Workflows»\n\n**multimodal** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Multimodal Workflows\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Multimodal Workflows",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-multimodal",
+            "title": "[ANIMATION: Multimodal Workflows]",
+            "description": "[ANIMATION: Hero panel for 'Multimodal Workflows' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: multimodal]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: Multimodal Workflows",
+              "markdown": "Мінімальний сценарій для **multimodal**."
+            }
+          ]
+        },
+        {
+          "id": "image-analysis",
+          "title": "Image Analysis Workflow",
+          "eli5": "«Image Analysis Workflow» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Image Analysis Workflow»\n\n**analysis** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Image Analysis Workflow\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Image Analysis Workflow",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-image-analysis",
+            "title": "[ANIMATION: Image Analysis Workflow]",
+            "description": "[ANIMATION: Hero panel for 'Image Analysis Workflow' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: image-analysis]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: Image Analysis Workflow",
+              "markdown": "Мінімальний сценарій для **analysis**."
+            }
+          ]
+        },
+        {
+          "id": "screenshot-tools",
+          "title": "Screenshot Tools",
+          "eli5": "«Screenshot Tools» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Screenshot Tools»\n\n**screenshot** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Screenshot Tools\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Screenshot Tools",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-screenshot-tools",
+            "title": "[ANIMATION: Screenshot Tools]",
+            "description": "[ANIMATION: Hero panel for 'Screenshot Tools' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: screenshot-tools]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: Screenshot Tools",
+              "markdown": "Мінімальний сценарій для **screenshot**."
+            }
+          ]
+        },
+        {
+          "id": "pdf-vision",
+          "title": "PDF & Document Vision",
+          "eli5": "«PDF & Document Vision» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «PDF & Document Vision»\n\n**pdf** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: PDF & Document Vision\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: PDF & Document Vision",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-pdf-vision",
+            "title": "[ANIMATION: PDF & Document Vision]",
+            "description": "[ANIMATION: Hero panel for 'PDF & Document Vision' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: pdf-vision]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: PDF & Document Vision",
+              "markdown": "Мінімальний сценарій для **pdf**."
+            }
+          ]
+        },
+        {
+          "id": "vision-limits",
+          "title": "Vision Limits",
+          "eli5": "«Vision Limits» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Vision Limits»\n\n**limits** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Vision Limits\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Vision Limits",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-vision-limits",
+            "title": "[ANIMATION: Vision Limits]",
+            "description": "[ANIMATION: Hero panel for 'Vision Limits' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: vision-limits]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: Vision Limits",
+              "markdown": "Мінімальний сценарій для **limits**."
+            }
+          ]
+        },
+        {
+          "id": "web-fetch",
+          "title": "Web Fetch Patterns",
+          "eli5": "«Web Fetch Patterns» — як підписана шухляда в майстерні: відкриваєш потрібну, а не весь інструмент одразу. AXON зберігає це передбачувано.",
+          "theoreticalFoundation": "## Навіщо розділ «Web Fetch Patterns»\n\n**fetch** — ключова частина AXON: локальний агент, ваші файли, явні дозволи на небезпечні дії.\n\nРозуміння теми допомагає передбачити поведінку `main.py` та `llm_client.py` до запуску команди.",
+          "markdown": "## Практика: Web Fetch Patterns\n\n1. Перевірте `.env` та `.axon/memory.md`.\n2. Викличте через CLI або Zenith.\n3. Слідкуйте за схваленнями та виводом інструментів.\n4. Закріпіть сценарій у skill.\n\nФайли: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Помилки: Web Fetch Patterns",
+            "markdown": "### Симптом\n\nПорожня відповідь, зависання або цикл.\n\n### Рішення\n\nПеревірте `.env`, схвалення, `/clear`, порт 8765, ім'я skill."
+          },
+          "animation": {
+            "id": "anim-web-fetch",
+            "title": "[ANIMATION: Web Fetch Patterns]",
+            "description": "[ANIMATION: Hero panel for 'Web Fetch Patterns' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: web-fetch]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Приклад: Web Fetch Patterns",
+              "markdown": "Мінімальний сценарій для **fetch**."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

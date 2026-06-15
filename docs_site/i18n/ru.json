@@ -1,0 +1,337 @@
+{
+  "meta": {
+    "title": "Документация AXON",
+    "subtitle": "Библия проекта v1.0",
+    "footer": "AXON Release Candidate 1.0 — Локальный портал документации"
+  },
+  "nav": {
+    "intro": "Введение",
+    "commands": "Команды",
+    "skills": "Система Skills",
+    "capabilities": "Возможности"
+  },
+  "intro": {
+    "title": "Введение в AXON",
+    "lead": "AXON — это потоковый AI-агент для кодинга в терминале. Он объединяет LLM через OpenRouter, нативные инструменты файлов/оболочки, динамические Skills и веб-дашборд Zenith — всё через быстрый async CLI на prompt_toolkit.",
+    "sections": [
+      {
+        "id": "what-is-axon",
+        "title": "Что такое AXON?",
+        "paragraphs": [
+          "AXON — это не обёртка чата вокруг API. Это <strong>локальная среда выполнения агента</strong>, которая живёт в каталоге вашего проекта, понимает файловую систему, запрашивает разрешения и расширяется через markdown-скиллы в <code>.axon/skills/</code>.",
+          "Название отражает назначение: <strong>автономный узел выполнения</strong> — вы описываете намерение, AXON планирует (опционально), читает код, пишет файлы (с резервной копией), выполняет shell-команды (с разрешения), ищет в интернете актуальные факты и отвечает через Rich-терминал или веб-UI Zenith по WebSocket.",
+          "<strong>Зачем потоковая архитектура?</strong> Блокирующие CLI зависают, пока модель думает. AXON использует <code>safe_async_print</code> и async agent loop — токены стримятся в реальном времени, результаты инструментов рендерятся панелями, а ANSI-утечки на Windows предотвращаются.",
+          "<strong>Зачем OpenRouter?</strong> AXON не привязан к модели. Переключайте модели через <code>/model</code> без переустановки. Claude для рассуждений, Llama для скорости, vision-модели для <code>/image</code>.",
+          "Также есть <strong>Project Memory</strong> (<code>.axon/memory.md</code>), невидимый контекст в каждом вызове LLM; <strong>Time Machine</strong> с <code>/undo</code>; и <strong>Git-интеллект</strong> через <code>/review</code> и <code>/commit</code>."
+        ]
+      },
+      {
+        "id": "architecture",
+        "title": "Обзор архитектуры",
+        "paragraphs": ["Понимание слоёв AXON помогает отлаживать и расширять систему."],
+        "list": [
+          "<strong>main.py</strong> — Точка входа. Сессия промпта, slash-команды, UI одобрения инструментов, WebSocket-мост.",
+          "<strong>llm_client.py</strong> — Клиент OpenRouter. Системные промпты, agent tool loop, режимы plan/execute.",
+          "<strong>skills/tools.py</strong> — Нативные инструменты: read_file, write_file, execute_shell, web_search.",
+          "<strong>skills_manager.py</strong> — Загрузка SKILL.md, YAML frontmatter, inline <code>!`command`</code>.",
+          "<strong>bridge.py</strong> — WebSocket на 127.0.0.1:8765 для синхронизации с Zenith.",
+          "<strong>.axon/</strong> — Локальные данные: skills, memory, backups, docs."
+        ],
+        "code": [{
+          "lang": "text",
+          "label": "Структура каталогов",
+          "source": "your-project/\n├── main.py\n├── llm_client.py\n├── skills/\n│   ├── tools.py\n│   └── tasks.py\n├── .axon/\n│   ├── skills/\n│   ├── memory.md\n│   ├── backups/\n│   └── docs/\n└── zenith-web/"
+        }]
+      },
+      {
+        "id": "installation",
+        "title": "Установка",
+        "paragraphs": ["Требуется Python 3.11+, ключ OpenRouter API и Git (опционально)."],
+        "code": [
+          {
+            "lang": "powershell",
+            "label": "Winget (Windows)",
+            "source": "winget install Python.Python.3.11\ngit clone https://github.com/your-org/axon.git\ncd axon\npython -m venv venv\n.\\venv\\Scripts\\Activate.ps1\npip install -r requirements.txt\ncopy .env.example .env"
+          },
+          {
+            "lang": "bash",
+            "label": "Ручная установка",
+            "source": "git clone https://github.com/your-org/axon.git\ncd axon\npython3 -m venv venv\nsource venv/bin/activate\npip install -r requirements.txt\ncp .env.example .env"
+          }
+        ],
+        "callout": {
+          "type": "warning",
+          "text": "<strong>Windows:</strong> AXON использует <code>safe_async_print</code> для предотвращения порчи prompt_toolkit ANSI-кодами. Рекомендуется Windows Terminal."
+        }
+      },
+      {
+        "id": "quick-start",
+        "title": "Быстрый старт",
+        "paragraphs": [
+          "После установки перейдите в каталог проекта и запустите AXON. <strong>Текущий рабочий каталог</strong> — workspace для всех файловых инструментов."
+        ],
+        "code": [
+          {"lang": "bash", "label": "Запуск", "source": "cd C:\\Projects\\my-app\npython path\\to\\axon\\main.py"},
+          {"lang": "text", "label": "Пример сессии", "source": "❯ You\nКакие файлы в проекте?\n\n✦ AXON\nСканирую корень проекта...\n[Tool: Read] listing directory\n\nПроект содержит main.py, config.json и папку zenith-web/..."}
+        ],
+        "list": [
+          "Пишите естественно — AXON сам вызовет read_file при необходимости.",
+          "Используйте <code>@filename</code> для прикрепления содержимого файла.",
+          "<code>/plan описание задачи</code> — разбить работу на шаги.",
+          "<code>/help</code> — полный список команд."
+        ]
+      },
+      {
+        "id": "zenith-dashboard",
+        "title": "Веб-дашборд Zenith",
+        "paragraphs": [
+          "При старте AXON запускает WebSocket-мост на <code>127.0.0.1:8765</code>. Дашборд Zenith подключается для удалённого чата, смены модели, статистики токенов и логов.",
+          "Терминал — для клавиатурной работы. Веб — для презентаций и второго монитора с Agent Orb.",
+          "Запуск веб-UI: <code>cd zenith-web && npm run dev</code> → <code>http://localhost:3000</code>."
+        ]
+      }
+    ],
+    "tryTerminal": {
+      "title": "Попробуйте AXON",
+      "initial": "$ python main.py\n\nAXON v1.0.0 — Ready\nВведите /help для команд\n",
+      "placeholder": "/help",
+      "button": "Выполнить",
+      "scenarios": {
+        "/help": "AXON Commands\n  /help    Список команд\n  /plan    Режим планирования\n  /docs    Документация проекта\n  /commit  AI git commit\n  ...",
+        "/plan refactor auth": "📋 Режим плана\n\n[1] ○ Аудит модуля auth\n[2] ○ Вынести логику сессий\n[3] ○ Добавить тесты login\n[4] ○ Обновить импорты\n\nВведите execute для старта.",
+        "/cost": "Стоимость: $0.0042 · Токены: 12847",
+        "*": "Попробуйте: /help, /plan refactor auth, /cost"
+      }
+    }
+  },
+  "commands": {
+    "title": "Справочник Slash-команд",
+    "lead": "Slash-команды перехватываются локально в main.py — они не отправляются в LLM, если явно не требуют модель (например /review, /commit). Это быстро, детерминированно и без трат токенов.",
+    "reference": {
+      "title": "Полная таблица команд",
+      "paragraphs": ["Все команды в <code>ui/completer.py</code> с Tab-дополнением."],
+      "headers": {"command": "Команда", "description": "Описание", "example": "Пример"},
+      "rows": [
+        {"command": "/help", "description": "Список всех slash-команд", "example": "/help"},
+        {"command": "/exit", "description": "Завершить AXON и WebSocket-мост", "example": "/exit"},
+        {"command": "/clear", "description": "Очистить историю, сохранить system prompt", "example": "/clear"},
+        {"command": "/cost", "description": "Токены и стоимость сессии", "example": "/cost"},
+        {"command": "/usage", "description": "Алиас для /cost", "example": "/usage"},
+        {"command": "/compact", "description": "Сжатие контекста (скоро)", "example": "/compact"},
+        {"command": "/model", "description": "Смена модели OpenRouter", "example": "/model anthropic/claude-3.5-sonnet"},
+        {"command": "/plan", "description": "Режим плана — только create_plan", "example": "/plan добавить тёмную тему"},
+        {"command": "/image", "description": "Загрузить изображение для vision", "example": "/image screenshot.png описать баги"},
+        {"command": "/create-skill", "description": "Мастер создания SKILL.md", "example": "/create-skill"},
+        {"command": "/review", "description": "Code review git diff через LLM", "example": "/review"},
+        {"command": "/undo", "description": "Восстановить файл из backup", "example": "/undo"},
+        {"command": "/commit", "description": "AI Conventional Commit с подтверждением", "example": "/commit"},
+        {"command": "/docs", "description": "Сгенерировать docs на localhost:8000", "example": "/docs"}
+      ]
+    },
+    "examples": [
+      {"title": "/help", "input": "/help", "output": "AXON Commands\n  /help   Список команд\n  /plan   Режим планирования\n  /docs   Документация\n  ..."},
+      {"title": "/plan + execute", "input": "/plan добавить JWT аутентификацию", "output": "📋 План создан\n\n[1] ○ Схема auth и хранение токенов\n[2] ○ Endpoints login/register\n[3] ○ Middleware\n[4] ○ Тесты\n\nВведите execute."},
+      {"title": "/commit", "input": "/commit", "output": "📝 Генерация сообщения...\n\n[?] Commit: \"feat: add JWT middleware\"? (y/n)\ny\n[✓] Commit создан"},
+      {"title": "/undo", "input": "/undo", "output": "[✓] File config.json restored to previous state."}
+    ],
+    "sections": [
+      {
+        "id": "plan-mode",
+        "title": "Режим плана — подробно",
+        "paragraphs": [
+          "<strong>Зачем:</strong> Сложные задачи проваливаются при немедленном write_file. Plan Mode заставляет LLM разбить работу на 3-5 шагов только через <code>create_plan</code> — без файлов и shell.",
+          "После плана введите <code>execute</code>, <code>go</code> или <code>run</code> для Execute Mode.",
+          "Состояние в <code>task_manager.py</code>, сбрасывается через <code>/clear</code>."
+        ],
+        "code": [{"lang": "text", "label": "Plan → Execute", "source": "❯ /plan миграция на PostgreSQL\n\n📋 План миграции\n[1] ○ Экспорт схемы SQLite\n[2] ○ Таблицы PostgreSQL\n[3] ○ Скрипт миграции\n\n❯ execute\n\n✦ AXON начинает шаг 1..."}]
+      },
+      {
+        "id": "model-switching",
+        "title": "Смена модели",
+        "paragraphs": [
+          "Модели в <code>config.json</code>. Смена не очищает историю.",
+          "Для <code>/image</code> нужна vision-модель (GPT-4o, Claude 3.5 Sonnet)."
+        ]
+      },
+      {
+        "id": "file-mentions",
+        "title": "@ Упоминания файлов",
+        "paragraphs": [
+          "<code>@path/to/file.py</code> прикрепляет содержимое. Каталоги — дерево глубины 2.",
+          "<strong>Зачем @?</strong> Точный контроль контекста без лишних токенов."
+        ],
+        "code": [{"lang": "text", "label": "Пример @", "source": "❯ Объясни баг в @src/auth/login.ts\n  📎 login.ts\n  [cyan]context[/] файл отправлен в AXON"}]
+      }
+    ],
+    "tryTerminal": {
+      "title": "Попробуйте команды",
+      "placeholder": "/plan добавить кэш",
+      "button": "Отправить",
+      "scenarios": {
+        "/plan добавить кэш": "📋 Plan Mode\n\n[1] ○ Определить кэшируемые API\n[2] ○ Выбрать Redis/in-memory\n[3] ○ Middleware кэша\n[4] ○ Инвалидация\n\nВведите execute.",
+        "/model": "Текущая модель: anthropic/claude-3.5-sonnet",
+        "/clear": "[✓] Контекст очищен.",
+        "/docs": "[✓] Docs at http://localhost:8000",
+        "*": "Попробуйте: /plan добавить кэш, /model, /clear, /docs"
+      }
+    }
+  },
+  "skills": {
+    "title": "Система Skills",
+    "lead": "Skills — архитектура плагинов AXON: markdown-инструкции, становящиеся инструментами LLM. Вдохновлено SKILL.md из Claude Code — упаковка экспертизы, live shell-контекста и ограничений инструментов.",
+    "sections": [
+      {
+        "id": "why-skills",
+        "title": "Зачем Skills?",
+        "paragraphs": [
+          "Нативные инструменты универсальны. Skills добавляют <strong>workflow</strong>: git-status знает про ветки, deploy — про staging URL.",
+          "Skills в <code>.axon/skills/</code> — версионируются с проектом и перезагружаются каждое сообщение.",
+          "<strong>Почему markdown?</strong> Авторы без кода. Frontmatter настраивает exposure, тело — инструкции для модели."
+        ]
+      },
+      {
+        "id": "layout",
+        "title": "Структура каталогов",
+        "paragraphs": ["Каждый skill — папка с <code>SKILL.md</code>. Вспомогательные файлы рядом."],
+        "code": [{"lang": "text", "label": "Структура", "source": ".axon/skills/\n├── git-status/\n│   └── SKILL.md\n├── deploy-staging/\n│   ├── SKILL.md\n│   └── healthcheck.sh"}]
+      },
+      {
+        "id": "frontmatter",
+        "title": "YAML Frontmatter",
+        "paragraphs": ["Парсится <code>skills_manager.py</code>."],
+        "code": [{"lang": "markdown", "label": "Frontmatter", "source": "---\nname: git-status\ndescription: Статус git и последние коммиты\ndisable-model-invocation: false\nallowed-tools: execute_shell, read_file\n---"}],
+        "list": [
+          "<strong>name</strong> — Имя инструмента для LLM",
+          "<strong>description</strong> — Когда вызывать (пишите для модели)",
+          "<strong>disable-model-invocation</strong> — true скрывает от LLM",
+          "<strong>allowed-tools</strong> — Разрешённые нативные инструменты"
+        ]
+      },
+      {
+        "id": "inline-shell",
+        "title": "Inline Shell (!`command`)",
+        "paragraphs": [
+          "Перед отправкой skill в LLM каждый <code>!`command`</code> выполняется локально, stdout подставляется в текст.",
+          "<strong>Зачем?</strong> Живое состояние проекта без лишних tool-call раундов.",
+          "Таймаут 30 сек, лимит 16KB."
+        ],
+        "code": [{"lang": "markdown", "label": "Пример", "source": "Ветка:\n!`git branch --show-current`\n\nПоследние коммиты:\n!`git log -3 --oneline`"}],
+        "callout": {"type": "tip", "text": "Кроссплатформенные fallback: <code>2>nul ||</code> для Windows и Unix."}
+      },
+      {
+        "id": "create-skill",
+        "title": "Создание Skills",
+        "paragraphs": ["<code>/create-skill</code> — мастер, или вручную:"],
+        "code": [{"lang": "markdown", "label": "Полный пример", "source": "---\nname: run-tests\ndescription: Запуск тестов и анализ падений\nallowed-tools: execute_shell, read_file\n---\n\n# Test Runner\n\nPython:\n!`python --version`\n\n1. Запустить pytest -v\n2. При падении прочитать тест\n3. Предложить исправление"}]
+      },
+      {
+        "id": "supporting-files",
+        "title": "Вспомогательные файлы",
+        "paragraphs": ["Ссылайтесь на соседние файлы в инструкциях. LLM загрузит их через read_file."]
+      },
+      {
+        "id": "reload",
+        "title": "Горячая перезагрузка",
+        "paragraphs": ["Skills перезагружаются каждое сообщение. Редактируйте SKILL.md без перезапуска AXON."]
+      }
+    ],
+    "tryTerminal": {
+      "title": "Симуляция Skill",
+      "placeholder": "invoke git-status",
+      "button": "Симулировать",
+      "scenarios": {
+        "invoke git-status": "✦ Skill: git-status\n\nВетка: feature/auth\nКоммиты: abc1234 feat: JWT...\n\n✦ AXON\n2 staged файла, 1 untracked config...",
+        "*": "Введите: invoke git-status"
+      }
+    }
+  },
+  "capabilities": {
+    "title": "Возможности",
+    "lead": "Память проекта, поиск, vision, git и безопасная запись — подсистемы AXON. Здесь — проблема, внутренняя реализация и практика использования.",
+    "sections": [
+      {
+        "id": "project-memory",
+        "title": "Project Memory (.axon/memory.md)",
+        "paragraphs": [
+          "<strong>Проблема:</strong> Каждая сессия с нуля — повтор архитектуры и правил.",
+          "<strong>Решение:</strong> <code>.axon/memory.md</code> инжектируется в system prompt как <code>Project Context:</code>. Не печатается в чат.",
+          "Ведите как .cursorrules — для модели, не для пользователя."
+        ],
+        "code": [{"lang": "markdown", "label": "Пример memory.md", "source": "# Контекст\n\n- Stack: Python 3.11, FastAPI\n- Auth: JWT в HttpOnly cookies\n- Не трогать legacy/\n- Staging: https://staging.example.com"}],
+        "callout": {"type": "tip", "text": "Перезагрузка через refresh_system_prompt() каждое сообщение."}
+      },
+      {
+        "id": "web-search",
+        "title": "Веб-поиск",
+        "paragraphs": [
+          "<strong>Проблема:</strong> Cutoff знаний LLM.",
+          "<strong>Решение:</strong> <code>web_search</code> через DuckDuckGo, топ-5 результатов. Без API-ключа.",
+          "Агент сам решает, когда искать актуальную документацию или новости."
+        ],
+        "code": [{"lang": "text", "label": "Пример", "source": "❯ Актуальная версия FastAPI?\n\n[Tool: Search] web_search(...)\n\nFastAPI 0.115.x — текущий stable..."}]
+      },
+      {
+        "id": "vision",
+        "title": "Vision (/image)",
+        "paragraphs": [
+          "Скриншоты и макеты — <code>/image путь [промпт]</code>. Base64 data URL в multimodal сообщении.",
+          "Нужна vision-модель. Форматы: PNG, JPEG, GIF, WebP."
+        ],
+        "code": [{"lang": "bash", "label": "Примеры", "source": "/image mockup.png описать проблемы UI\n/image bug.png какая ошибка?"}]
+      },
+      {
+        "id": "git-integration",
+        "title": "Git-интеграция",
+        "paragraphs": [
+          "<strong>/review</strong> — status + diff → LLM code review.",
+          "<strong>/commit</strong> — LLM генерирует Conventional Commit, y/n, затем git commit -am.",
+          "Подтверждение коммитов — контроль над историей git."
+        ],
+        "code": [{"lang": "text", "label": "/review", "source": "❯ /review\n\n🔍 Reviewing...\n\n## Issues\n1. Null check в validate_token()...\n2. Hardcoded secret в тесте..."}]
+      },
+      {
+        "id": "time-machine",
+        "title": "Time Machine (/undo)",
+        "paragraphs": [
+          "Перед перезаписью write_file — backup в <code>.axon/backups/</code>.",
+          "<code>/undo</code> восстанавливает последний файл.",
+          "Стек глубины 1 — для «отмени последнюю запись»."
+        ],
+        "code": [{"lang": "text", "label": "Backup", "source": ".axon/backups/\n├── config.json_20260615_143022.bak"}]
+      },
+      {
+        "id": "tool-approval",
+        "title": "Одобрение инструментов",
+        "paragraphs": [
+          "write_file и execute_shell требуют разрешения.",
+          "1. Разрешить раз — 2. На сессию — 3. Отклонить.",
+          "read и search безопасны; write и shell меняют систему."
+        ]
+      },
+      {
+        "id": "live-docs",
+        "title": "Live Docs (/docs)",
+        "paragraphs": [
+          "<code>/docs</code> → docs_gen.py → AST index → localhost:8000.",
+          "Этот портал — человекочитаемая Библия. Ниже — live данные из docs.json."
+        ]
+      },
+      {
+        "id": "bridge",
+        "title": "WebSocket Bridge",
+        "paragraphs": [
+          "<code>bridge.py</code> на ws://127.0.0.1:8765. Zenith синхронизирует чат, модель, токены.",
+          "Если порт занят — терминал работает с предупреждением."
+        ]
+      }
+    ]
+  },
+  "autoDocs": {
+    "title": "Автогенерируемый индекс проекта",
+    "paragraphs": [
+      "Данные из <code>data/docs.json</code> (scripts/docs_gen.py). AST-классы, функции, роли файлов.",
+      "Запустите <code>/docs</code> для обновления."
+    ],
+    "unavailable": "docs.json не найден. Запустите /docs или: python scripts/docs_gen.py"
+  }
+}

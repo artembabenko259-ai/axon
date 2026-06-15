@@ -1,0 +1,657 @@
+{
+  "sections": [
+    {
+      "id": "git-workflows",
+      "title": "Git Workflows",
+      "lead": "Review, commit, conventional commits, skills, and pre-commit hooks.",
+      "chapter": 8,
+      "subsections": [
+        {
+          "id": "git-review",
+          "title": "/review for Git",
+          "eli5": "Imagine /review for Git is like a labeled drawer in your workshop toolbox. The label says **review** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why /review for Git matters\n\nIn any AI-assisted development workflow, **review** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Git Workflows chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding review lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of review as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: /review for Git\n\nThis section walks through **review** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for review.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when review is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When /review for Git goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on review without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-git-review",
+              "title": "[ANIMATION: /review for Git]",
+              "description": "[ANIMATION: Hero panel for '/review for Git' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: git-review]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-git-review-flow",
+              "title": "[ANIMATION: Data flow — /review for Git]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for git-review. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: /review for Git",
+              "markdown": "```text\n# Smallest useful invocation for review\nUser: demonstrate git-review\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: git-review-helper",
+              "markdown": "```markdown\n---\nname: git-review-helper\ndescription: Automate review\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then git-review",
+              "markdown": "```text\n/plan 'Improve review' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: /review for Git",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: /review for Git",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ],
+          "stepsTable": {
+            "title": "/review for Git — step trace",
+            "headers": {
+              "step": "Step",
+              "what": "What happens",
+              "who": "Who does it"
+            },
+            "rows": [
+              {
+                "step": "1",
+                "what": "User invokes /review for Git",
+                "who": "You"
+              },
+              {
+                "step": "2",
+                "what": "Parser routes to handler or LLM",
+                "who": "command_parser.py"
+              },
+              {
+                "step": "3",
+                "what": "Tools/memory/skills assembled",
+                "who": "llm_client.py"
+              },
+              {
+                "step": "4",
+                "what": "Destructive calls pause for approval",
+                "who": "main.py"
+              },
+              {
+                "step": "5",
+                "what": "Result streams to terminal + Zenith",
+                "who": "bridge.py"
+              }
+            ]
+          }
+        },
+        {
+          "id": "git-commit",
+          "title": "/commit AI Commits",
+          "eli5": "Imagine /commit AI Commits is like a labeled drawer in your workshop toolbox. The label says **commit** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why /commit AI Commits matters\n\nIn any AI-assisted development workflow, **commit** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Git Workflows chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding commit lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of commit as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: /commit AI Commits\n\nThis section walks through **commit** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for commit.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when commit is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When /commit AI Commits goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on commit without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-git-commit",
+              "title": "[ANIMATION: /commit AI Commits]",
+              "description": "[ANIMATION: Hero panel for '/commit AI Commits' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: git-commit]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-git-commit-flow",
+              "title": "[ANIMATION: Data flow — /commit AI Commits]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for git-commit. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: /commit AI Commits",
+              "markdown": "```text\n# Smallest useful invocation for commit\nUser: demonstrate git-commit\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: git-commit-helper",
+              "markdown": "```markdown\n---\nname: git-commit-helper\ndescription: Automate commit\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then git-commit",
+              "markdown": "```text\n/plan 'Improve commit' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: /commit AI Commits",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: /commit AI Commits",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ]
+        },
+        {
+          "id": "conventional-commits",
+          "title": "Conventional Commits",
+          "eli5": "Imagine Conventional Commits is like a labeled drawer in your workshop toolbox. The label says **conventional** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why Conventional Commits matters\n\nIn any AI-assisted development workflow, **conventional** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Git Workflows chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding conventional lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of conventional as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: Conventional Commits\n\nThis section walks through **conventional** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for conventional.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when conventional is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When Conventional Commits goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on conventional without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-conventional-commits",
+              "title": "[ANIMATION: Conventional Commits]",
+              "description": "[ANIMATION: Hero panel for 'Conventional Commits' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: conventional-commits]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-conventional-commits-flow",
+              "title": "[ANIMATION: Data flow — Conventional Commits]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for conventional-commits. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: Conventional Commits",
+              "markdown": "```text\n# Smallest useful invocation for conventional\nUser: demonstrate conventional-commits\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: conventional-commits-helper",
+              "markdown": "```markdown\n---\nname: conventional-commits-helper\ndescription: Automate conventional\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then conventional-commits",
+              "markdown": "```text\n/plan 'Improve conventional' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: Conventional Commits",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: Conventional Commits",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ],
+          "stepsTable": {
+            "title": "Conventional Commits — step trace",
+            "headers": {
+              "step": "Step",
+              "what": "What happens",
+              "who": "Who does it"
+            },
+            "rows": [
+              {
+                "step": "1",
+                "what": "User invokes Conventional Commits",
+                "who": "You"
+              },
+              {
+                "step": "2",
+                "what": "Parser routes to handler or LLM",
+                "who": "command_parser.py"
+              },
+              {
+                "step": "3",
+                "what": "Tools/memory/skills assembled",
+                "who": "llm_client.py"
+              },
+              {
+                "step": "4",
+                "what": "Destructive calls pause for approval",
+                "who": "main.py"
+              },
+              {
+                "step": "5",
+                "what": "Result streams to terminal + Zenith",
+                "who": "bridge.py"
+              }
+            ]
+          }
+        },
+        {
+          "id": "git-skills",
+          "title": "Git Skills",
+          "eli5": "Imagine Git Skills is like a labeled drawer in your workshop toolbox. The label says **git skills** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why Git Skills matters\n\nIn any AI-assisted development workflow, **git skills** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Git Workflows chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding git skills lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of git skills as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: Git Skills\n\nThis section walks through **git skills** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for git skills.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when git skills is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When Git Skills goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on git skills without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-git-skills",
+              "title": "[ANIMATION: Git Skills]",
+              "description": "[ANIMATION: Hero panel for 'Git Skills' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: git-skills]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-git-skills-flow",
+              "title": "[ANIMATION: Data flow — Git Skills]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for git-skills. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: Git Skills",
+              "markdown": "```text\n# Smallest useful invocation for git skills\nUser: demonstrate git-skills\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: git-skills-helper",
+              "markdown": "```markdown\n---\nname: git-skills-helper\ndescription: Automate git skills\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then git-skills",
+              "markdown": "```text\n/plan 'Improve git skills' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: Git Skills",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: Git Skills",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ]
+        },
+        {
+          "id": "pre-commit-workflow",
+          "title": "Pre-Commit Workflow",
+          "eli5": "Imagine Pre-Commit Workflow is like a labeled drawer in your workshop toolbox. The label says **pre-commit** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why Pre-Commit Workflow matters\n\nIn any AI-assisted development workflow, **pre-commit** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Git Workflows chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding pre-commit lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of pre-commit as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: Pre-Commit Workflow\n\nThis section walks through **pre-commit** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for pre-commit.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when pre-commit is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When Pre-Commit Workflow goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on pre-commit without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-pre-commit-workflow",
+              "title": "[ANIMATION: Pre-Commit Workflow]",
+              "description": "[ANIMATION: Hero panel for 'Pre-Commit Workflow' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: pre-commit-workflow]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-pre-commit-workflow-flow",
+              "title": "[ANIMATION: Data flow — Pre-Commit Workflow]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for pre-commit-workflow. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: Pre-Commit Workflow",
+              "markdown": "```text\n# Smallest useful invocation for pre-commit\nUser: demonstrate pre-commit-workflow\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: pre-commit-workflow-helper",
+              "markdown": "```markdown\n---\nname: pre-commit-workflow-helper\ndescription: Automate pre-commit\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then pre-commit-workflow",
+              "markdown": "```text\n/plan 'Improve pre-commit' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: Pre-Commit Workflow",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: Pre-Commit Workflow",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ],
+          "stepsTable": {
+            "title": "Pre-Commit Workflow — step trace",
+            "headers": {
+              "step": "Step",
+              "what": "What happens",
+              "who": "Who does it"
+            },
+            "rows": [
+              {
+                "step": "1",
+                "what": "User invokes Pre-Commit Workflow",
+                "who": "You"
+              },
+              {
+                "step": "2",
+                "what": "Parser routes to handler or LLM",
+                "who": "command_parser.py"
+              },
+              {
+                "step": "3",
+                "what": "Tools/memory/skills assembled",
+                "who": "llm_client.py"
+              },
+              {
+                "step": "4",
+                "what": "Destructive calls pause for approval",
+                "who": "main.py"
+              },
+              {
+                "step": "5",
+                "what": "Result streams to terminal + Zenith",
+                "who": "bridge.py"
+              }
+            ]
+          }
+        },
+        {
+          "id": "git-status-skill",
+          "title": "git-status Skill",
+          "eli5": "Imagine git-status Skill is like a labeled drawer in your workshop toolbox. The label says **status skill** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why git-status Skill matters\n\nIn any AI-assisted development workflow, **status skill** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Git Workflows chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding status skill lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of status skill as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: git-status Skill\n\nThis section walks through **status skill** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for status skill.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when status skill is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When git-status Skill goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on status skill without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-git-status-skill",
+              "title": "[ANIMATION: git-status Skill]",
+              "description": "[ANIMATION: Hero panel for 'git-status Skill' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: git-status-skill]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-git-status-skill-flow",
+              "title": "[ANIMATION: Data flow — git-status Skill]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for git-status-skill. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: git-status Skill",
+              "markdown": "```text\n# Smallest useful invocation for status skill\nUser: demonstrate git-status-skill\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: git-status-skill-helper",
+              "markdown": "```markdown\n---\nname: git-status-skill-helper\ndescription: Automate status skill\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then git-status-skill",
+              "markdown": "```text\n/plan 'Improve status skill' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: git-status Skill",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: git-status Skill",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ]
+        },
+        {
+          "id": "branch-workflow",
+          "title": "Branch Workflow",
+          "eli5": "Imagine Branch Workflow is like a labeled drawer in your workshop toolbox. The label says **branches** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why Branch Workflow matters\n\nIn any AI-assisted development workflow, **branches** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Git Workflows chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding branches lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of branches as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: Branch Workflow\n\nThis section walks through **branches** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for branches.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when branches is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When Branch Workflow goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on branches without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-branch-workflow",
+              "title": "[ANIMATION: Branch Workflow]",
+              "description": "[ANIMATION: Hero panel for 'Branch Workflow' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: branch-workflow]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-branch-workflow-flow",
+              "title": "[ANIMATION: Data flow — Branch Workflow]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for branch-workflow. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: Branch Workflow",
+              "markdown": "```text\n# Smallest useful invocation for branches\nUser: demonstrate branch-workflow\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: branch-workflow-helper",
+              "markdown": "```markdown\n---\nname: branch-workflow-helper\ndescription: Automate branches\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then branch-workflow",
+              "markdown": "```text\n/plan 'Improve branches' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: Branch Workflow",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: Branch Workflow",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ],
+          "stepsTable": {
+            "title": "Branch Workflow — step trace",
+            "headers": {
+              "step": "Step",
+              "what": "What happens",
+              "who": "Who does it"
+            },
+            "rows": [
+              {
+                "step": "1",
+                "what": "User invokes Branch Workflow",
+                "who": "You"
+              },
+              {
+                "step": "2",
+                "what": "Parser routes to handler or LLM",
+                "who": "command_parser.py"
+              },
+              {
+                "step": "3",
+                "what": "Tools/memory/skills assembled",
+                "who": "llm_client.py"
+              },
+              {
+                "step": "4",
+                "what": "Destructive calls pause for approval",
+                "who": "main.py"
+              },
+              {
+                "step": "5",
+                "what": "Result streams to terminal + Zenith",
+                "who": "bridge.py"
+              }
+            ]
+          }
+        },
+        {
+          "id": "merge-conflicts",
+          "title": "Merge Conflict Helper",
+          "eli5": "Imagine Merge Conflict Helper is like a labeled drawer in your workshop toolbox. The label says **conflicts** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why Merge Conflict Helper matters\n\nIn any AI-assisted development workflow, **conflicts** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Git Workflows chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding conflicts lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of conflicts as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: Merge Conflict Helper\n\nThis section walks through **conflicts** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for conflicts.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when conflicts is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When Merge Conflict Helper goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on conflicts without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-merge-conflicts",
+              "title": "[ANIMATION: Merge Conflict Helper]",
+              "description": "[ANIMATION: Hero panel for 'Merge Conflict Helper' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: merge-conflicts]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-merge-conflicts-flow",
+              "title": "[ANIMATION: Data flow — Merge Conflict Helper]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for merge-conflicts. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: Merge Conflict Helper",
+              "markdown": "```text\n# Smallest useful invocation for conflicts\nUser: demonstrate merge-conflicts\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: merge-conflicts-helper",
+              "markdown": "```markdown\n---\nname: merge-conflicts-helper\ndescription: Automate conflicts\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then merge-conflicts",
+              "markdown": "```text\n/plan 'Improve conflicts' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: Merge Conflict Helper",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: Merge Conflict Helper",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ]
+        },
+        {
+          "id": "gitignore-tips",
+          "title": ".gitignore Tips",
+          "eli5": "Imagine .gitignore Tips is like a labeled drawer in your workshop toolbox. The label says **gitignore** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why .gitignore Tips matters\n\nIn any AI-assisted development workflow, **gitignore** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Git Workflows chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding gitignore lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of gitignore as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: .gitignore Tips\n\nThis section walks through **gitignore** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for gitignore.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when gitignore is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When .gitignore Tips goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on gitignore without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-gitignore-tips",
+              "title": "[ANIMATION: .gitignore Tips]",
+              "description": "[ANIMATION: Hero panel for '.gitignore Tips' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: gitignore-tips]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-gitignore-tips-flow",
+              "title": "[ANIMATION: Data flow — .gitignore Tips]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for gitignore-tips. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: .gitignore Tips",
+              "markdown": "```text\n# Smallest useful invocation for gitignore\nUser: demonstrate gitignore-tips\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: gitignore-tips-helper",
+              "markdown": "```markdown\n---\nname: gitignore-tips-helper\ndescription: Automate gitignore\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then gitignore-tips",
+              "markdown": "```text\n/plan 'Improve gitignore' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: .gitignore Tips",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: .gitignore Tips",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ],
+          "stepsTable": {
+            "title": ".gitignore Tips — step trace",
+            "headers": {
+              "step": "Step",
+              "what": "What happens",
+              "who": "Who does it"
+            },
+            "rows": [
+              {
+                "step": "1",
+                "what": "User invokes .gitignore Tips",
+                "who": "You"
+              },
+              {
+                "step": "2",
+                "what": "Parser routes to handler or LLM",
+                "who": "command_parser.py"
+              },
+              {
+                "step": "3",
+                "what": "Tools/memory/skills assembled",
+                "who": "llm_client.py"
+              },
+              {
+                "step": "4",
+                "what": "Destructive calls pause for approval",
+                "who": "main.py"
+              },
+              {
+                "step": "5",
+                "what": "Result streams to terminal + Zenith",
+                "who": "bridge.py"
+              }
+            ]
+          }
+        },
+        {
+          "id": "git-undo",
+          "title": "Git + /undo Integration",
+          "eli5": "Imagine Git + /undo Integration is like a labeled drawer in your workshop toolbox. The label says **undo** — so when you need that job done, you open exactly this drawer instead of dumping every tool on the floor. AXON does the same: it keeps this idea in a predictable place so you and the AI never guess.",
+          "theoreticalFoundation": "## Why Git + /undo Integration matters\n\nIn any AI-assisted development workflow, **undo** is not a nice-to-have — it is the difference between a toy demo and a tool you trust on real code. AXON treats this topic as first-class because developers repeat the same questions every session until the system encodes the answer once.\n\n### Design principles\n\nThe Git Workflows chapter exists because AXON is **local-first**: your files, your terminal, your approval gates. That architecture pushes complexity to explicit, inspectable mechanisms rather than hidden platform magic. Understanding undo lets you predict what AXON will do before it does it.\n\n### Mental model\n\nThink of undo as a contract between you and the agent loop in `main.py` → `llm_client.py`. The contract defines inputs (your message, memory, skills), outputs (tool calls, streaming text), and failure boundaries (approval, timeout, token limits). When the contract is clear, debugging becomes mechanical instead of mystical.\n\n### Further reading in this bible\n\nCross-link mentally to adjacent pages in this chapter and to the Reference Appendix (Chapter 15) for tables and schemas. The goal is cumulative knowledge: each page should make the next page faster to absorb.",
+          "markdown": "## Practical deep-dive: Git + /undo Integration\n\nThis section walks through **undo** the way you would explain it to a teammate pairing on AXON for the first time. We cover the happy path, the files involved, and the observability hooks you can use to verify behavior.\n\n### Step-by-step workflow\n\n1. **Prepare context** — ensure `.env` has `OPENROUTER_API_KEY`, project memory in `.axon/memory.md` mentions any conventions for undo.\n2. **Invoke** — use the CLI prompt or Zenith dashboard; both route through the same bridge when connected.\n3. **Observe** — watch terminal output for tool calls, approval prompts, and chain progress markers (`⛓` for multi-command).\n4. **Verify** — check filesystem changes, git status, or Zenith chat history.\n5. **Iterate** — capture repeatable flows as skills under `.axon/skills/`.\n\n### Key source files\n\n| File | Role |\n|------|------|\n| `main.py` | CLI loop, slash routing, approval UI |\n| `llm_client.py` | OpenRouter agent loop, tool execution |\n| `bridge.py` | WebSocket sync to Zenith (port 8765) |\n| `skills_manager.py` | Skills + memory loading |\n| `task_manager.py` | Plan/execute state |\n\n### Tips for power users\n\n- Combine with `&` chains when undo is one step in a longer pipeline.\n- Prefer skills over repeating long natural-language instructions.\n- Use `/cost` periodically during heavy sessions to track spend.",
+          "failureMode": {
+            "title": "When Git + /undo Integration goes wrong",
+            "markdown": "### Symptom\n\nAXON hangs, returns empty output, or loops on undo without completing.\n\n### Common causes\n\n1. **Missing API key** — `OPENROUTER_API_KEY` not loaded from `.env`.\n2. **Approval deadlock** — write/shell waiting for `y` but prompt scrolled away.\n3. **Context overflow** — too many @ files attached; model truncates silently.\n4. **Bridge desync** — Zenith connected but CLI restarted; refresh browser.\n5. **Skill typo** — YAML `name` does not match folder or has invalid tools.\n\n### Fix checklist\n\n- Run `/clear` to reset conversation, keep memory.md.\n- Check `python main.py` logs for stack traces.\n- Verify port 8765 free: `netstat -an | findstr 8765` (Windows).\n- Re-run with `/model` set to a stable default.\n- Narrow task scope and retry one tool at a time."
+          },
+          "animations": [
+            {
+              "id": "anim-git-undo",
+              "title": "[ANIMATION: Git + /undo Integration]",
+              "description": "[ANIMATION: Hero panel for 'Git + /undo Integration' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: git-undo]",
+              "trigger": "on-scroll-into-view"
+            },
+            {
+              "id": "anim-git-undo-flow",
+              "title": "[ANIMATION: Data flow — Git + /undo Integration]",
+              "description": "[ANIMATION: SVG diagram — User → main.py → llm_client → tools → approval gate → response. Highlight path for git-undo. Dots animate along edges for 2.5s loop.]",
+              "trigger": "on-hover"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Minimal: Git + /undo Integration",
+              "markdown": "```text\n# Smallest useful invocation for undo\nUser: demonstrate git-undo\n```\n\nExpected: AXON explains steps, uses read-only tools first, asks before writes."
+            },
+            {
+              "title": "With skill: git-undo-helper",
+              "markdown": "```markdown\n---\nname: git-undo-helper\ndescription: Automate undo\nallowed-tools: read_file, execute_shell\n---\n\nRun context:\n!`git status -sb`\n```\n\nSkill injects live git context before LLM instructions execute."
+            },
+            {
+              "title": "Chained: plan then git-undo",
+              "markdown": "```text\n/plan 'Improve undo' & /delegate reviewer Audit changes\n```\n\nChain runs plan first, then delegates review to specialist agent."
+            },
+            {
+              "title": "Failure recovery: Git + /undo Integration",
+              "markdown": "If approval denied, AXON stops the tool call and reports which step failed.\n\nRe-run with narrower scope or pre-approve session for read-only shell."
+            },
+            {
+              "title": "Zenith parity: Git + /undo Integration",
+              "markdown": "Same prompt typed in Zenith web chat routes through `bridge.py` to identical handler in `main.py` — terminal and web stay in sync."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

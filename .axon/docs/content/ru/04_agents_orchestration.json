@@ -1,0 +1,242 @@
+{
+  "sections": [
+    {
+      "id": "agents-orchestration",
+      "title": "Agents & Orchestration",
+      "lead": "Sub-agents, delegation, system prompts, and when to specialize.",
+      "chapter": 4,
+      "subsections": [
+        {
+          "id": "sub-agents-theory",
+          "title": "Sub-Agents Theory",
+          "eli5": "«Sub-Agents Theory» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Sub-Agents Theory»\n\n**theory** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Sub-Agents Theory\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Sub-Agents Theory",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-sub-agents-theory",
+            "title": "[ANIMATION: Sub-Agents Theory]",
+            "description": "[ANIMATION: Hero panel for 'Sub-Agents Theory' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: sub-agents-theory]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Sub-Agents Theory",
+              "markdown": "Минимальный сценарий для **theory**."
+            }
+          ]
+        },
+        {
+          "id": "create-agent",
+          "title": "/create-agent",
+          "eli5": "«/create-agent» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «/create-agent»\n\n**scaffold** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: /create-agent\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: /create-agent",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-create-agent",
+            "title": "[ANIMATION: /create-agent]",
+            "description": "[ANIMATION: Hero panel for '/create-agent' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: create-agent]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: /create-agent",
+              "markdown": "Минимальный сценарий для **scaffold**."
+            }
+          ]
+        },
+        {
+          "id": "delegate",
+          "title": "/delegate Command",
+          "eli5": "«/delegate Command» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «/delegate Command»\n\n**delegate** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: /delegate Command\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: /delegate Command",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-delegate",
+            "title": "[ANIMATION: /delegate Command]",
+            "description": "[ANIMATION: Hero panel for '/delegate Command' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: delegate]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: /delegate Command",
+              "markdown": "Минимальный сценарий для **delegate**."
+            }
+          ]
+        },
+        {
+          "id": "system-prompt-md",
+          "title": "system_prompt.md",
+          "eli5": "«system_prompt.md» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «system_prompt.md»\n\n**prompt file** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: system_prompt.md\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: system_prompt.md",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-system-prompt-md",
+            "title": "[ANIMATION: system_prompt.md]",
+            "description": "[ANIMATION: Hero panel for 'system_prompt.md' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: system-prompt-md]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: system_prompt.md",
+              "markdown": "Минимальный сценарий для **prompt file**."
+            }
+          ]
+        },
+        {
+          "id": "agent-folders",
+          "title": "Agent Folder Layout",
+          "eli5": "«Agent Folder Layout» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Agent Folder Layout»\n\n**folders** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Agent Folder Layout\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Agent Folder Layout",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-agent-folders",
+            "title": "[ANIMATION: Agent Folder Layout]",
+            "description": "[ANIMATION: Hero panel for 'Agent Folder Layout' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: agent-folders]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Agent Folder Layout",
+              "markdown": "Минимальный сценарий для **folders**."
+            }
+          ]
+        },
+        {
+          "id": "when-to-delegate",
+          "title": "When to Delegate",
+          "eli5": "«When to Delegate» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «When to Delegate»\n\n**decision** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: When to Delegate\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: When to Delegate",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-when-to-delegate",
+            "title": "[ANIMATION: When to Delegate]",
+            "description": "[ANIMATION: Hero panel for 'When to Delegate' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: when-to-delegate]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: When to Delegate",
+              "markdown": "Минимальный сценарий для **decision**."
+            }
+          ]
+        },
+        {
+          "id": "agent-naming",
+          "title": "Agent Naming Conventions",
+          "eli5": "«Agent Naming Conventions» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Agent Naming Conventions»\n\n**naming** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Agent Naming Conventions\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Agent Naming Conventions",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-agent-naming",
+            "title": "[ANIMATION: Agent Naming Conventions]",
+            "description": "[ANIMATION: Hero panel for 'Agent Naming Conventions' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: agent-naming]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Agent Naming Conventions",
+              "markdown": "Минимальный сценарий для **naming**."
+            }
+          ]
+        },
+        {
+          "id": "delegate-limits",
+          "title": "Delegation Limits",
+          "eli5": "«Delegation Limits» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Delegation Limits»\n\n**limits** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Delegation Limits\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Delegation Limits",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-delegate-limits",
+            "title": "[ANIMATION: Delegation Limits]",
+            "description": "[ANIMATION: Hero panel for 'Delegation Limits' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: delegate-limits]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Delegation Limits",
+              "markdown": "Минимальный сценарий для **limits**."
+            }
+          ]
+        },
+        {
+          "id": "agent-isolation",
+          "title": "Agent Context Isolation",
+          "eli5": "«Agent Context Isolation» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Agent Context Isolation»\n\n**isolation** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Agent Context Isolation\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Agent Context Isolation",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-agent-isolation",
+            "title": "[ANIMATION: Agent Context Isolation]",
+            "description": "[ANIMATION: Hero panel for 'Agent Context Isolation' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: agent-isolation]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Agent Context Isolation",
+              "markdown": "Минимальный сценарий для **isolation**."
+            }
+          ]
+        },
+        {
+          "id": "testing-agents",
+          "title": "Testing Your Agents",
+          "eli5": "«Testing Your Agents» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Testing Your Agents»\n\n**testing** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Testing Your Agents\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Testing Your Agents",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-testing-agents",
+            "title": "[ANIMATION: Testing Your Agents]",
+            "description": "[ANIMATION: Hero panel for 'Testing Your Agents' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: testing-agents]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Testing Your Agents",
+              "markdown": "Минимальный сценарий для **testing**."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

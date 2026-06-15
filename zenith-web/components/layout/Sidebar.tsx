@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BookOpen,
   LayoutDashboard,
   MessageSquare,
   Settings,
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/chat", label: "Chat", icon: MessageSquare },
+  { href: "/docs", label: "Documentation", icon: BookOpen },
   { href: "/marketplace", label: "Marketplace", icon: Sparkles },
   { href: "/config", label: "Config", icon: Settings },
 ];
@@ -40,7 +42,9 @@ export function Sidebar() {
 
       <nav className="flex flex-1 flex-col gap-1">
         {navItems.map((item) => {
-          const active = pathname === item.href;
+          const active =
+            pathname === item.href ||
+            (item.href !== "/" && pathname.startsWith(`${item.href}/`));
           const Icon = item.icon;
           return (
             <Link key={item.href} href={item.href}>

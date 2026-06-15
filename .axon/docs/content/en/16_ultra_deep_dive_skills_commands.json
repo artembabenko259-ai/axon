@@ -1,0 +1,517 @@
+{
+  "meta": {
+    "title": "Ultra Deep Dive — Skills, Commands & Content",
+    "stats": {
+      "module": "deep_dive",
+      "pages": 20
+    }
+  },
+  "sections": [
+    {
+      "id": "ultra-deep-dive",
+      "title": "Ultra Deep Dive Mode",
+      "lead": "20 pages of God-mode internals — memory, prompts, filesystem, case studies, failure trees.",
+      "chapter": 16,
+      "subsections": [
+        {
+          "id": "dd-module-map",
+          "title": "Deep Dive Module — Skills, Commands & Content Map",
+          "eli5": "This module is the X-ray of AXON. While other chapters teach what to type, these 20 pages show the skeleton: which file reads your keystroke, where the prompt is built, and where data is stored on disk.",
+          "theoreticalFoundation": "## Why a separate Deep Dive module exists\n\nAXON is not a thin wrapper around an API. It is a **stateful agent runtime** with:\n- An in-memory conversation (`LLMManager.messages`)\n- Filesystem-backed skills (`.axon/skills/*/SKILL.md`)\n- Filesystem-backed agents (`.axon/agents/*/system_prompt.md`)\n- Ephemeral plan state (`task_manager.py`)\n- Session-scoped approval cache (`approved_session_tools` in `skills/tools.py`)\n\nOther AI CLIs hide this. AXON exposes it because **predictability beats magic** when you are debugging a runaway `write_file` at 2am.\n\n### Comparison to other systems\n\n| System | Skills | Slash commands | Local approval |\n|--------|--------|----------------|----------------|\n| AXON | SKILL.md + `!`shell`` | `main.py` intercept | Yes, write/shell |\n| Claude Code | SKILL.md | Built-in | Varies |\n| Raw OpenRouter API | None | None | None |\n\nAXON's design choice: **slash commands never hit the LLM** unless explicitly LLM-backed (`/review`, `/commit`, `/delegate` task). That saves tokens and makes automation deterministic.\n\n### Memory model (high level)\n\n```\nLLMManager.messages: list[dict]   # OpenAI chat format, grows per turn\ntask_manager.tasks: list[Task]    # plan mode only, cleared on /clear\nSkillManager._skills: dict        # reloaded every message\napproved_session_tools: set       # until /exit\n```\n\nNo database. Everything is process-local except files you write.",
+          "markdown": "## God Mode: end-to-end map\n\n```\nUser keystroke\n    │\n    ▼\nmain.py chat_loop / process_user_message\n    │\n    ├─ '&' in text? ──► command_parser.split_command_chain()\n    │                      └── sequential handle_single_input()\n    │\n    ├─ starts with '/'? ──► execute_slash_command()  [NO LLM]\n    │       except /review, /commit, /delegate → LLM involved\n    │\n    └─ natural language ──► llm_manager.send_message_async()\n            │\n            ▼\n        llm_client._agent_loop()\n            ├─ messages[0] = system prompt (memory + skills summary)\n            ├─ tools = native + task + skill schemas\n            └─ tool call ──► _dispatch_tool()\n                    ├─ skill? invoke_skill() + inject_shell_context\n                    ├─ task? execute_task_tool()\n                    └─ native? execute_tool() + approval gate\n```\n\n### Files you must know\n\n| Path | Responsibility |\n|------|----------------|\n| `main.py` | Routing, approval UI, chain execution |\n| `llm_client.py` | Prompt assembly, agent loop, delegation swap |\n| `skills_manager.py` | Parse SKILL.md, inline shell, invoke |\n| `skills/tools.py` | Native tools + approval |\n| `command_parser.py` | `&` splitting |\n| `agent_manager.py` | Sub-agent prompts |\n| `task_manager.py` | Plan board state |\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Deep Dive Module — Skills, Commands & Content Map breaks",
+            "markdown": "### Failure tree: module-level confusion\n\n```\nSymptom: \"AXON ignored my slash command\"\n├─ Command typo → /help to list\n├─ Command sent via web with wrong format → check bridge payload\n├─ Chain split wrong → unbalanced quotes around &\n└─ LLM path taken instead → line didn't start with /\n\nSymptom: \"Skill not in tool list\"\n├─ disable-model-invocation: true\n├─ YAML parse error → check --- delimiters\n├─ Folder missing SKILL.md\n└─ reload_skills not called → send any message to refresh\n```"
+          },
+          "animations": [
+            {
+              "id": "anim-dd-module-map",
+              "title": "[ANIMATION: Deep Dive Module — Skills, Commands & Content Map]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Deep Dive Module — Skills, Commands & Content Map' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ]
+        },
+        {
+          "id": "dd-skill-filesystem",
+          "title": "Anatomy: Skill Filesystem Layout",
+          "eli5": "A skill is a folder with a recipe card (SKILL.md). AXON scans folders, not a database. Delete the folder — skill vanishes next reload.",
+          "theoreticalFoundation": "## Design history: why folders, not a registry DB\n\nEarly agent frameworks used JSON registries. AXON chose **git-friendly directories** because:\n1. Skills travel with the repo (code reviewable)\n2. No migration scripts when schema changes\n3. Authors can add `helper.sh`, `template.json` beside SKILL.md\n\nThe cost: `SkillManager.reload()` walks disk every message. For typical projects (<50 skills) this is negligible (<5ms).",
+          "markdown": "## Deep Internal: reload() walk\n\n```python\n# skills_manager.py — simplified\nfor skill_dir in sorted(root.iterdir()):\n    skill_file = skill_dir / \"SKILL.md\"\n    skill = parse_skill_file(skill_file)\n    self._skills[skill.skill_id] = skill\n    self._by_tool_name[sanitize_tool_name(skill.name)] = skill\n```\n\n**skill_id** = folder name (`git-status`)\n**tool_name** = sanitized YAML `name` (falls back to folder)\n\n### Disk layout\n\n```\n.axon/skills/\n  git-status/\n    SKILL.md          ← required\n    helper.sh         ← optional, referenced in instructions\n  web-research-writer/\n    SKILL.md\n    research/         ← output dir created by agent, not AXON\n```\n\n### Interaction with project memory\n\n`load_project_memory()` reads `.axon/memory.md` **independently** of skills. Both inject into `messages[0]` system prompt. Skills additionally appear as **callable tools** with their own invoke payload.\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Anatomy: Skill Filesystem Layout breaks",
+            "markdown": "### Failure tree: filesystem\n\n```\nSkill not found\n├─ Wrong cwd → AXON uses Path.cwd(), cd to project root\n├─ Typo in folder name vs YAML name\n├─ SKILL.md not UTF-8 → parse may fail silently (returns None)\n└─ Skill in user home but project elsewhere\n\nFix: ls .axon/skills/ && cat .axon/skills/<name>/SKILL.md\n```"
+          },
+          "animations": [
+            {
+              "id": "anim-dd-skill-filesystem",
+              "title": "[ANIMATION: Anatomy: Skill Filesystem Layout]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Anatomy: Skill Filesystem Layout' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ]
+        },
+        {
+          "id": "dd-yaml-parser",
+          "title": "Anatomy: YAML Frontmatter Parser",
+          "eli5": "The recipe label on SKILL.md is parsed by a tiny custom parser — not PyYAML. It only understands keys, values, commas, and booleans.",
+          "theoreticalFoundation": "## Why custom YAML?\n\nDependency minimization. SKILL frontmatter is intentionally simple. A 80-line `_parse_simple_yaml` handles every production skill AXON ships.\n\n### What gets parsed into memory\n\n```python\n@dataclass(frozen=True)\nclass Skill:\n    skill_id: str           # folder name\n    name: str               # from YAML\n    description: str        # → OpenRouter tool description\n    disable_model_invocation: bool\n    allowed_tools: tuple[str, ...]\n    body_raw: str           # markdown AFTER frontmatter\n    path: Path              # absolute path to SKILL.md\n```\n\n**Memory allocation:** One `Skill` object per folder per reload. `body_raw` holds full file body as string (typically 1-8KB).",
+          "markdown": "## God Mode: parse_frontmatter()\n\n```\nSKILL.md bytes on disk\n    │\n    ▼\nread_text(utf-8)\n    │\n    ▼\nregex ^---\\s*\\n(.*?)\\n---\\s*\\n?\n    ├─ match → YAML block + body\n    └─ no match → entire file is body, empty meta\n    │\n    ▼\n_parse_simple_yaml() → dict\n    │\n    ▼\nSkill dataclass frozen in SkillManager._skills\n```\n\n### LLM prompt construction impact\n\nOnly `description` and `tool_name` enter the **tools array** sent to OpenRouter. The full `body_raw` is NOT in the system prompt — it arrives only when the LLM **calls** the skill tool (via `invoke_skill` return value). This keeps system prompts small.\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Anatomy: YAML Frontmatter Parser breaks",
+            "markdown": "```\nParse returns None\n├─ File unreadable (permissions)\n├─ Empty file\n└─ Rare: regex edge case with --- in body without opening ---\n\ndisable-model-invocation ignored\n└─ Must be literal true/false in YAML (custom parser)\n\nallowed-tools not enforced at runtime\n└─ DOCUMENTED GAP: listed in invoke text, not blocked in execute_tool\n    Fix: only document tools you trust; future: enforce in _dispatch_tool\n```"
+          },
+          "animations": [
+            {
+              "id": "anim-dd-yaml-parser",
+              "title": "[ANIMATION: Anatomy: YAML Frontmatter Parser]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Anatomy: YAML Frontmatter Parser' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ]
+        },
+        {
+          "id": "dd-inline-shell",
+          "title": "Anatomy: Inline Shell Injection (`!`command`)",
+          "eli5": "Before the AI reads your skill, AXON runs shell commands hidden in the markdown and pastes the output in place — like a mail merge for terminal text.",
+          "theoreticalFoundation": "## Why inline shell exists\n\nWithout it, the LLM must burn tool rounds:\n1. call execute_shell for git status\n2. read output\n3. reason\n\nWith `!`git status``, step 1-2 happen **before** the model sees the skill body. This is **eager evaluation** — a design pattern from static site generators (Jekyll) applied to agent instructions.\n\n### Security boundary\n\nInline shell does **NOT** go through user approval. It runs at skill invoke time with AXON process permissions. **Never** put user-controlled text inside `!`...``.",
+          "markdown": "## God Mode: inject_shell_context()\n\n```python\nINLINE_SHELL_PATTERN = re.compile(r\"!`([^`]+)`\")\n\ndef inject_shell_context(body: str) -> str:\n    return INLINE_SHELL_PATTERN.sub(\n        lambda m: run_inline_shell(m.group(1)), body\n    )\n```\n\n### run_inline_shell internals\n\n| Platform | Execution |\n|----------|-----------|\n| Windows | `subprocess.run(cmd, shell=True)` |\n| Unix | `shlex.split(cmd)` then run |\n\nLimits: `SHELL_TIMEOUT_SECONDS = 30`, `MAX_INLINE_OUTPUT = 16384`\n\n### State chart\n\n```\ninvoke_skill(tool_name)\n    │\n    ▼\nload body_raw (frozen at reload)\n    │\n    ▼\ninject_shell_context(body_raw)  ← mutates COPY as string\n    │\n    ▼\nwrap in \"# Skill activated\" template\n    │\n    ▼\nreturn str → appended as tool result message in messages[]\n```\n\nThe hydrated string lives only in the conversation transcript — not written to disk unless the LLM later calls write_file.\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Anatomy: Inline Shell Injection (`!`command`) breaks",
+            "markdown": "```\n(empty command) in output\n└─ Placeholder was !`` or whitespace\n\ncommand timed out after 30s\n└─ Split long scripts; use read_file on cached log\n\ntruncated at 16KB\n└─ Pipe through tail/head in the shell command\n\nWindows vs Unix\n└─ Use 2>nul || fallback pattern in skill templates\n```"
+          },
+          "animations": [
+            {
+              "id": "anim-plumbing-deep",
+              "title": "[ANIMATION: Plumbing cross-section]",
+              "description": "[ANIMATION: User drags SKILL.md to terminal → AXON displays 'Context Loaded' in blue → !`cmd` pipes glow → stdout drops into document preview panel]",
+              "trigger": "on-hover"
+            }
+          ]
+        },
+        {
+          "id": "dd-invoke-skill-llm",
+          "title": "Anatomy: invoke_skill → LLM Message Construction",
+          "eli5": "When the AI 'calls' your skill, it doesn't run Python in the skill file — AXON returns a fat instruction string that becomes the next message in the chat history.",
+          "theoreticalFoundation": "## OpenAI message shape after skill call\n\n```json\n{\n  \"role\": \"tool\",\n  \"tool_call_id\": \"call_abc123\",\n  \"content\": \"# Skill activated: git-status\\n\\n## Skill instructions\\n\\nBranch:\\nmain\\n...\"\n}\n```\n\nThe model's **next** turn reads this as ground truth. Token cost = len(content). Heavy `!`shell`` output directly bills tokens.",
+          "markdown": "## invoke_skill() template assembly\n\n```python\nsections = [\n    f\"# Skill activated: {skill.name}\",\n    \"Follow the instructions below strictly...\",\n    \"## Skill instructions\",\n    resolved_body.strip(),  # post-injection\n]\nif user_request:\n    sections.extend([\"## User request\", user_request])\nreturn \"\\n\".join(sections)\n```\n\n### allowed-tools: advisory vs enforced\n\nThe string says `(tools: execute_shell, read_file)` but `_dispatch_tool` does not filter native tools by skill. **The LLM can still call write_file** unless you rely on model discipline. Deep Internal note for contributors: enforcement belongs in `_dispatch_tool` future patch.\n\n### Comparison\n\n| Approach | Pros | Cons |\n|----------|------|------|\n| AXON invoke string | Simple, debuggable | Large tool results |\n| MCP resources | Standardized | Extra server |\n| RAG over SKILL.md | Smaller prompts | Stale, retrieval errors |\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Anatomy: invoke_skill → LLM Message Construction breaks",
+            "markdown": "```\nSkill returns empty\n├─ body_raw only frontmatter\n├─ All shell injections failed silently\n└─ tool_name mismatch\n\nModel ignores skill instructions\n├─ Competing system prompt rules\n├─ Skill body too long → truncated by model context\n└─ Retry with shorter body; move detail to supporting files\n```"
+          },
+          "animations": [
+            {
+              "id": "anim-dd-invoke-skill-llm",
+              "title": "[ANIMATION: Anatomy: invoke_skill → LLM Message Construction]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Anatomy: invoke_skill → LLM Message Construction' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ]
+        },
+        {
+          "id": "dd-skill-tool-schema",
+          "title": "Anatomy: Skill Registration in OpenRouter Tool Schema",
+          "eli5": "Every invocable skill becomes a JSON function schema appended to read_file, write_file, etc. The LLM chooses when to call it based on description quality.",
+          "theoreticalFoundation": "## _get_all_tool_schemas() composition\n\n```python\nreturn (\n    get_tools_schema()           # 4 native tools\n    + get_task_tool_schemas()    # create_plan, complete_task\n    + self._skill_manager.get_tool_schemas()  # 0..N skills\n)\n```\n\nPlan mode filters to **only** `create_plan`.\n\n### Schema shape per skill\n\n```json\n{\n  \"name\": \"git-status\",\n  \"description\": \"Inspect git repository...\",\n  \"parameters\": {\n    \"properties\": {\n      \"request\": { \"type\": \"string\", \"description\": \"Optional context\" }\n    }\n  }\n}\n```\n\nNo required parameters — skills are always callable with `{}`.",
+          "markdown": "## God Mode: from disk to API payload\n\n```\nreload_skills()\n    │\n    ▼\nget_tool_schemas() per skill where not disable_model_invocation\n    │\n    ▼\n_agent_loop() → client.chat.completions.create(tools=[...])\n    │\n    ▼\nmodel returns tool_calls[]\n    │\n    ▼\n_dispatch_tool(\"git-status\", args)\n```\n\n### Persisted where?\n\nTool schemas are **ephemeral per request** — rebuilt each agent loop iteration after `reload_skills()`. Only SKILL.md on disk is persistent.\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Anatomy: Skill Registration in OpenRouter Tool Schema breaks",
+            "markdown": "```\nSkill missing from API tools list\n├─ disable-model-invocation: true\n├─ reload returned 0 (empty .axon/skills)\n└─ OpenRouter model without tool support\n\nDuplicate tool names\n└─ sanitize_tool_name collision → rename folder or YAML name\n```"
+          },
+          "animations": [
+            {
+              "id": "anim-dd-skill-tool-schema",
+              "title": "[ANIMATION: Anatomy: Skill Registration in OpenRouter Tool Schema]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Anatomy: Skill Registration in OpenRouter Tool Schema' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ]
+        },
+        {
+          "id": "dd-create-skill-cmd",
+          "title": "Deep Internal: /create-skill",
+          "eli5": "The wizard in main.py writes SKILL.md — it never touches the LLM except optionally reloading skills into the system prompt.",
+          "theoreticalFoundation": "## Routing\n\n```python\n# main.py execute_slash_command\nif cmd == \"/create-skill\":\n    await run_create_skill()\n    return True  # handled locally\n```\n\n`run_create_skill` uses `run_in_terminal` for interactive `input()` when prompt_toolkit session is active — same pattern as tool approval.",
+          "markdown": "## create_skill_file() disk write\n\n```python\nskill_dir = skills_root(workspace) / sanitize_skill_name(name)\nskill_path = skill_dir / \"SKILL.md\"\nskill_path.write_text(content, encoding=\"utf-8\")\n```\n\nThen `llm_manager.reload_skills()` rescans disk and updates `messages[0]`.\n\n### Console execution trace\n\n```\n❯ /create-skill\n🛠 Creating a new AXON skill\nSkill Name: check-logs\nDescription: Tail application logs and summarize errors\nAuto-execute shell command: tail -50 logs/app.log\n[✓] Skill created successfully! AXON can now use check-logs.\n```\n\n### ASCII: approval vs wizard\n\n```\n/create-skill ──► run_in_terminal(input prompts) ──► create_skill_file()\n                                                         │\n                                                         ▼\n                                                    SKILL.md on disk\n                                                         │\n                                                         ▼\n                                                    reload_skills()\n```\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Deep Internal: /create-skill breaks",
+            "markdown": "```\nWizard empty name\n└─ Validation in run_create_skill — required fields\n\nSkill created but not callable\n├─ AXON cwd != project cwd\n├─ disable-model-invocation accidentally true in template\n└─ Restart not needed — reload_skills on next message\n\nPermission denied writing .axon/skills\n└─ mkdir parents=True should handle; check antivirus locks\n```"
+          },
+          "animations": [
+            {
+              "id": "anim-dd-create-skill-cmd",
+              "title": "[ANIMATION: Deep Internal: /create-skill]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Deep Internal: /create-skill' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ],
+          "sandbox": {
+            "title": "/create-skill trace",
+            "placeholder": "/create-skill",
+            "initial": "$ axon\n",
+            "scenarios": {
+              "/create-skill": "🛠 Creating a new AXON skill\nSkill Name: demo\n[✓] Skill created!"
+            }
+          }
+        },
+        {
+          "id": "dd-slash-router",
+          "title": "Deep Internal: Slash Command Router in main.py",
+          "eli5": "Every line starting with / is parsed before the LLM unless it's part of a quoted & chain segment.",
+          "theoreticalFoundation": "## execute_slash_command vs handle_single_input\n\n- `execute_slash_command` — returns bool, used for pure slash\n- `handle_single_input` — also handles /plan prefix, /delegate, natural language\n\nSpecial cases **outside** execute_slash_command:\n- `/plan <desc>` → `run_plan_mode` (LLM with create_plan only)\n- `/delegate` → `run_delegate` (sub-agent swap)\n- `/commit` → `run_commit` (LLM one-shot + git)",
+          "markdown": "## God Mode dispatch table\n\n| Input pattern | Handler | LLM? | Persists |\n|---------------|---------|------|----------|\n| `/help` | emit list | No | No |\n| `/clear` | reset messages[1:] | No | No |\n| `/plan x` | send_plan_async | Yes | task_manager |\n| `/delegate a t` | send_delegated_async | Yes | No swap persist |\n| `/commit` | generate_commit_message | Yes | git commit |\n| `/undo` | backup_manager | No | restores file |\n| natural | send_message_async | Yes | messages[] |\n\n### & chain overlay\n\n```python\nif is_command_chain(stripped):\n    for part in split_command_chain(stripped):\n        await handle_single_input(part, ...)\n```\n\nOrder is **left-to-right**. No parallelism.\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Deep Internal: Slash Command Router in main.py breaks",
+            "markdown": "```\nUnknown command\n└─ Falls through to emit yellow warning — does NOT reach LLM\n\n/plan without description\n└─ Usage hint only\n\nChain stops mid-way\n├─ Earlier segment raised shutdown\n├─ User /exit in chain (unlikely)\n└─ Exception in LLM segment — later segments still run unless exception propagates\n```"
+          },
+          "animations": [
+            {
+              "id": "anim-dd-slash-router",
+              "title": "[ANIMATION: Deep Internal: Slash Command Router in main.py]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Deep Internal: Slash Command Router in main.py' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ]
+        },
+        {
+          "id": "dd-plan-deep",
+          "title": "Deep Internal: /plan and task_manager",
+          "eli5": "Plan mode flips a global flag that restricts the tool schema to a single function: create_plan.",
+          "theoreticalFoundation": "## task_manager state\n\n```python\ntask_manager.plan_mode = True   # during send_plan_async\ntask_manager.execution_mode = True  # during send_execute_async\ntask_manager.tasks: list[Task]  # id, name, status\ntask_manager.goal: str\n```\n\nCleared on `/clear`.",
+          "markdown": "## send_plan_async prompt injection\n\nHard-coded user message forces planning behavior. Tools filtered:\n\n```python\nif task_manager.plan_mode:\n    return [schema for schema in get_task_tool_schemas()\n            if name == \"create_plan\"]\n```\n\n### execute / go / run\n\nNatural language triggers `run_execute_mode` → `send_execute_async` with full tool schema restored.\n\n### ASCII state machine\n\n```\n[idle] --/plan--> [plan_mode] --create_plan--> [has_plan]\n[has_plan] --execute--> [execution_mode] --complete_task*--> [idle or done]\n```\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Deep Internal: /plan and task_manager breaks",
+            "markdown": "```\nPlan empty after /plan\n├─ Model didn't call create_plan — retry with clearer description\n├─ Wrong model (no tool support)\n└─ API error — check /cost and logs\n\nexecute does nothing\n└─ task_manager.has_plan() false — run /plan first\n\nTasks stuck not done\n└─ Model never calls complete_task — nudge in natural language\n```"
+          },
+          "animations": [
+            {
+              "id": "anim-dd-plan-deep",
+              "title": "[ANIMATION: Deep Internal: /plan and task_manager]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Deep Internal: /plan and task_manager' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ]
+        },
+        {
+          "id": "dd-delegate-deep",
+          "title": "Deep Internal: /delegate and Agent Prompt Swap",
+          "eli5": "Delegation temporarily replaces messages[0] with the sub-agent's system_prompt.md while keeping the same tool surface.",
+          "theoreticalFoundation": "## agent_manager layout\n\n```\n.axon/agents/code-reviewer/system_prompt.md\n```\n\n`load_agent_prompt(name)` reads file or returns None.",
+          "markdown": "## send_delegated_async lifecycle\n\n```python\noriginal_system = self.messages[0][\"content\"]\nself.messages[0][\"content\"] = self._build_agent_system_prompt(agent_prompt)\ntry:\n    return await self._agent_loop(payload)\nfinally:\n    self.messages[0][\"content\"] = original_system\n```\n\n**Critical:** Conversation history remains — only system role swaps. Sub-agent sees prior turns unless you `/clear`.\n\n### vs skills\n\n| | Skill | Sub-agent |\n|---|-------|-----------|\n| Trigger | LLM tool call | /delegate slash |\n| Prompt source | SKILL.md body on invoke | system_prompt.md replaces system |\n| Persistence | Per invoke | Per delegate call |\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Deep Internal: /delegate and Agent Prompt Swap breaks",
+            "markdown": "```\nAgent not found\n└─ Check .axon/agents/<name>/system_prompt.md exists\n\nDelegate seems like main AXON\n├─ Prompt swap failed — agent file empty\n└─ Main personality strong in conversation history\n\nForgot to create agent\n└─ /create-agent wizard first\n```"
+          },
+          "animations": [
+            {
+              "id": "anim-dd-delegate-deep",
+              "title": "[ANIMATION: Deep Internal: /delegate and Agent Prompt Swap]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Deep Internal: /delegate and Agent Prompt Swap' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ]
+        },
+        {
+          "id": "dd-amp-chain-deep",
+          "title": "Deep Internal: Multi-Command `&` Parser",
+          "eli5": "The ampersand splitter is a character scanner with quote awareness — not shell parsing.",
+          "theoreticalFoundation": "## Why not shlex.split the whole line?\n\nBecause `/plan 'a & b' & /help` must split into TWO commands, not three. The `&` inside quotes is literal.",
+          "markdown": "## Algorithm (command_parser.py)\n\n```\nstate: buf, quote=None\nfor each char:\n  if in quote: handle close quote\n  elif char is quote: enter quote\n  elif char is &: flush buf as segment\n  else: append to buf\n```\n\nReturns single-element list if no split occurred (optimization).\n\n### Real chain console\n\n```\n❯ /plan 'Fix auth bug' & /delegate reviewer Audit auth module\n⛓ Running 2 chained commands…\n── Chain 1/2 ──\n[plan output...]\n── Chain 2/2 ──\n🤖 Sub-agent reviewer working...\n```\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Deep Internal: Multi-Command `&` Parser breaks",
+            "markdown": "```\nChain split wrong\n├─ Unmatched quote → entire line one segment\n├─ & without spaces OK: /a&/b still splits\n└─ Nested quotes not supported — use one quote style\n\nSecond command never runs\n└─ First command hung on approval — answer y/n\n```"
+          },
+          "animations": [
+            {
+              "id": "anim-dd-amp-chain-deep",
+              "title": "[ANIMATION: Deep Internal: Multi-Command `&` Parser]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Deep Internal: Multi-Command `&` Parser' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ]
+        },
+        {
+          "id": "dd-commit-deep",
+          "title": "Deep Internal: /commit",
+          "eli5": "Git status + diff feed a one-shot LLM call with no tools; user confirms before git commit -am.",
+          "theoreticalFoundation": "## collect_git_changes()\n\nRuns `git status` and `git diff` via subprocess in project cwd.\n\n## generate_commit_message_async()\n\nSeparate API call — does NOT use agent loop or tools. Strict system prompt: return ONLY message.",
+          "markdown": "## Console flow\n\n```\n❯ /commit\n📝 Generating commit message...\n[?] Commit with message: \"feat: add JWT middleware\"? (y/n)\ny\n[✓] [master abc1234] feat: add JWT middleware\n```\n\n`run_in_terminal` wraps y/n prompt when CLI session active.\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Deep Internal: /commit breaks",
+            "markdown": "```\nNot a git repository\n└─ collect_git_changes error message\n\nEmpty diff\n└─ Nothing to commit message\n\nUser says n\n└─ Cancelled — no git side effects\n\ncommit -am skips untracked\n└─ git add needed first — document in workflow\n```"
+          },
+          "animations": [
+            {
+              "id": "anim-dd-commit-deep",
+              "title": "[ANIMATION: Deep Internal: /commit]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Deep Internal: /commit' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ]
+        },
+        {
+          "id": "dd-at-mentions-deep",
+          "title": "Deep Internal: @ File Context + Skills/Commands",
+          "eli5": "When you type @src/app.ts in a message, file content is injected BEFORE the LLM sees your text — separate from skills but part of the same prompt budget.",
+          "theoreticalFoundation": "## ui/file_context.py role\n\n`build_file_context(stripped, workspace)` regex-matches `@path` tokens, reads files or directory trees (depth 2), prepends to user payload in `send_message_async`:\n\n```python\npayload = f\"{user_text}\\n\\n---\\n[Context attached]\\n{file_context}\"\n```\n\nNot stored on disk. Not a skill. Ephemeral per message.",
+          "markdown": "## Interaction with skills and slash commands\n\n| Path | @ mentions attached? |\n|------|---------------------|\n| Natural language | Yes, via handle_single_input |\n| /delegate task | Yes, on task string |\n| /plan desc | No file_context in run_plan_mode |\n| /create-skill | No |\n| Skill invoke | LLM may read_file separately |\n\n### ASCII: message assembly\n\n```\nUser: \"Fix bug in @auth/login.ts\"\n        │\n        ▼\nbuild_file_context() ──► file bytes in RAM\n        │\n        ▼\nmessages.append(user, payload with file + question)\n        │\n        ▼\n_agent_loop → may ALSO call read_file (duplicate awareness)\n```\n\n### Why duplicate reads happen\n\nThe model may not trust attached context and call read_file anyway. Cost: extra tokens + approval-free read.\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Deep Internal: @ File Context + Skills/Commands breaks",
+            "markdown": "```\n@file not found\n└─ Regex didn't match path — check chars allowed [a-zA-Z0-9_./\\\\-]\n\nHuge directory @src/\n└─ Depth-2 tree still large — narrow path\n\nContext overflow\n└─ Attach fewer/smaller files; use skills with targeted !`shell`\n```"
+          },
+          "animations": [
+            {
+              "id": "anim-dd-at-mentions-deep",
+              "title": "[ANIMATION: Deep Internal: @ File Context + Skills/Commands]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Deep Internal: @ File Context + Skills/Commands' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ]
+        },
+        {
+          "id": "dd-case-web-research",
+          "title": "Case Study 1: Web Research → Read → Summarize → File",
+          "eli5": "This case study follows web-research-writer from business problem through AXON internals to failure branches — the way a staff engineer would document a production playbook.",
+          "theoreticalFoundation": "## Problem (Why we need this)\n\nProduction teams repeatedly need **web-research-writer**: the same multi-step sequence involving context gathering, reasoning, and optional file writes. Without encoding in a skill or chain, every developer re-prompts from scratch — inconsistent results, wasted tokens, approval fatigue.\n\n### Success criteria\n\n1. Reproducible output format\n2. Minimal tool calls\n3. Clear approval boundaries\n4. Observable console trace for audits",
+          "markdown": "## Implementation (Code structure)\n\n### Skill / command artifacts\n\n```\n.axon/skills/web-research-writer/SKILL.md     # or chain of slash commands\n.axon/memory.md                 # project conventions\n```\n\n### SKILL.md skeleton for web-research-writer\n\n```markdown\n---\nname: web-research-writer\ndescription: [Write for the MODEL — when to invoke]\nallowed-tools: read_file, execute_shell, web_search, write_file\n---\n\n# Instructions\n1. ...\n!`git status -sb`\n```\n\n### Deep Internal path\n\n```\nUser message or /delegate\n  → llm_client._agent_loop\n  → tool: web-research-writer\n  → invoke_skill → inject_shell_context\n  → tool result in messages[]\n  → LLM calls native tools (approval on write/shell)\n```\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Case Study 1: Web Research → Read → Summarize → File breaks",
+            "markdown": "## Execution (Console transcript pattern)\n\n```\n❯ Research FastAPI lifespan events and save to research/fastapi.md\n\n✦ AXON\n[Tool: web-research-writer] invoking skill...\n\n[Tool: Search] web_search(\"FastAPI lifespan events 2025\")\n[Tool: Write] write_file(\"research/fastapi.md\", ...) \n[?] Allow write_file? (1 once / 2 session / 3 deny)\n\n✦ AXON\nSaved research/fastapi.md with summary of lifespan hooks...\n```\n\n## Failure Tree\n\n```\nweb_search empty\n├─ No network → check firewall\n├─ DuckDuckGo rate limit → retry later\n└─ Query too vague → tighten user prompt\n\nwrite_file denied\n├─ User pressed 3 → agent must explain alternative\n└─ Path outside cwd → use relative paths\n\nSkill not invoked\n├─ Description doesn't match user intent → improve YAML description\n└─ Model chose execute_shell directly → strengthen skill instructions\n```\n\n### Debug commands\n\n`/cost` — token spend\n`/clear` — reset without losing memory.md\nls .axon/skills/web-research-writer/ — verify disk\n\n### Extended failure branches\n\n**Error: API rate limit (429)** — OpenRouter returns error; `_agent_loop` surfaces friendly message. Fix: wait, switch model, reduce context with `/clear`.\n\n**Error: tool_call_id mismatch** — Rare OpenRouter/SDK bug on interrupted stream. Fix: `/clear` and retry.\n\n**Error: skill body encoding** — UTF-8 BOM in SKILL.md can break frontmatter regex. Fix: save as UTF-8 without BOM.\n\n**Error: chained command partial success** — Plan succeeds, delegate fails. State: plan remains in task_manager. Fix: run `execute` manually or `/clear` plan.\n\n### Observability\n\nEnable mental tracing: every tool call prints `[Tool: Label]` via `tool_display_label` in main.py callbacks. Map label → function in `skills/tools.py` TOOL_SCHEMAS."
+          },
+          "animations": [
+            {
+              "id": "anim-dd-case-web-research",
+              "title": "[ANIMATION: Case Study 1: Web Research → Read → Summarize → File]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Case Study 1: Web Research → Read → Summarize → File' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Stage 1 — Problem definition (web-research-writer)",
+              "markdown": "User story: As a developer I want automated {key} so that I stop repeating manual steps."
+            },
+            {
+              "title": "Stage 2 — Scaffold",
+              "markdown": "/create-skill or manual mkdir .axon/skills/web-research-writer"
+            },
+            {
+              "title": "Stage 3 — Dry run",
+              "markdown": "Invoke with read-only tools first; no write_file until output validated."
+            },
+            {
+              "title": "Stage 4 — Production",
+              "markdown": "Add !`shell` injections for live context; commit SKILL.md to git."
+            },
+            {
+              "title": "Stage 5 — Chain",
+              "markdown": "/plan 'Improve web-research-writer' & /delegate reviewer Validate skill output"
+            }
+          ]
+        },
+        {
+          "id": "dd-case-deploy",
+          "title": "Case Study 2: Deploy Staging Pipeline Skill",
+          "eli5": "This case study follows deploy-staging from business problem through AXON internals to failure branches — the way a staff engineer would document a production playbook.",
+          "theoreticalFoundation": "## Problem (Why we need this)\n\nProduction teams repeatedly need **deploy-staging**: the same multi-step sequence involving context gathering, reasoning, and optional file writes. Without encoding in a skill or chain, every developer re-prompts from scratch — inconsistent results, wasted tokens, approval fatigue.\n\n### Success criteria\n\n1. Reproducible output format\n2. Minimal tool calls\n3. Clear approval boundaries\n4. Observable console trace for audits",
+          "markdown": "## Implementation (Code structure)\n\n### Skill / command artifacts\n\n```\n.axon/skills/deploy-staging/SKILL.md     # or chain of slash commands\n.axon/memory.md                 # project conventions\n```\n\n### SKILL.md skeleton for deploy-staging\n\n```markdown\n---\nname: deploy-staging\ndescription: [Write for the MODEL — when to invoke]\nallowed-tools: read_file, execute_shell, web_search, write_file\n---\n\n# Instructions\n1. ...\n!`git status -sb`\n```\n\n### Deep Internal path\n\n```\nUser message or /delegate\n  → llm_client._agent_loop\n  → tool: deploy-staging\n  → invoke_skill → inject_shell_context\n  → tool result in messages[]\n  → LLM calls native tools (approval on write/shell)\n```\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Case Study 2: Deploy Staging Pipeline Skill breaks",
+            "markdown": "## Execution (Console transcript pattern)\n\n```\n❯ Research FastAPI lifespan events and save to research/fastapi.md\n\n✦ AXON\n[Tool: deploy-staging] invoking skill...\n\n[Tool: Search] web_search(\"FastAPI lifespan events 2025\")\n[Tool: Write] write_file(\"research/fastapi.md\", ...) \n[?] Allow write_file? (1 once / 2 session / 3 deny)\n\n✦ AXON\nSaved research/fastapi.md with summary of lifespan hooks...\n```\n\n## Failure Tree\n\n```\nweb_search empty\n├─ No network → check firewall\n├─ DuckDuckGo rate limit → retry later\n└─ Query too vague → tighten user prompt\n\nwrite_file denied\n├─ User pressed 3 → agent must explain alternative\n└─ Path outside cwd → use relative paths\n\nSkill not invoked\n├─ Description doesn't match user intent → improve YAML description\n└─ Model chose execute_shell directly → strengthen skill instructions\n```\n\n### Debug commands\n\n`/cost` — token spend\n`/clear` — reset without losing memory.md\nls .axon/skills/deploy-staging/ — verify disk\n\n### Extended failure branches\n\n**Error: API rate limit (429)** — OpenRouter returns error; `_agent_loop` surfaces friendly message. Fix: wait, switch model, reduce context with `/clear`.\n\n**Error: tool_call_id mismatch** — Rare OpenRouter/SDK bug on interrupted stream. Fix: `/clear` and retry.\n\n**Error: skill body encoding** — UTF-8 BOM in SKILL.md can break frontmatter regex. Fix: save as UTF-8 without BOM.\n\n**Error: chained command partial success** — Plan succeeds, delegate fails. State: plan remains in task_manager. Fix: run `execute` manually or `/clear` plan.\n\n### Observability\n\nEnable mental tracing: every tool call prints `[Tool: Label]` via `tool_display_label` in main.py callbacks. Map label → function in `skills/tools.py` TOOL_SCHEMAS."
+          },
+          "animations": [
+            {
+              "id": "anim-dd-case-deploy",
+              "title": "[ANIMATION: Case Study 2: Deploy Staging Pipeline Skill]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Case Study 2: Deploy Staging Pipeline Skill' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Stage 1 — Problem definition (deploy-staging)",
+              "markdown": "User story: As a developer I want automated {key} so that I stop repeating manual steps."
+            },
+            {
+              "title": "Stage 2 — Scaffold",
+              "markdown": "/create-skill or manual mkdir .axon/skills/deploy-staging"
+            },
+            {
+              "title": "Stage 3 — Dry run",
+              "markdown": "Invoke with read-only tools first; no write_file until output validated."
+            },
+            {
+              "title": "Stage 4 — Production",
+              "markdown": "Add !`shell` injections for live context; commit SKILL.md to git."
+            },
+            {
+              "title": "Stage 5 — Chain",
+              "markdown": "/plan 'Improve deploy-staging' & /delegate reviewer Validate skill output"
+            }
+          ]
+        },
+        {
+          "id": "dd-case-test-fixer",
+          "title": "Case Study 3: Test Failure Auto-Diagnosis",
+          "eli5": "This case study follows test-fixer from business problem through AXON internals to failure branches — the way a staff engineer would document a production playbook.",
+          "theoreticalFoundation": "## Problem (Why we need this)\n\nProduction teams repeatedly need **test-fixer**: the same multi-step sequence involving context gathering, reasoning, and optional file writes. Without encoding in a skill or chain, every developer re-prompts from scratch — inconsistent results, wasted tokens, approval fatigue.\n\n### Success criteria\n\n1. Reproducible output format\n2. Minimal tool calls\n3. Clear approval boundaries\n4. Observable console trace for audits",
+          "markdown": "## Implementation (Code structure)\n\n### Skill / command artifacts\n\n```\n.axon/skills/test-fixer/SKILL.md     # or chain of slash commands\n.axon/memory.md                 # project conventions\n```\n\n### SKILL.md skeleton for test-fixer\n\n```markdown\n---\nname: test-fixer\ndescription: [Write for the MODEL — when to invoke]\nallowed-tools: read_file, execute_shell, web_search, write_file\n---\n\n# Instructions\n1. ...\n!`git status -sb`\n```\n\n### Deep Internal path\n\n```\nUser message or /delegate\n  → llm_client._agent_loop\n  → tool: test-fixer\n  → invoke_skill → inject_shell_context\n  → tool result in messages[]\n  → LLM calls native tools (approval on write/shell)\n```\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Case Study 3: Test Failure Auto-Diagnosis breaks",
+            "markdown": "## Execution (Console transcript pattern)\n\n```\n❯ Research FastAPI lifespan events and save to research/fastapi.md\n\n✦ AXON\n[Tool: test-fixer] invoking skill...\n\n[Tool: Search] web_search(\"FastAPI lifespan events 2025\")\n[Tool: Write] write_file(\"research/fastapi.md\", ...) \n[?] Allow write_file? (1 once / 2 session / 3 deny)\n\n✦ AXON\nSaved research/fastapi.md with summary of lifespan hooks...\n```\n\n## Failure Tree\n\n```\nweb_search empty\n├─ No network → check firewall\n├─ DuckDuckGo rate limit → retry later\n└─ Query too vague → tighten user prompt\n\nwrite_file denied\n├─ User pressed 3 → agent must explain alternative\n└─ Path outside cwd → use relative paths\n\nSkill not invoked\n├─ Description doesn't match user intent → improve YAML description\n└─ Model chose execute_shell directly → strengthen skill instructions\n```\n\n### Debug commands\n\n`/cost` — token spend\n`/clear` — reset without losing memory.md\nls .axon/skills/test-fixer/ — verify disk\n\n### Extended failure branches\n\n**Error: API rate limit (429)** — OpenRouter returns error; `_agent_loop` surfaces friendly message. Fix: wait, switch model, reduce context with `/clear`.\n\n**Error: tool_call_id mismatch** — Rare OpenRouter/SDK bug on interrupted stream. Fix: `/clear` and retry.\n\n**Error: skill body encoding** — UTF-8 BOM in SKILL.md can break frontmatter regex. Fix: save as UTF-8 without BOM.\n\n**Error: chained command partial success** — Plan succeeds, delegate fails. State: plan remains in task_manager. Fix: run `execute` manually or `/clear` plan.\n\n### Observability\n\nEnable mental tracing: every tool call prints `[Tool: Label]` via `tool_display_label` in main.py callbacks. Map label → function in `skills/tools.py` TOOL_SCHEMAS."
+          },
+          "animations": [
+            {
+              "id": "anim-dd-case-test-fixer",
+              "title": "[ANIMATION: Case Study 3: Test Failure Auto-Diagnosis]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Case Study 3: Test Failure Auto-Diagnosis' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Stage 1 — Problem definition (test-fixer)",
+              "markdown": "User story: As a developer I want automated {key} so that I stop repeating manual steps."
+            },
+            {
+              "title": "Stage 2 — Scaffold",
+              "markdown": "/create-skill or manual mkdir .axon/skills/test-fixer"
+            },
+            {
+              "title": "Stage 3 — Dry run",
+              "markdown": "Invoke with read-only tools first; no write_file until output validated."
+            },
+            {
+              "title": "Stage 4 — Production",
+              "markdown": "Add !`shell` injections for live context; commit SKILL.md to git."
+            },
+            {
+              "title": "Stage 5 — Chain",
+              "markdown": "/plan 'Improve test-fixer' & /delegate reviewer Validate skill output"
+            }
+          ]
+        },
+        {
+          "id": "dd-case-chain-pdc",
+          "title": "Case Study 4: Plan → Delegate → Commit Chain",
+          "eli5": "This case study follows chain-pdc from business problem through AXON internals to failure branches — the way a staff engineer would document a production playbook.",
+          "theoreticalFoundation": "## Problem (Why we need this)\n\nProduction teams repeatedly need **chain-pdc**: the same multi-step sequence involving context gathering, reasoning, and optional file writes. Without encoding in a skill or chain, every developer re-prompts from scratch — inconsistent results, wasted tokens, approval fatigue.\n\n### Success criteria\n\n1. Reproducible output format\n2. Minimal tool calls\n3. Clear approval boundaries\n4. Observable console trace for audits",
+          "markdown": "## Implementation (Code structure)\n\n### Skill / command artifacts\n\n```\n.axon/skills/chain-pdc/SKILL.md     # or chain of slash commands\n.axon/memory.md                 # project conventions\n```\n\n### SKILL.md skeleton for chain-pdc\n\n```markdown\n---\nname: chain-pdc\ndescription: [Write for the MODEL — when to invoke]\nallowed-tools: read_file, execute_shell, web_search, write_file\n---\n\n# Instructions\n1. ...\n!`git status -sb`\n```\n\n### Deep Internal path\n\n```\nUser message or /delegate\n  → llm_client._agent_loop\n  → tool: chain-pdc\n  → invoke_skill → inject_shell_context\n  → tool result in messages[]\n  → LLM calls native tools (approval on write/shell)\n```\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Case Study 4: Plan → Delegate → Commit Chain breaks",
+            "markdown": "## Execution (Console transcript pattern)\n\n```\n❯ Research FastAPI lifespan events and save to research/fastapi.md\n\n✦ AXON\n[Tool: chain-pdc] invoking skill...\n\n[Tool: Search] web_search(\"FastAPI lifespan events 2025\")\n[Tool: Write] write_file(\"research/fastapi.md\", ...) \n[?] Allow write_file? (1 once / 2 session / 3 deny)\n\n✦ AXON\nSaved research/fastapi.md with summary of lifespan hooks...\n```\n\n## Failure Tree\n\n```\nweb_search empty\n├─ No network → check firewall\n├─ DuckDuckGo rate limit → retry later\n└─ Query too vague → tighten user prompt\n\nwrite_file denied\n├─ User pressed 3 → agent must explain alternative\n└─ Path outside cwd → use relative paths\n\nSkill not invoked\n├─ Description doesn't match user intent → improve YAML description\n└─ Model chose execute_shell directly → strengthen skill instructions\n```\n\n### Debug commands\n\n`/cost` — token spend\n`/clear` — reset without losing memory.md\nls .axon/skills/chain-pdc/ — verify disk\n\n### Extended failure branches\n\n**Error: API rate limit (429)** — OpenRouter returns error; `_agent_loop` surfaces friendly message. Fix: wait, switch model, reduce context with `/clear`.\n\n**Error: tool_call_id mismatch** — Rare OpenRouter/SDK bug on interrupted stream. Fix: `/clear` and retry.\n\n**Error: skill body encoding** — UTF-8 BOM in SKILL.md can break frontmatter regex. Fix: save as UTF-8 without BOM.\n\n**Error: chained command partial success** — Plan succeeds, delegate fails. State: plan remains in task_manager. Fix: run `execute` manually or `/clear` plan.\n\n### Observability\n\nEnable mental tracing: every tool call prints `[Tool: Label]` via `tool_display_label` in main.py callbacks. Map label → function in `skills/tools.py` TOOL_SCHEMAS."
+          },
+          "animations": [
+            {
+              "id": "anim-dd-case-chain-pdc",
+              "title": "[ANIMATION: Case Study 4: Plan → Delegate → Commit Chain]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Case Study 4: Plan → Delegate → Commit Chain' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Stage 1 — Problem definition (chain-pdc)",
+              "markdown": "User story: As a developer I want automated {key} so that I stop repeating manual steps."
+            },
+            {
+              "title": "Stage 2 — Scaffold",
+              "markdown": "/create-skill or manual mkdir .axon/skills/chain-pdc"
+            },
+            {
+              "title": "Stage 3 — Dry run",
+              "markdown": "Invoke with read-only tools first; no write_file until output validated."
+            },
+            {
+              "title": "Stage 4 — Production",
+              "markdown": "Add !`shell` injections for live context; commit SKILL.md to git."
+            },
+            {
+              "title": "Stage 5 — Chain",
+              "markdown": "/plan 'Improve chain-pdc' & /delegate reviewer Validate skill output"
+            }
+          ]
+        },
+        {
+          "id": "dd-case-skill-at-search",
+          "title": "Case Study 5: Skill + @ Mention + web_search",
+          "eli5": "This case study follows skill-at-search from business problem through AXON internals to failure branches — the way a staff engineer would document a production playbook.",
+          "theoreticalFoundation": "## Problem (Why we need this)\n\nProduction teams repeatedly need **skill-at-search**: the same multi-step sequence involving context gathering, reasoning, and optional file writes. Without encoding in a skill or chain, every developer re-prompts from scratch — inconsistent results, wasted tokens, approval fatigue.\n\n### Success criteria\n\n1. Reproducible output format\n2. Minimal tool calls\n3. Clear approval boundaries\n4. Observable console trace for audits",
+          "markdown": "## Implementation (Code structure)\n\n### Skill / command artifacts\n\n```\n.axon/skills/skill-at-search/SKILL.md     # or chain of slash commands\n.axon/memory.md                 # project conventions\n```\n\n### SKILL.md skeleton for skill-at-search\n\n```markdown\n---\nname: skill-at-search\ndescription: [Write for the MODEL — when to invoke]\nallowed-tools: read_file, execute_shell, web_search, write_file\n---\n\n# Instructions\n1. ...\n!`git status -sb`\n```\n\n### Deep Internal path\n\n```\nUser message or /delegate\n  → llm_client._agent_loop\n  → tool: skill-at-search\n  → invoke_skill → inject_shell_context\n  → tool result in messages[]\n  → LLM calls native tools (approval on write/shell)\n```\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Case Study 5: Skill + @ Mention + web_search breaks",
+            "markdown": "## Execution (Console transcript pattern)\n\n```\n❯ Research FastAPI lifespan events and save to research/fastapi.md\n\n✦ AXON\n[Tool: skill-at-search] invoking skill...\n\n[Tool: Search] web_search(\"FastAPI lifespan events 2025\")\n[Tool: Write] write_file(\"research/fastapi.md\", ...) \n[?] Allow write_file? (1 once / 2 session / 3 deny)\n\n✦ AXON\nSaved research/fastapi.md with summary of lifespan hooks...\n```\n\n## Failure Tree\n\n```\nweb_search empty\n├─ No network → check firewall\n├─ DuckDuckGo rate limit → retry later\n└─ Query too vague → tighten user prompt\n\nwrite_file denied\n├─ User pressed 3 → agent must explain alternative\n└─ Path outside cwd → use relative paths\n\nSkill not invoked\n├─ Description doesn't match user intent → improve YAML description\n└─ Model chose execute_shell directly → strengthen skill instructions\n```\n\n### Debug commands\n\n`/cost` — token spend\n`/clear` — reset without losing memory.md\nls .axon/skills/skill-at-search/ — verify disk\n\n### Extended failure branches\n\n**Error: API rate limit (429)** — OpenRouter returns error; `_agent_loop` surfaces friendly message. Fix: wait, switch model, reduce context with `/clear`.\n\n**Error: tool_call_id mismatch** — Rare OpenRouter/SDK bug on interrupted stream. Fix: `/clear` and retry.\n\n**Error: skill body encoding** — UTF-8 BOM in SKILL.md can break frontmatter regex. Fix: save as UTF-8 without BOM.\n\n**Error: chained command partial success** — Plan succeeds, delegate fails. State: plan remains in task_manager. Fix: run `execute` manually or `/clear` plan.\n\n### Observability\n\nEnable mental tracing: every tool call prints `[Tool: Label]` via `tool_display_label` in main.py callbacks. Map label → function in `skills/tools.py` TOOL_SCHEMAS."
+          },
+          "animations": [
+            {
+              "id": "anim-dd-case-skill-at-search",
+              "title": "[ANIMATION: Case Study 5: Skill + @ Mention + web_search]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Case Study 5: Skill + @ Mention + web_search' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ],
+          "examples": [
+            {
+              "title": "Stage 1 — Problem definition (skill-at-search)",
+              "markdown": "User story: As a developer I want automated {key} so that I stop repeating manual steps."
+            },
+            {
+              "title": "Stage 2 — Scaffold",
+              "markdown": "/create-skill or manual mkdir .axon/skills/skill-at-search"
+            },
+            {
+              "title": "Stage 3 — Dry run",
+              "markdown": "Invoke with read-only tools first; no write_file until output validated."
+            },
+            {
+              "title": "Stage 4 — Production",
+              "markdown": "Add !`shell` injections for live context; commit SKILL.md to git."
+            },
+            {
+              "title": "Stage 5 — Chain",
+              "markdown": "/plan 'Improve skill-at-search' & /delegate reviewer Validate skill output"
+            }
+          ]
+        },
+        {
+          "id": "dd-failure-master",
+          "title": "Master Failure Tree — Skills & Commands",
+          "eli5": "One diagram to rule every support ticket.",
+          "theoreticalFoundation": "## Why centralized failure trees matter\n\nAXON surfaces errors in three places: terminal Rich output, tool result strings, and bridge WebSocket to Zenith. Users blame 'the AI' when the root cause is cwd, approval, or YAML.",
+          "markdown": "## ASCII master tree\n\n```\nAXON misbehaves\n│\n├─ Slash command wrong\n│   ├─ Typo → /help\n│   ├─ Chain quote error → count segments\n│   └─ Wrong cwd\n│\n├─ Skill wrong\n│   ├─ Not in tool list → disable_model_invocation, reload\n│   ├─ Empty invoke → shell injection failed\n│   └─ Model ignores body → shorten, strengthen description\n│\n├─ Tool denied\n│   ├─ User chose deny\n│   └─ Session not approved → press 2 for session allow\n│\n├─ LLM errors\n│   ├─ API key → .env OPENROUTER_API_KEY\n│   ├─ Model → /model switch\n│   └─ Context length → /clear, fewer @ files\n│\n└─ Bridge\n    ├─ Port 8765 in use → warning only\n    └─ Refresh Zenith after CLI restart\n```\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Master Failure Tree — Skills & Commands breaks",
+            "markdown": "### Persistence cheat sheet\n\n| Data | Location | Survives /clear? | Survives restart? |\n|------|----------|------------------|-------------------|\n| Chat | messages[] | No | No |\n| memory | .axon/memory.md | Yes | Yes |\n| skills | .axon/skills/ | Yes | Yes |\n| agents | .axon/agents/ | Yes | Yes |\n| plan | task_manager RAM | No | No |\n| backups | .axon/backups/ | Yes | Yes |\n| approvals | approved_session_tools | No | No |\n\nUse this page as index — each branch links to a Deep Dive page with specifics."
+          },
+          "animations": [
+            {
+              "id": "anim-dd-failure-master",
+              "title": "[ANIMATION: Master Failure Tree — Skills & Commands]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Master Failure Tree — Skills & Commands' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ]
+        },
+        {
+          "id": "dd-builder-appendix",
+          "title": "Builder's Appendix — Implement Skills/Commands From Scratch",
+          "eli5": "If you were forking AXON tomorrow, this is the build order.",
+          "theoreticalFoundation": "## Historical design decisions (expanded)\n\n1. **prompt_toolkit + async** — Windows ANSI safety drove `safe_async_print` and `run_in_terminal` for nested UI.\n2. **Skills as tools not prompts** — Keeps system prompt small; pays cost on invoke.\n3. **Slash local-first** — Predictable automation for power users.\n4. **No skill sandbox** — Trust model; inline shell is the main security footgun.",
+          "markdown": "## Build order (God mode for implementers)\n\n```\nWeek 1: main.py loop + OpenRouter chat (no tools)\nWeek 2: skills/tools.py read/write/shell + approval\nWeek 3: skills_manager.py parse + invoke + !`shell`\nWeek 4: task_manager plan/execute\nWeek 5: slash router + command_parser chains\nWeek 6: agent_manager + delegate swap\nWeek 7: bridge.py + Zenith\n```\n\n### Minimal invoke_skill pseudocode\n\n```python\ndef invoke_skill(name, args):\n    body = inject_shell_context(skills[name].body_raw)\n    return f\"# Skill activated\\n{body}\\n## User\\n{args.get('request','')}\"\n```\n\n### Test checklist\n\n- [ ] SKILL.md with !`echo hi`\n- [ ] /create-skill wizard\n- [ ] /plan & /delegate chain\n- [ ] write_file deny path\n- [ ] reload_skills after edit\n\n### Deep Internal (recursive)\n\n**main.py** receives input in `handle_single_input` or `chat_loop`. No background thread — asyncio single-threaded event loop. **Storage:** none on disk for routing decision; `stripped` string in stack frame only.\n\n**llm_client.py** `messages` list is the sole conversation memory. Each `append` adds dicts. OpenRouter receives full list every `_agent_loop` iteration. Token growth is O(turns × context).\n\n**Filesystem:** skills read at invoke time from path in `Skill.path`; mtime not cached — edit SKILL.md mid-session, next invoke sees new content after `reload_skills()` on next user message.\n\n### Design comparison (expanded)\n\nClaude Code popularized SKILL.md; AXON adopts same author format but couples to **local approval** and **inline shell without approval** — a deliberate tension. Authors must treat `!`cmd`` as pre-approved automation. Document this in every team skill README.\n\n### Builder note\n\nTo reimplement: start with `invoke_skill` returning a string before wiring OpenRouter. Unit test `inject_shell_context` with fake subprocess. Only then add tool schema registration.\n",
+          "failureMode": {
+            "title": "When Builder's Appendix — Implement Skills/Commands From Scratch breaks",
+            "markdown": "```\nFork breaks on Windows\n└─ shell=True path in run_inline_shell\n\nTests flake on CI\n└─ skills invoke real git — mock subprocess in tests\n\nDocumentation drift\n└─ Regenerate: python scripts/generate_deep_dive_module.py\n                python scripts/merge_docs_content.py\n```"
+          },
+          "animations": [
+            {
+              "id": "anim-dd-builder-appendix",
+              "title": "[ANIMATION: Builder's Appendix — Implement Skills/Commands From Scratch]",
+              "description": "[ANIMATION: Scroll-triggered diagram for 'Builder's Appendix — Implement Skills/Commands From Scratch' — state nodes pulse cyan, error branches flash red, approval gate pauses timeline until user clicks Allow]",
+              "trigger": "on-scroll-into-view"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

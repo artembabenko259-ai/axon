@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Serve AXON Live Docs on localhost."""
+"""Serve AXON documentation portal on localhost."""
 
 from __future__ import annotations
 
@@ -10,12 +10,21 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 
-def docs_dir(workspace: Path) -> Path:
-    return workspace / ".axon" / "docs"
+def project_root() -> Path:
+    return Path(__file__).resolve().parent.parent
+
+
+def docs_site_dir(workspace: Path | None = None) -> Path:
+    """Primary portal: docs_site/ in AXON repo (or workspace if bundled)."""
+    root = project_root()
+    site = root / "docs_site"
+    if site.is_dir():
+        return site
+    return (workspace or Path.cwd()) / "docs_site"
 
 
 class DocsRequestHandler(SimpleHTTPRequestHandler):
-    """Static file handler with JSON content-type for docs.json."""
+    """Static file handler with cache headers for JSON."""
 
     def end_headers(self) -> None:
         if self.path.endswith(".json"):
@@ -35,18 +44,17 @@ def is_port_in_use(port: int, host: str = "127.0.0.1") -> bool:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Serve AXON Live Docs")
+    parser = argparse.ArgumentParser(description="Serve AXON documentation portal")
     parser.add_argument("--workspace", type=Path, default=Path.cwd())
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--host", default="127.0.0.1")
     args = parser.parse_args()
 
-    workspace = args.workspace.resolve()
-    directory = docs_dir(workspace)
+    directory = docs_site_dir(args.workspace.resolve())
     directory.mkdir(parents=True, exist_ok=True)
 
     if not (directory / "index.html").is_file():
-        print(f"Warning: {directory / 'index.html'} not found. Run docs_gen.py first.")
+        print(f"Warning: {directory / 'index.html'} not found.")
 
     if is_port_in_use(args.port, args.host):
         print(f"Port {args.port} already in use — assuming docs server is running.")
@@ -55,7 +63,7 @@ def main() -> int:
     handler = partial(DocsRequestHandler, directory=str(directory))
     with ThreadingHTTPServer((args.host, args.port), handler) as httpd:
         url = f"http://{args.host}:{args.port}"
-        print(f"Serving AXON docs at {url}")
+        print(f"Serving AXON documentation at {url}")
         print(f"Directory: {directory}")
         try:
             httpd.serve_forever()

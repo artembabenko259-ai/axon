@@ -1,0 +1,242 @@
+{
+  "sections": [
+    {
+      "id": "plan-execute",
+      "title": "Plan & Execute Mode",
+      "lead": "Deep dive into task_manager, create_plan, and execution flow.",
+      "chapter": 7,
+      "subsections": [
+        {
+          "id": "plan-mode-deep",
+          "title": "Plan Mode Deep Dive",
+          "eli5": "«Plan Mode Deep Dive» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Plan Mode Deep Dive»\n\n**plan mode** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Plan Mode Deep Dive\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Plan Mode Deep Dive",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-plan-mode-deep",
+            "title": "[ANIMATION: Plan Mode Deep Dive]",
+            "description": "[ANIMATION: Hero panel for 'Plan Mode Deep Dive' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: plan-mode-deep]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Plan Mode Deep Dive",
+              "markdown": "Минимальный сценарий для **plan mode**."
+            }
+          ]
+        },
+        {
+          "id": "execute-mode",
+          "title": "Execute Mode",
+          "eli5": "«Execute Mode» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Execute Mode»\n\n**execute mode** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Execute Mode\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Execute Mode",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-execute-mode",
+            "title": "[ANIMATION: Execute Mode]",
+            "description": "[ANIMATION: Hero panel for 'Execute Mode' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: execute-mode]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Execute Mode",
+              "markdown": "Минимальный сценарий для **execute mode**."
+            }
+          ]
+        },
+        {
+          "id": "task-manager",
+          "title": "task_manager.py",
+          "eli5": "«task_manager.py» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «task_manager.py»\n\n**task manager** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: task_manager.py\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: task_manager.py",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-task-manager",
+            "title": "[ANIMATION: task_manager.py]",
+            "description": "[ANIMATION: Hero panel for 'task_manager.py' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: task-manager]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: task_manager.py",
+              "markdown": "Минимальный сценарий для **task manager**."
+            }
+          ]
+        },
+        {
+          "id": "create-plan-tool",
+          "title": "create_plan Tool",
+          "eli5": "«create_plan Tool» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «create_plan Tool»\n\n**create_plan** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: create_plan Tool\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: create_plan Tool",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-create-plan-tool",
+            "title": "[ANIMATION: create_plan Tool]",
+            "description": "[ANIMATION: Hero panel for 'create_plan Tool' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: create-plan-tool]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: create_plan Tool",
+              "markdown": "Минимальный сценарий для **create_plan**."
+            }
+          ]
+        },
+        {
+          "id": "complete-task",
+          "title": "complete_task Tool",
+          "eli5": "«complete_task Tool» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «complete_task Tool»\n\n**complete_task** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: complete_task Tool\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: complete_task Tool",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-complete-task",
+            "title": "[ANIMATION: complete_task Tool]",
+            "description": "[ANIMATION: Hero panel for 'complete_task Tool' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: complete-task]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: complete_task Tool",
+              "markdown": "Минимальный сценарий для **complete_task**."
+            }
+          ]
+        },
+        {
+          "id": "plan-failures",
+          "title": "Plan Failure Modes",
+          "eli5": "«Plan Failure Modes» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Plan Failure Modes»\n\n**plan failures** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Plan Failure Modes\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Plan Failure Modes",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-plan-failures",
+            "title": "[ANIMATION: Plan Failure Modes]",
+            "description": "[ANIMATION: Hero panel for 'Plan Failure Modes' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: plan-failures]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Plan Failure Modes",
+              "markdown": "Минимальный сценарий для **plan failures**."
+            }
+          ]
+        },
+        {
+          "id": "plan-vs-execute",
+          "title": "Plan vs Execute Comparison",
+          "eli5": "«Plan vs Execute Comparison» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Plan vs Execute Comparison»\n\n**comparison** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Plan vs Execute Comparison\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Plan vs Execute Comparison",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-plan-vs-execute",
+            "title": "[ANIMATION: Plan vs Execute Comparison]",
+            "description": "[ANIMATION: Hero panel for 'Plan vs Execute Comparison' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: plan-vs-execute]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Plan vs Execute Comparison",
+              "markdown": "Минимальный сценарий для **comparison**."
+            }
+          ]
+        },
+        {
+          "id": "cancel-plan",
+          "title": "Canceling a Plan",
+          "eli5": "«Canceling a Plan» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Canceling a Plan»\n\n**cancel** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Canceling a Plan\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Canceling a Plan",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-cancel-plan",
+            "title": "[ANIMATION: Canceling a Plan]",
+            "description": "[ANIMATION: Hero panel for 'Canceling a Plan' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: cancel-plan]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Canceling a Plan",
+              "markdown": "Минимальный сценарий для **cancel**."
+            }
+          ]
+        },
+        {
+          "id": "multi-plan",
+          "title": "Multiple Plans in Session",
+          "eli5": "«Multiple Plans in Session» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Multiple Plans in Session»\n\n**multi plan** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Multiple Plans in Session\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Multiple Plans in Session",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-multi-plan",
+            "title": "[ANIMATION: Multiple Plans in Session]",
+            "description": "[ANIMATION: Hero panel for 'Multiple Plans in Session' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: multi-plan]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Multiple Plans in Session",
+              "markdown": "Минимальный сценарий для **multi plan**."
+            }
+          ]
+        },
+        {
+          "id": "plan-with-delegate",
+          "title": "Plan + Delegate Combo",
+          "eli5": "«Plan + Delegate Combo» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Plan + Delegate Combo»\n\n**combo** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Plan + Delegate Combo\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Plan + Delegate Combo",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-plan-with-delegate",
+            "title": "[ANIMATION: Plan + Delegate Combo]",
+            "description": "[ANIMATION: Hero panel for 'Plan + Delegate Combo' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: plan-with-delegate]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Plan + Delegate Combo",
+              "markdown": "Минимальный сценарий для **combo**."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -14,10 +14,13 @@ SLASH_COMMANDS = [
     "/plan",
     "/image",
     "/create-skill",
+    "/gen-skill",
     "/review",
     "/undo",
     "/commit",
     "/docs",
+    "/create-agent",
+    "/delegate",
 ]
 
 AXON_COMMANDS: dict[str, str] = {
@@ -31,10 +34,13 @@ AXON_COMMANDS: dict[str, str] = {
     "/plan": "Plan Mode — /plan <description> to break work into steps",
     "/image": "Load image for vision — /image <path> [prompt]",
     "/create-skill": "Interactive wizard to create a new SKILL.md",
+    "/gen-skill": "AI-generate a skill from a description — /gen-skill \"...\"",
     "/review": "Review current git diff for bugs and code smells",
     "/undo": "Restore last file overwritten by write_file",
     "/commit": "AI-generated Conventional Commit with confirmation",
     "/docs": "Generate and serve interactive project docs at localhost:8000",
+    "/create-agent": "Scaffold a sub-agent in .axon/agents/",
+    "/delegate": "Delegate task to sub-agent — /delegate <name> <task>",
 }
 
 
@@ -52,7 +58,7 @@ class AxonCommandCompleter(Completer):
             return
 
         if " " in text.strip() and not text.strip().startswith(
-            ("/model", "/plan", "/image")
+            ("/model", "/plan", "/image", "/delegate", "/gen-skill")
         ):
             return
 
@@ -66,6 +72,14 @@ class AxonCommandCompleter(Completer):
                     display=command,
                     display_meta=description,
                 )
+
+        if word.startswith("/del") and "/delegate" not in word:
+            yield Completion(
+                "/delegate ",
+                start_position=-len(word),
+                display="/delegate ",
+                display_meta=AXON_COMMANDS["/delegate"],
+            )
 
         if word.startswith("/doc") and "/docs" not in word:
             yield Completion(
@@ -97,6 +111,14 @@ class AxonCommandCompleter(Completer):
                 start_position=-len(word),
                 display="/create-skill",
                 display_meta=AXON_COMMANDS["/create-skill"],
+            )
+
+        if word.startswith("/gen") and "/gen-skill" not in word:
+            yield Completion(
+                "/gen-skill ",
+                start_position=-len(word),
+                display="/gen-skill ",
+                display_meta=AXON_COMMANDS["/gen-skill"],
             )
 
         if word.startswith("/rev") and "/review" not in word:

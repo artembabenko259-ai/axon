@@ -19,6 +19,7 @@ from skills.tools import (
     parse_tool_arguments,
 )
 from skills_manager import SkillManager, load_project_memory
+from agent_manager import load_agent_prompt
 from task_manager import task_manager
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
@@ -113,6 +114,23 @@ class LLMManager:
 
     def _build_system_prompt(self) -> str:
         parts = [AXON_SYSTEM_PROMPT_BASE]
+        memory = load_project_memory(self._workspace)
+        if memory:
+            parts.append(f"Project Context:\n{memory}")
+        skills_block = self._skill_manager.skills_summary_for_system()
+        if skills_block:
+            parts.append(skills_block)
+        return "\n\n".join(parts)
+
+    def _build_agent_system_prompt(self, agent_prompt: str) -> str:
+        parts = [
+            agent_prompt.strip(),
+            (
+                "You are operating as an AXON sub-agent. You have the same native tools: "
+                "read_file, write_file, execute_shell, web_search. "
+                "write_file and execute_shell require user approval."
+            ),
+        ]
         memory = load_project_memory(self._workspace)
         if memory:
             parts.append(f"Project Context:\n{memory}")
@@ -325,6 +343,111 @@ class LLMManager:
             return await self._agent_loop(prompt)
         finally:
             task_manager.execution_mode = False
+
+    async def send_delegated_async(
+        self,
+        agent_name: str,
+        task: str,
+        *,
+        file_context: str = "",
+    ) -> LLMResult:
+        """Run a task using a sub-agent's system_prompt.md while keeping native tools."""
+        self.reload_credentials()
+        self.reload_skills()
+
+        agent_prompt = load_agent_prompt(agent_name, self._workspace)
+        if not agent_prompt:
+            return LLMResult(
+                content="",
+                model=self.model,
+                error=(
+                    f"AXON: Agent '{agent_name}' not found. "
+                    f"Use /create-agent to scaffold one in .axon/agents/"
+                ),
+            )
+
+        if not self.messages or self.messages[0].get("role") != "system":
+            self.messages.insert(
+                0,
+                {"role": "system", "content": self._build_system_prompt()},
+            )
+
+        original_system = self.messages[0]["content"]
+        self.messages[0]["content"] = self._build_agent_system_prompt(agent_prompt)
+
+        payload = (
+            f"[Delegated to agent: {agent_name}]\n{task.strip()}"
+        )
+        if file_context.strip():
+            payload += (
+                f"\n\n---\n[Context attached by user]\n{file_context.strip()}"
+            )
+
+        try:
+            return await self._agent_loop(payload)
+        finally:
+            self.messages[0]["content"] = original_system
+
+    async def generate_skill_file_async(self, description: str) -> LLMResult:
+        """Ask the LLM for a complete AXON skill file (no tools)."""
+        self.reload_credentials()
+        skill_system = (
+            "You are an AXON skill author. AXON skills are markdown files with YAML "
+            "frontmatter followed by instruction markdown (not Python modules). "
+            "Built-in tools: read_file, write_file, execute_shell, web_search. "
+            "Inline shell injection uses !`command` syntax in the markdown body. "
+            "Return ONLY the complete skill file inside one markdown code fence. "
+            "No text outside the fence."
+        )
+        user_prompt = (
+            "Create a complete AXON skill file based on this description: "
+            f"{description}. Return the file content as a valid YAML header "
+            "(name, description, usage) followed by markdown skill instructions "
+            "that reference allowed AXON built-in tools and optional !`shell` blocks."
+        )
+        try:
+            response = await asyncio.to_thread(
+                self._client.chat.completions.create,
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": skill_system},
+                    {"role": "user", "content": user_prompt},
+                ],
+            )
+            choice = response.choices[0] if response.choices else None
+            if choice is None:
+                return LLMResult(
+                    content="",
+                    model=self.model,
+                    error="AXON: Empty response while generating skill.",
+                )
+
+            raw = (choice.message.content or "").strip()
+            usage = self._parse_usage(response.usage)
+            if usage is not None:
+                record_token_usage(usage.total_tokens)
+
+            if not raw:
+                return LLMResult(
+                    content="",
+                    model=self.model,
+                    error="AXON: Model returned empty skill content.",
+                    usage=usage,
+                )
+
+            return LLMResult(content=raw, model=self.model, usage=usage)
+        except APIError as exc:
+            return LLMResult(
+                content="",
+                model=self.model,
+                error=f"AXON: API error — {self._friendly_api_error(exc)}",
+            )
+        except Exception as exc:
+            return LLMResult(
+                content="",
+                model=self.model,
+                error=f"AXON: Could not generate skill — {exc}",
+            )
 
     async def generate_commit_message_async(
         self,

@@ -155,6 +155,74 @@ def sanitize_skill_name(name: str) -> str:
     return cleaned or "custom-skill"
 
 
+def extract_skill_code_block(text: str) -> str:
+    """Pull skill file content from an LLM response (fenced block or raw frontmatter)."""
+    stripped = text.strip()
+    if not stripped:
+        return ""
+
+    fence = re.search(
+        r"```(?:skill|markdown|yaml|md|txt)?\s*\n(.*?)```",
+        stripped,
+        re.DOTALL | re.IGNORECASE,
+    )
+    if fence:
+        return fence.group(1).strip()
+
+    if stripped.startswith("---"):
+        return stripped
+
+    return stripped
+
+
+def skill_name_from_content(content: str, *, fallback: str = "custom-skill") -> str:
+    """Read and sanitize `name` from generated skill frontmatter."""
+    meta, _ = parse_frontmatter(content)
+    raw_name = str(meta.get("name") or "").strip()
+    return sanitize_skill_name(raw_name or fallback)
+
+
+def save_generated_skill_file(
+    content: str,
+    *,
+    workspace: Path | None = None,
+) -> tuple[Path, str]:
+    """Write LLM output to `.axon/skills/<skill_name>.skill`."""
+    ensure_skills_workspace(workspace)
+    skill_content = extract_skill_code_block(content)
+    if not skill_content.strip():
+        raise ValueError("Generated skill content is empty.")
+
+    meta, _ = parse_frontmatter(skill_content)
+    if not str(meta.get("name") or "").strip():
+        raise ValueError("Generated skill must include a `name` field in YAML frontmatter.")
+
+    skill_name = skill_name_from_content(skill_content)
+    skill_path = skills_root(workspace) / f"{skill_name}.skill"
+    skill_path.write_text(skill_content.rstrip() + "\n", encoding="utf-8")
+    return skill_path, skill_name
+
+
+def parse_gen_skill_description(command_line: str) -> str | None:
+    """Parse `/gen-skill <description>` supporting quoted descriptions."""
+    stripped = command_line.strip()
+    if not stripped.lower().startswith("/gen-skill"):
+        return None
+
+    rest = stripped[len("/gen-skill") :].strip()
+    if not rest:
+        return None
+
+    if rest[0] in "\"'":
+        quote = rest[0]
+        end = rest.find(quote, 1)
+        if end == -1:
+            return rest[1:].strip()
+        return rest[1:end].strip()
+
+    return rest.strip()
+
+
 def create_skill_file(
     name: str,
     description: str,
@@ -215,7 +283,12 @@ def parse_skill_file(path: Path) -> Skill | None:
         return None
 
     meta, body = parse_frontmatter(raw)
-    skill_id = path.parent.name
+    if path.name == "SKILL.md":
+        skill_id = path.parent.name
+    elif path.suffix == ".skill":
+        skill_id = path.stem
+    else:
+        skill_id = path.stem
 
     name = str(meta.get("name") or skill_id).strip()
     description = str(
@@ -380,6 +453,15 @@ class SkillManager:
             if not skill_dir.is_dir():
                 continue
             skill_file = skill_dir / "SKILL.md"
+            if not skill_file.is_file():
+                continue
+            skill = parse_skill_file(skill_file)
+            if skill is None:
+                continue
+            self._skills[skill.skill_id] = skill
+            self._by_tool_name[skill.tool_name] = skill
+
+        for skill_file in sorted(root.glob("*.skill")):
             if not skill_file.is_file():
                 continue
             skill = parse_skill_file(skill_file)

@@ -1,0 +1,242 @@
+{
+  "sections": [
+    {
+      "id": "git-workflows",
+      "title": "Git Workflows",
+      "lead": "Review, commit, conventional commits, skills, and pre-commit hooks.",
+      "chapter": 8,
+      "subsections": [
+        {
+          "id": "git-review",
+          "title": "/review for Git",
+          "eli5": "«/review for Git» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «/review for Git»\n\n**review** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: /review for Git\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: /review for Git",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-git-review",
+            "title": "[ANIMATION: /review for Git]",
+            "description": "[ANIMATION: Hero panel for '/review for Git' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: git-review]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: /review for Git",
+              "markdown": "Минимальный сценарий для **review**."
+            }
+          ]
+        },
+        {
+          "id": "git-commit",
+          "title": "/commit AI Commits",
+          "eli5": "«/commit AI Commits» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «/commit AI Commits»\n\n**commit** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: /commit AI Commits\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: /commit AI Commits",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-git-commit",
+            "title": "[ANIMATION: /commit AI Commits]",
+            "description": "[ANIMATION: Hero panel for '/commit AI Commits' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: git-commit]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: /commit AI Commits",
+              "markdown": "Минимальный сценарий для **commit**."
+            }
+          ]
+        },
+        {
+          "id": "conventional-commits",
+          "title": "Conventional Commits",
+          "eli5": "«Conventional Commits» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Conventional Commits»\n\n**conventional** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Conventional Commits\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Conventional Commits",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-conventional-commits",
+            "title": "[ANIMATION: Conventional Commits]",
+            "description": "[ANIMATION: Hero panel for 'Conventional Commits' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: conventional-commits]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Conventional Commits",
+              "markdown": "Минимальный сценарий для **conventional**."
+            }
+          ]
+        },
+        {
+          "id": "git-skills",
+          "title": "Git Skills",
+          "eli5": "«Git Skills» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Git Skills»\n\n**git skills** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Git Skills\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Git Skills",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-git-skills",
+            "title": "[ANIMATION: Git Skills]",
+            "description": "[ANIMATION: Hero panel for 'Git Skills' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: git-skills]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Git Skills",
+              "markdown": "Минимальный сценарий для **git skills**."
+            }
+          ]
+        },
+        {
+          "id": "pre-commit-workflow",
+          "title": "Pre-Commit Workflow",
+          "eli5": "«Pre-Commit Workflow» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Pre-Commit Workflow»\n\n**pre-commit** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Pre-Commit Workflow\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Pre-Commit Workflow",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-pre-commit-workflow",
+            "title": "[ANIMATION: Pre-Commit Workflow]",
+            "description": "[ANIMATION: Hero panel for 'Pre-Commit Workflow' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: pre-commit-workflow]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Pre-Commit Workflow",
+              "markdown": "Минимальный сценарий для **pre-commit**."
+            }
+          ]
+        },
+        {
+          "id": "git-status-skill",
+          "title": "git-status Skill",
+          "eli5": "«git-status Skill» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «git-status Skill»\n\n**status skill** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: git-status Skill\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: git-status Skill",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-git-status-skill",
+            "title": "[ANIMATION: git-status Skill]",
+            "description": "[ANIMATION: Hero panel for 'git-status Skill' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: git-status-skill]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: git-status Skill",
+              "markdown": "Минимальный сценарий для **status skill**."
+            }
+          ]
+        },
+        {
+          "id": "branch-workflow",
+          "title": "Branch Workflow",
+          "eli5": "«Branch Workflow» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Branch Workflow»\n\n**branches** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Branch Workflow\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Branch Workflow",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-branch-workflow",
+            "title": "[ANIMATION: Branch Workflow]",
+            "description": "[ANIMATION: Hero panel for 'Branch Workflow' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: branch-workflow]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Branch Workflow",
+              "markdown": "Минимальный сценарий для **branches**."
+            }
+          ]
+        },
+        {
+          "id": "merge-conflicts",
+          "title": "Merge Conflict Helper",
+          "eli5": "«Merge Conflict Helper» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Merge Conflict Helper»\n\n**conflicts** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Merge Conflict Helper\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Merge Conflict Helper",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-merge-conflicts",
+            "title": "[ANIMATION: Merge Conflict Helper]",
+            "description": "[ANIMATION: Hero panel for 'Merge Conflict Helper' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: merge-conflicts]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Merge Conflict Helper",
+              "markdown": "Минимальный сценарий для **conflicts**."
+            }
+          ]
+        },
+        {
+          "id": "gitignore-tips",
+          "title": ".gitignore Tips",
+          "eli5": "«.gitignore Tips» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «.gitignore Tips»\n\n**gitignore** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: .gitignore Tips\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: .gitignore Tips",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-gitignore-tips",
+            "title": "[ANIMATION: .gitignore Tips]",
+            "description": "[ANIMATION: Hero panel for '.gitignore Tips' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: gitignore-tips]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: .gitignore Tips",
+              "markdown": "Минимальный сценарий для **gitignore**."
+            }
+          ]
+        },
+        {
+          "id": "git-undo",
+          "title": "Git + /undo Integration",
+          "eli5": "«Git + /undo Integration» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Git + /undo Integration»\n\n**undo** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Git + /undo Integration\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Git + /undo Integration",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-git-undo",
+            "title": "[ANIMATION: Git + /undo Integration]",
+            "description": "[ANIMATION: Hero panel for 'Git + /undo Integration' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: git-undo]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Git + /undo Integration",
+              "markdown": "Минимальный сценарий для **undo**."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

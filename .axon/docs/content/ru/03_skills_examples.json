@@ -1,0 +1,242 @@
+{
+  "sections": [
+    {
+      "id": "skills-examples",
+      "title": "Skills Examples",
+      "lead": "Ten complex multi-step skill walkthroughs you can copy and adapt.",
+      "chapter": 3,
+      "subsections": [
+        {
+          "id": "web-research-writer",
+          "title": "Web Research Writer",
+          "eli5": "«Web Research Writer» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Web Research Writer»\n\n**web research** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Web Research Writer\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Web Research Writer",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-web-research-writer",
+            "title": "[ANIMATION: Web Research Writer]",
+            "description": "[ANIMATION: Hero panel for 'Web Research Writer' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: web-research-writer]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Web Research Writer",
+              "markdown": "Минимальный сценарий для **web research**."
+            }
+          ]
+        },
+        {
+          "id": "deploy-staging",
+          "title": "Deploy Staging Pipeline",
+          "eli5": "«Deploy Staging Pipeline» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Deploy Staging Pipeline»\n\n**deploy** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Deploy Staging Pipeline\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Deploy Staging Pipeline",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-deploy-staging",
+            "title": "[ANIMATION: Deploy Staging Pipeline]",
+            "description": "[ANIMATION: Hero panel for 'Deploy Staging Pipeline' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: deploy-staging]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Deploy Staging Pipeline",
+              "markdown": "Минимальный сценарий для **deploy**."
+            }
+          ]
+        },
+        {
+          "id": "test-fixer",
+          "title": "Test Failure Auto-Diagnosis",
+          "eli5": "«Test Failure Auto-Diagnosis» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Test Failure Auto-Diagnosis»\n\n**pytest** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Test Failure Auto-Diagnosis\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Test Failure Auto-Diagnosis",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-test-fixer",
+            "title": "[ANIMATION: Test Failure Auto-Diagnosis]",
+            "description": "[ANIMATION: Hero panel for 'Test Failure Auto-Diagnosis' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: test-fixer]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Test Failure Auto-Diagnosis",
+              "markdown": "Минимальный сценарий для **pytest**."
+            }
+          ]
+        },
+        {
+          "id": "git-release-notes",
+          "title": "Git Release Notes Generator",
+          "eli5": "«Git Release Notes Generator» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Git Release Notes Generator»\n\n**git release** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Git Release Notes Generator\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Git Release Notes Generator",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-git-release-notes",
+            "title": "[ANIMATION: Git Release Notes Generator]",
+            "description": "[ANIMATION: Hero panel for 'Git Release Notes Generator' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: git-release-notes]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Git Release Notes Generator",
+              "markdown": "Минимальный сценарий для **git release**."
+            }
+          ]
+        },
+        {
+          "id": "dependency-audit",
+          "title": "Dependency Audit Skill",
+          "eli5": "«Dependency Audit Skill» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Dependency Audit Skill»\n\n**security audit** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Dependency Audit Skill\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Dependency Audit Skill",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-dependency-audit",
+            "title": "[ANIMATION: Dependency Audit Skill]",
+            "description": "[ANIMATION: Hero panel for 'Dependency Audit Skill' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: dependency-audit]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Dependency Audit Skill",
+              "markdown": "Минимальный сценарий для **security audit**."
+            }
+          ]
+        },
+        {
+          "id": "api-scaffold",
+          "title": "REST API Scaffold",
+          "eli5": "«REST API Scaffold» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «REST API Scaffold»\n\n**scaffolding** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: REST API Scaffold\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: REST API Scaffold",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-api-scaffold",
+            "title": "[ANIMATION: REST API Scaffold]",
+            "description": "[ANIMATION: Hero panel for 'REST API Scaffold' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: api-scaffold]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: REST API Scaffold",
+              "markdown": "Минимальный сценарий для **scaffolding**."
+            }
+          ]
+        },
+        {
+          "id": "db-migration-helper",
+          "title": "Database Migration Helper",
+          "eli5": "«Database Migration Helper» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Database Migration Helper»\n\n**migrations** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Database Migration Helper\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Database Migration Helper",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-db-migration-helper",
+            "title": "[ANIMATION: Database Migration Helper]",
+            "description": "[ANIMATION: Hero panel for 'Database Migration Helper' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: db-migration-helper]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Database Migration Helper",
+              "markdown": "Минимальный сценарий для **migrations**."
+            }
+          ]
+        },
+        {
+          "id": "code-review-pack",
+          "title": "Code Review Pack",
+          "eli5": "«Code Review Pack» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Code Review Pack»\n\n**review** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Code Review Pack\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Code Review Pack",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-code-review-pack",
+            "title": "[ANIMATION: Code Review Pack]",
+            "description": "[ANIMATION: Hero panel for 'Code Review Pack' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: code-review-pack]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Code Review Pack",
+              "markdown": "Минимальный сценарий для **review**."
+            }
+          ]
+        },
+        {
+          "id": "incident-runbook",
+          "title": "Incident Runbook Executor",
+          "eli5": "«Incident Runbook Executor» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Incident Runbook Executor»\n\n**incident** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Incident Runbook Executor\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Incident Runbook Executor",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-incident-runbook",
+            "title": "[ANIMATION: Incident Runbook Executor]",
+            "description": "[ANIMATION: Hero panel for 'Incident Runbook Executor' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: incident-runbook]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Incident Runbook Executor",
+              "markdown": "Минимальный сценарий для **incident**."
+            }
+          ]
+        },
+        {
+          "id": "docs-sync",
+          "title": "Docs Sync Skill",
+          "eli5": "«Docs Sync Skill» — как подписанный ящик в мастерской: открываешь нужный, а не весь инструмент сразу. AXON хранит это предсказуемо.",
+          "theoreticalFoundation": "## Зачем нужен раздел «Docs Sync Skill»\n\n**documentation** — ключевая часть AXON: локальный агент, ваши файлы, явные разрешения на опасные действия.\n\nПонимание этой темы помогает предсказывать поведение `main.py` и `llm_client.py` до запуска команды.",
+          "markdown": "## Практика: Docs Sync Skill\n\n1. Проверьте `.env` и `.axon/memory.md`.\n2. Вызовите функцию через CLI или Zenith.\n3. Следите за одобрениями и выводом инструментов.\n4. Закрепите повторяемый сценарий в skill.\n\nОсновные файлы: `main.py`, `llm_client.py`, `bridge.py`, `skills_manager.py`, `task_manager.py`.",
+          "failureMode": {
+            "title": "Ошибки: Docs Sync Skill",
+            "markdown": "### Симптом\n\nПустой ответ, зависание или цикл.\n\n### Решение\n\nПроверьте `.env`, одобрения, `/clear`, порт 8765, имя skill."
+          },
+          "animation": {
+            "id": "anim-docs-sync",
+            "title": "[ANIMATION: Docs Sync Skill]",
+            "description": "[ANIMATION: Hero panel for 'Docs Sync Skill' — left column shows ELI5 iconography, center timeline steps light up sequentially, right column displays live code snippets fading in. Cyan pulse on active step. Loop on scroll into view. Sub-id: docs-sync]",
+            "trigger": "on-scroll-into-view"
+          },
+          "examples": [
+            {
+              "title": "Пример: Docs Sync Skill",
+              "markdown": "Минимальный сценарий для **documentation**."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

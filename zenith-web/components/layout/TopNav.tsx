@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Menu, MessageSquare, Settings, Sparkles, X } from "lucide-react";
+import { BookOpen, LayoutDashboard, Menu, MessageSquare, Settings, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher";
 import { ConfigWidget } from "@/components/config/ConfigWidget";
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/chat", label: "Chat", icon: MessageSquare },
+  { href: "/docs", label: "Documentation", icon: BookOpen },
   { href: "/marketplace", label: "Marketplace", icon: Sparkles },
   { href: "/config", label: "Config", icon: Settings },
 ];
@@ -48,7 +49,9 @@ export function TopNav({ title = "Control Panel" }: TopNavProps) {
         <div className="flex items-center gap-2">
           <nav className="hidden items-center gap-1 md:flex">
             {navItems.map((item) => {
-              const active = pathname === item.href;
+              const active =
+                pathname === item.href ||
+                (item.href !== "/" && pathname.startsWith(`${item.href}/`));
               const Icon = item.icon;
               return (
                 <Link key={item.href} href={item.href}>

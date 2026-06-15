@@ -26,9 +26,16 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.rule import Rule
 
+from agent_manager import create_agent, list_agents
 from backup_manager import backup_manager
 from bridge import AxonBridge
-from skills_manager import create_skill_file, ensure_skills_workspace
+from command_parser import is_command_chain, split_command_chain
+from skills_manager import (
+    create_skill_file,
+    ensure_skills_workspace,
+    parse_gen_skill_description,
+    save_generated_skill_file,
+)
 from skills.tasks import set_plan_render_callback
 from task_manager import task_manager
 from llm_client import (
@@ -434,6 +441,41 @@ async def start_axon() -> None:
             except Exception as exc:
                 await emit(f"\n[bold red]✦ AXON:[/] [ERROR]: {exc}\n")
 
+    async def run_gen_skill(description: str, *, background: bool = False) -> None:
+        if not description.strip():
+            await emit(
+                '[yellow]Usage: /gen-skill "description of the skill"[/]\n'
+            )
+            return
+
+        await emit("\n[bold cyan]❯ You:[/]\n/gen-skill")
+        await emit("[bold magenta]🛠 Generating skill with AI...[/]")
+
+        async with llm_lock:
+            result = await llm_manager.generate_skill_file_async(description.strip())
+
+        if not result.ok:
+            await emit(f"[red]{result.display_text}[/]\n")
+            return
+
+        try:
+            path, skill_name = save_generated_skill_file(
+                result.content,
+                workspace=workspace,
+            )
+        except (OSError, ValueError) as exc:
+            await emit(f"[red]Failed to save skill — {exc}[/]\n")
+            return
+
+        llm_manager.reload_skills()
+        if result.usage:
+            await sync_stats()
+
+        await safe_async_print(
+            f'[green][✓] Skill "{skill_name}" created and loaded successfully. '
+            f"Use it with !{skill_name}.[/]\n"
+        )
+
     async def run_create_skill() -> None:
         await emit("[bold magenta]🛠 Creating a new AXON skill[/]\n")
 
@@ -472,6 +514,84 @@ async def start_axon() -> None:
             )
         except OSError as exc:
             await emit(f"[red]Failed to create skill — {exc}[/]\n")
+
+    async def run_create_agent() -> None:
+        await emit("[bold magenta]🤖 Creating a new AXON sub-agent[/]\n")
+
+        def _prompt_fields() -> tuple[str, str, str]:
+            name = input("Agent name (e.g., code-reviewer): ").strip()
+            focus = input("Specialty / focus: ").strip()
+            mission = input("Mission (optional, Enter to skip): ").strip()
+            return name, focus, mission
+
+        app = get_app_or_none()
+        if _prompt_is_active():
+            name, focus, mission = await run_in_terminal(_prompt_fields)
+        else:
+            name, focus, mission = _prompt_fields()
+
+        if not name:
+            await emit("[red]Agent name is required.[/]\n")
+            return
+        if not focus:
+            await emit("[red]Specialty/focus is required.[/]\n")
+            return
+
+        try:
+            path = create_agent(name, focus, mission, workspace=workspace)
+            await emit(
+                f"[green][✓] Agent created![/] "
+                f"Delegate with [cyan]/delegate {path.parent.name} <task>[/]\n"
+            )
+        except OSError as exc:
+            await emit(f"[red]Failed to create agent — {exc}[/]\n")
+
+    async def run_delegate(
+        agent_name: str,
+        task: str,
+        *,
+        background: bool = False,
+    ) -> None:
+        if not agent_name.strip():
+            agents = list_agents(workspace)
+            if agents:
+                await emit(
+                    "[yellow]Usage: /delegate <agent_name> <task>[/]\n"
+                    f"[dim]Available: {', '.join(agents)}[/]\n"
+                )
+            else:
+                await emit(
+                    "[yellow]Usage: /delegate <agent_name> <task>[/]\n"
+                    "[dim]No agents yet — use /create-agent[/]\n"
+                )
+            return
+
+        if not task.strip():
+            await emit("[yellow]Usage: /delegate <agent_name> <task>[/]\n")
+            return
+
+        await emit(
+            f"\n[bold cyan]❯ Delegate →[/] [magenta]{agent_name}[/]\n{task}"
+        )
+        await emit(f"[bold magenta]🤖 Sub-agent {agent_name} working...[/]")
+
+        display_text, file_context = build_file_context(task, workspace)
+
+        async with llm_lock:
+            result = await llm_manager.send_delegated_async(
+                agent_name.strip(),
+                display_text,
+                file_context=file_context,
+            )
+
+        await emit(f"\n[bold green]✦ {agent_name}:[/]")
+        if result.ok and result.content:
+            await emit(Markdown(result.content))
+        else:
+            await emit(f"[red]{result.display_text}[/]")
+        await emit(f"[dim]Cost: ${TOTAL_COST:.4f} | Tokens: {TOTAL_TOKENS}[/dim]\n")
+        if result.usage:
+            await sync_stats()
 
     async def run_review(*, background: bool = False) -> None:
         prompt, error = build_review_prompt(workspace)
@@ -658,6 +778,11 @@ async def start_axon() -> None:
             await run_create_skill()
             return True
 
+        if cmd == "/gen-skill":
+            description = parse_gen_skill_description(stripped) or args
+            await run_gen_skill(description, background=background)
+            return True
+
         if cmd == "/review":
             await run_review(background=background)
             return True
@@ -674,8 +799,101 @@ async def start_axon() -> None:
             await run_docs()
             return True
 
+        if cmd == "/create-agent":
+            await run_create_agent()
+            return True
+
+        if cmd == "/delegate":
+            parts = stripped.split(maxsplit=2)
+            if len(parts) >= 3:
+                await run_delegate(parts[1], parts[2], background=background)
+            elif len(parts) == 2:
+                await run_delegate(parts[1], "", background=background)
+            else:
+                await run_delegate("", "", background=background)
+            return True
+
         await emit(f"[yellow]AXON: Unknown command {cmd}. Type /help.[/]\n")
         return True
+
+    async def handle_single_input(
+        text: str,
+        source: str = "terminal",
+        *,
+        background: bool | None = None,
+    ) -> None:
+        """Process one user input (slash command, plan, execute, or LLM message)."""
+        if background is None:
+            background = source == "web"
+
+        stripped = text.strip()
+        if not stripped:
+            return
+
+        if stripped.lower().startswith("/plan"):
+            description = stripped[5:].strip()
+            if description:
+                await run_plan_mode(description, background=background)
+            else:
+                await emit("[yellow]Usage: /plan <description>[/]\n")
+            return
+
+        if stripped.startswith("/"):
+            if stripped.lower().startswith("/delegate"):
+                parts = stripped.split(maxsplit=2)
+                agent = parts[1] if len(parts) > 1 else ""
+                task = parts[2] if len(parts) > 2 else ""
+                await run_delegate(agent, task, background=background)
+                return
+            await execute_slash_command(stripped, background=background)
+            return
+
+        lowered = stripped.lower()
+        if lowered in {"execute", "go", "run"} and task_manager.has_plan():
+            await run_execute_mode(background=background)
+            return
+
+        display_text, file_context = build_file_context(stripped, workspace)
+
+        if background:
+            await emit(f"\n[bold blue]🌐 Web User:[/]\n{stripped}")
+        else:
+            await emit(f"\n{DEFAULT_THEME.user_label}")
+            await emit(format_display_mentions(display_text))
+            if file_context:
+                await emit(
+                    "[dim]  [cyan]context[/] attached file data sent to AXON[/dim]"
+                )
+
+        if source == "terminal":
+            await bridge.broadcast_chat(
+                role="user",
+                text=stripped,
+                source="terminal",
+                message_id=f"terminal-user-{uuid.uuid4().hex[:8]}",
+            )
+
+        async with llm_lock:
+            try:
+                result = await run_llm(
+                    stripped,
+                    background=background,
+                    file_context=file_context,
+                )
+                await bridge.broadcast_chat(
+                    role="assistant",
+                    text=result.display_text,
+                    source=source,
+                    message_id=f"{source}-axon-{uuid.uuid4().hex[:8]}",
+                )
+            except Exception as exc:
+                error_text = f"[ERROR]: {exc}"
+                await emit(f"\n[bold red]✦ AXON:[/] {error_text}\n")
+                await bridge.broadcast_chat(
+                    role="assistant",
+                    text=error_text,
+                    source=source,
+                )
 
     async def process_user_message(text: str, source: str = "terminal") -> None:
         background = source == "web"
@@ -685,63 +903,21 @@ async def start_axon() -> None:
             if not stripped:
                 return
 
-            if stripped.startswith("/"):
-                if stripped.lower().startswith("/plan"):
-                    description = stripped[5:].strip()
-                    if description:
-                        await run_plan_mode(description, background=background)
-                    else:
-                        await emit("[yellow]Usage: /plan <description>[/]\n")
-                    return
-                await execute_slash_command(stripped, background=background)
-                return
-
-            lowered = stripped.lower()
-            if lowered in {"execute", "go", "run"} and task_manager.has_plan():
-                await run_execute_mode(background=background)
-                return
-
-            display_text, file_context = build_file_context(stripped, workspace)
-
-            if background:
-                await emit(f"\n[bold blue]🌐 Web User:[/]\n{stripped}")
-            else:
-                await emit(f"\n{DEFAULT_THEME.user_label}")
-                await emit(format_display_mentions(display_text))
-                if file_context:
-                    await emit(
-                        "[dim]  [cyan]context[/] attached file data sent to AXON[/dim]"
-                    )
-
-            if source == "terminal":
-                await bridge.broadcast_chat(
-                    role="user",
-                    text=stripped,
-                    source="terminal",
-                    message_id=f"terminal-user-{uuid.uuid4().hex[:8]}",
+            if is_command_chain(stripped):
+                parts = split_command_chain(stripped)
+                await emit(
+                    f"[dim]⛓ Running {len(parts)} chained commands…[/]\n"
                 )
-
-            async with llm_lock:
-                try:
-                    result = await run_llm(
-                        stripped,
+                for index, part in enumerate(parts, start=1):
+                    await emit(f"[dim]── Chain {index}/{len(parts)} ──[/]")
+                    await handle_single_input(
+                        part,
+                        source,
                         background=background,
-                        file_context=file_context,
                     )
-                    await bridge.broadcast_chat(
-                        role="assistant",
-                        text=result.display_text,
-                        source=source,
-                        message_id=f"{source}-axon-{uuid.uuid4().hex[:8]}",
-                    )
-                except Exception as exc:
-                    error_text = f"[ERROR]: {exc}"
-                    await emit(f"\n[bold red]✦ AXON:[/] {error_text}\n")
-                    await bridge.broadcast_chat(
-                        role="assistant",
-                        text=error_text,
-                        source=source,
-                    )
+                return
+
+            await handle_single_input(text, source, background=background)
 
         if background:
             async with in_terminal():
@@ -797,6 +973,18 @@ async def start_axon() -> None:
 
             if stripped.lower() == "/commit":
                 await run_commit()
+                if shutdown.is_set():
+                    break
+                continue
+
+            if is_command_chain(stripped):
+                parts = split_command_chain(stripped)
+                await emit(f"[dim]⛓ Running {len(parts)} chained commands…[/]\n")
+                for index, part in enumerate(parts, start=1):
+                    await emit(f"[dim]── Chain {index}/{len(parts)} ──[/]")
+                    await handle_single_input(part, "terminal")
+                    if shutdown.is_set():
+                        break
                 if shutdown.is_set():
                     break
                 continue
