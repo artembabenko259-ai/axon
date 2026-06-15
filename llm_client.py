@@ -45,7 +45,9 @@ AXON_SYSTEM_PROMPT_BASE = (
     "write_file and execute_shell require explicit user approval — if denied, "
     "explain alternatives. When executing a plan, call complete_task after each "
     "finished step. After using tools, always reply with a clear summary "
-    "for the user in plain language."
+    "for the user in plain language. "
+    "Never call tools for simple greetings, thanks, goodbye, or other small talk — "
+    "reply briefly in plain text instead."
 )
 
 ToolNotifyCallback = Callable[[str, str], Awaitable[None]]
@@ -108,6 +110,7 @@ class LLMManager:
         self._workspace = workspace or Path.cwd()
         self._skill_manager = SkillManager(workspace=self._workspace)
         self._skill_manager.reload()
+        self.session_system_prompt: str = ""
         self.messages: list[dict[str, Any]] = [
             {"role": "system", "content": self._build_system_prompt()},
         ]
@@ -115,7 +118,6 @@ class LLMManager:
         self._client = self._build_client(self._api_key)
         self._approve = approve
         self._on_tool: ToolNotifyCallback | None = None
-        self.session_system_prompt: str = ""
 
     def set_session_system_prompt(self, text: str) -> None:
         self.session_system_prompt = text.strip()

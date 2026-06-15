@@ -36,7 +36,7 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="flex h-[calc(100dvh-10rem)] min-h-[400px] flex-col overflow-hidden rounded-xl border border-white/[0.06] bg-[#0a0a0a] sm:h-[calc(100dvh-8rem)]">
+    <div className="flex h-full min-h-[min(640px,calc(100dvh-7rem))] flex-1 flex-col overflow-hidden rounded-xl border border-white/[0.06] bg-[#0a0a0a]">
       <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#111] px-4 py-3 sm:px-5">
         <div>
           <p className="label-caps">Bridge</p>

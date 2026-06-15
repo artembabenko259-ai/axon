@@ -1,0 +1,18 @@
+{
+  "name": "AXON Control Panel",
+  "short_name": "AXON",
+  "description": "Monitor your AXON CLI agent, chat, and models from the browser.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

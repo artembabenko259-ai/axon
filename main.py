@@ -54,6 +54,7 @@ from skills.tools import (
 from ui.axon_completer import build_axon_completer
 from ui.branding import INSTRUCTIONS, VERSION, build_gradient_logo
 from ui.completer import AXON_COMMANDS
+from message_router import try_chitchat_reply
 from ui.system_prompt_cmd import handle_system_command
 from ui.welcome import build_welcome_screen, should_show_welcome
 from ui.file_context import build_file_context
@@ -901,6 +902,23 @@ async def start_axon() -> None:
                 source="terminal",
                 message_id=f"terminal-user-{uuid.uuid4().hex[:8]}",
             )
+
+        quick_reply = try_chitchat_reply(stripped) if not file_context else None
+        if quick_reply:
+            llm_manager.messages.append({"role": "user", "content": stripped})
+            llm_manager.messages.append({"role": "assistant", "content": quick_reply})
+            await emit(f"\n{DEFAULT_THEME.assistant_label}")
+            await emit(quick_reply)
+            await emit(
+                f"\n[dim]Cost: ${TOTAL_COST:.4f} | Tokens: {TOTAL_TOKENS}[/dim]\n"
+            )
+            await bridge.broadcast_chat(
+                role="assistant",
+                text=quick_reply,
+                source=source,
+                message_id=f"{source}-axon-{uuid.uuid4().hex[:8]}",
+            )
+            return
 
         async with llm_lock:
             try:
