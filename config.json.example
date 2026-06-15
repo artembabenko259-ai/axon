@@ -1,0 +1,5 @@
+{
+  "openrouter_api_key": "",
+  "model": "meta-llama/llama-3.1-8b-instruct",
+  "provider": "openrouter"
+}
