@@ -21,21 +21,52 @@ export interface ChatMessage {
   timestamp: number;
 }
 
-interface ChatContextValue {
+export interface BridgeStats {
+  tokens: number;
+  cost: number;
+}
+
+interface BridgeContextValue {
   messages: ChatMessage[];
   connected: boolean;
-  sendMessage: (content: string) => void;
+  stats: BridgeStats;
+  activeModel: string;
+  sendMessage: (text: string) => void;
+  sendSetModel: (model: string) => void;
   clearMessages: () => void;
 }
 
-const WS_URL =
-  process.env.NEXT_PUBLIC_WS_URL ?? "ws://127.0.0.1:8765";
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8765";
 
-const ChatContext = createContext<ChatContextValue | null>(null);
+const BridgeContext = createContext<BridgeContextValue | null>(null);
 
-export function ChatProvider({ children }: { children: ReactNode }) {
+function normalizeRole(role?: string): ChatRole {
+  if (role === "user") return "user";
+  if (role === "system") return "system";
+  return "assistant";
+}
+
+function formatTokens(tokens: number): string {
+  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`;
+  if (tokens >= 1_000) return `${(tokens / 1_000).toFixed(1)}k`;
+  return String(tokens);
+}
+
+export function formatBridgeStats(stats: BridgeStats): {
+  tokensLabel: string;
+  costLabel: string;
+} {
+  return {
+    tokensLabel: formatTokens(stats.tokens),
+    costLabel: `$${stats.cost.toFixed(4)}`,
+  };
+}
+
+export function BridgeProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [connected, setConnected] = useState(false);
+  const [stats, setStats] = useState<BridgeStats>({ tokens: 0, cost: 0 });
+  const [activeModel, setActiveModel] = useState("");
   const wsRef = useRef<WebSocket | null>(null);
   const seenIds = useRef<Set<string>>(new Set());
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -44,6 +75,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     if (seenIds.current.has(msg.id)) return;
     seenIds.current.add(msg.id);
     setMessages((prev) => [...prev, msg]);
+  }, []);
+
+  const sendRaw = useCallback((payload: Record<string, unknown>) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(payload));
+    }
   }, []);
 
   const connect = useCallback(() => {
@@ -56,7 +93,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
     ws.onclose = () => {
       setConnected(false);
-      reconnectTimer.current = setTimeout(connect, 3000);
+      reconnectTimer.current = setTimeout(connect, 2000);
     };
 
     ws.onerror = () => ws.close();
@@ -66,9 +103,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         const data = JSON.parse(event.data as string) as {
           type?: string;
           id?: string;
-          role?: ChatRole;
+          role?: string;
           content?: string;
+          text?: string;
           source?: "web" | "terminal";
+          tokens?: number;
+          cost?: number;
+          model?: string;
         };
 
         if (data.type === "connected") {
@@ -79,20 +120,37 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             source: "terminal",
             timestamp: Date.now(),
           });
+          if (data.model) setActiveModel(data.model);
           return;
         }
 
-        if (data.type === "chat" && data.content) {
+        if (data.type === "stats") {
+          setStats({
+            tokens: Number(data.tokens ?? 0),
+            cost: Number(data.cost ?? 0),
+          });
+          return;
+        }
+
+        if (data.type === "model" && data.model) {
+          setActiveModel(data.model);
+          return;
+        }
+
+        if (data.type === "chat") {
+          const content = (data.text ?? data.content ?? "").trim();
+          if (!content || content === "Thinking...") return;
+
           appendMessage({
-            id: data.id ?? `${data.source}-${Date.now()}`,
-            role: data.role ?? "user",
-            content: data.content,
+            id: data.id ?? `${data.source ?? "terminal"}-${Date.now()}`,
+            role: normalizeRole(data.role),
+            content,
             source: data.source ?? "terminal",
             timestamp: Date.now(),
           });
         }
       } catch {
-        /* ignore malformed */
+        /* ignore malformed payloads */
       }
     };
   }, [appendMessage]);
@@ -105,34 +163,36 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     };
   }, [connect]);
 
-  const sendMessage = useCallback((content: string) => {
-    const trimmed = content.trim();
-    if (!trimmed) return;
+  const sendMessage = useCallback(
+    (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
 
-    const id = `web-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    const msg: ChatMessage = {
-      id,
-      role: "user",
-      content: trimmed,
-      source: "web",
-      timestamp: Date.now(),
-    };
+      const id = `web-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const msg: ChatMessage = {
+        id,
+        role: "user",
+        content: trimmed,
+        source: "web",
+        timestamp: Date.now(),
+      };
 
-    seenIds.current.add(id);
-    setMessages((prev) => [...prev, msg]);
+      seenIds.current.add(id);
+      setMessages((prev) => [...prev, msg]);
+      sendRaw({ type: "chat", text: trimmed });
+    },
+    [sendRaw],
+  );
 
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(
-        JSON.stringify({
-          type: "chat",
-          id,
-          role: "user",
-          content: trimmed,
-          source: "web",
-        }),
-      );
-    }
-  }, []);
+  const sendSetModel = useCallback(
+    (model: string) => {
+      const trimmed = model.trim();
+      if (!trimmed) return;
+      setActiveModel(trimmed);
+      sendRaw({ type: "set_model", model: trimmed });
+    },
+    [sendRaw],
+  );
 
   const clearMessages = useCallback(() => {
     setMessages([]);
@@ -140,17 +200,38 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ messages, connected, sendMessage, clearMessages }),
-    [messages, connected, sendMessage, clearMessages],
+    () => ({
+      messages,
+      connected,
+      stats,
+      activeModel,
+      sendMessage,
+      sendSetModel,
+      clearMessages,
+    }),
+    [
+      messages,
+      connected,
+      stats,
+      activeModel,
+      sendMessage,
+      sendSetModel,
+      clearMessages,
+    ],
   );
 
   return (
-    <ChatContext.Provider value={value}>{children}</ChatContext.Provider>
+    <BridgeContext.Provider value={value}>{children}</BridgeContext.Provider>
   );
 }
 
-export function useChat() {
-  const ctx = useContext(ChatContext);
-  if (!ctx) throw new Error("useChat must be used within ChatProvider");
+export function useWebSocket() {
+  const ctx = useContext(BridgeContext);
+  if (!ctx) {
+    throw new Error("useWebSocket must be used within BridgeProvider");
+  }
   return ctx;
 }
+
+export const useChat = useWebSocket;
+export const ChatProvider = BridgeProvider;

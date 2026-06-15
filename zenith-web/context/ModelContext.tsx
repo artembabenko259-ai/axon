@@ -13,6 +13,7 @@ import {
   DEFAULT_MODELS,
   type ModelOption,
 } from "@/components/dashboard/ModelSelector";
+import { useWebSocket } from "@/context/ChatContext";
 
 export interface CustomModel {
   id: string;
@@ -77,6 +78,7 @@ function customToOption(model: CustomModel): ModelOption {
 }
 
 export function ModelProvider({ children }: { children: ReactNode }) {
+  const { sendSetModel, activeModel: bridgeModel } = useWebSocket();
   const [activeModelId, setActiveModelId] = useState(DEFAULT_MODEL);
   const [enabledModels, setEnabledModels] = useState<Record<string, boolean>>(
     {},
@@ -92,6 +94,13 @@ export function ModelProvider({ children }: { children: ReactNode }) {
     setHydrated(true);
   }, []);
 
+  useEffect(() => {
+    if (bridgeModel) {
+      setActiveModelId(bridgeModel);
+      localStorage.setItem(MODEL_STORAGE_KEY, bridgeModel);
+    }
+  }, [bridgeModel]);
+
   const allModels = useMemo(() => {
     const custom = customModels.map(customToOption);
     const defaultIds = new Set(DEFAULT_MODELS.map((m) => m.id));
@@ -99,17 +108,21 @@ export function ModelProvider({ children }: { children: ReactNode }) {
     return [...DEFAULT_MODELS, ...uniqueCustom];
   }, [customModels]);
 
-  const setActiveModel = useCallback((modelId: string) => {
-    setIsSwitching(true);
-    setActiveModelId(modelId);
-    localStorage.setItem(MODEL_STORAGE_KEY, modelId);
-    setEnabledModels((prev) => {
-      const next = { ...prev, [modelId]: true };
-      localStorage.setItem(ENABLED_STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
-    setTimeout(() => setIsSwitching(false), 800);
-  }, []);
+  const setActiveModel = useCallback(
+    (modelId: string) => {
+      setIsSwitching(true);
+      setActiveModelId(modelId);
+      localStorage.setItem(MODEL_STORAGE_KEY, modelId);
+      setEnabledModels((prev) => {
+        const next = { ...prev, [modelId]: true };
+        localStorage.setItem(ENABLED_STORAGE_KEY, JSON.stringify(next));
+        return next;
+      });
+      sendSetModel(modelId);
+      setTimeout(() => setIsSwitching(false), 800);
+    },
+    [sendSetModel],
+  );
 
   const toggleModelEnabled = useCallback((modelId: string) => {
     setEnabledModels((prev) => {

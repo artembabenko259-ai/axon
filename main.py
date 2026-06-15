@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import io
 import sys
+import uuid
 from dataclasses import dataclass
 
 from dotenv import load_dotenv
@@ -21,8 +22,13 @@ from rich.panel import Panel
 from rich.style import Style as RichStyle
 from rich.text import Text
 
-from llm_client import LLMManager
-from ui.axon_terminal import estimate_cost
+from bridge import AxonBridge
+from llm_client import (
+    LLMManager,
+    TOTAL_COST,
+    TOTAL_TOKENS,
+    reset_session_counters,
+)
 from ui.branding import build_gradient_logo, generate_logo_text
 from ui.completer import AXON_COMMANDS, AxonCommandCompleter
 from ui.theme import DEFAULT_THEME
@@ -50,8 +56,15 @@ AXON_STYLE = Style.from_dict(
 @dataclass
 class SessionState:
     model: str
-    cost: float = 0.0
     status: str = "Ready"
+
+    @property
+    def total_tokens(self) -> int:
+        return TOTAL_TOKENS
+
+    @property
+    def cost(self) -> float:
+        return TOTAL_COST
 
 
 def _terminal_width() -> int:
@@ -82,6 +95,8 @@ def _build_header_ansi(state: SessionState, width: int) -> str:
     status.append(short_model, style=RichStyle(color="#a1a1aa"))
     status.append("   Cost: ", style=RichStyle(color="#71717a"))
     status.append(f"${state.cost:.4f}", style=RichStyle(color="#67e8f9"))
+    status.append("   Tokens: ", style=RichStyle(color="#71717a"))
+    status.append(str(state.total_tokens), style=RichStyle(color="#a1a1aa"))
     status.append("   Status: ", style=RichStyle(color="#71717a"))
     status.append(state.status, style=RichStyle(color="#4ade80"))
 
@@ -101,52 +116,12 @@ def _build_header_ansi(state: SessionState, width: int) -> str:
     )
 
 
-def _handle_slash_command(
-    text: str,
-    *,
-    chat_history: TextArea,
-    llm_manager: LLMManager,
-    state: SessionState,
-    application: Application,
-) -> bool:
-    """Handle slash commands. Returns True if handled (skip LLM)."""
-    parts = text.strip().split(maxsplit=1)
-    cmd = parts[0].lower()
-    args = parts[1] if len(parts) > 1 else ""
-
-    if cmd == "/exit":
-        application.exit()
-        return True
-
-    if cmd == "/help":
-        lines = [f"  {name:<10} {desc}" for name, desc in AXON_COMMANDS.items()]
-        chat_history.text += "AXON: Commands:\n" + "\n".join(lines) + "\n"
-        return True
-
-    if cmd == "/clear":
-        chat_history.text = CHAT_PLACEHOLDER
-        state.cost = 0.0
-        llm_manager.messages = [llm_manager.messages[0]]
-        return True
-
-    if cmd == "/model":
-        if args.strip():
-            llm_manager.set_model(args.strip())
-            state.model = llm_manager.model
-            chat_history.text += f"AXON: Model set to {llm_manager.model}\n"
-        else:
-            chat_history.text += f"AXON: Current model: {llm_manager.model}\n"
-        return True
-
-    chat_history.text += f"AXON: Unknown command {cmd}. Type /help.\n"
-    return True
-
-
-def main() -> None:
+async def start_axon() -> None:
     load_dotenv()
 
     llm_manager = LLMManager()
     state = SessionState(model=llm_manager.model)
+    bridge = AxonBridge()
 
     logo_lines = len([ln for ln in generate_logo_text().splitlines() if ln.strip()]) or 4
     header_height = logo_lines + 4
@@ -174,52 +149,122 @@ def main() -> None:
     )
     user_input.window.height = D.exact(1)
 
+    def refresh_ui() -> None:
+        try:
+            get_app().invalidate()
+        except Exception:
+            pass
+
+    async def sync_stats() -> None:
+        await bridge.broadcast_stats(TOTAL_TOKENS, TOTAL_COST)
+
+    async def apply_model(model: str, *, announce_cli: bool = True) -> None:
+        llm_manager.set_model(model)
+        state.model = model
+        bridge._current_model = model
+        if announce_cli:
+            chat_history.text += f"AXON: Model set to {model}\n"
+        await bridge.broadcast_model(model)
+        refresh_ui()
+
+    async def process_user_message(text: str, source: str = "terminal") -> None:
+        stripped = text.strip()
+        if not stripped:
+            return
+
+        if stripped.startswith("/"):
+            parts = stripped.split(maxsplit=1)
+            cmd = parts[0].lower()
+            args = parts[1] if len(parts) > 1 else ""
+
+            if cmd == "/exit":
+                try:
+                    get_app().exit()
+                except Exception:
+                    pass
+                return
+
+            if cmd == "/help":
+                lines = [f"  {name:<10} {desc}" for name, desc in AXON_COMMANDS.items()]
+                chat_history.text += "AXON: Commands:\n" + "\n".join(lines) + "\n"
+                refresh_ui()
+                return
+
+            if cmd == "/clear":
+                chat_history.text = CHAT_PLACEHOLDER
+                reset_session_counters()
+                llm_manager.messages = [llm_manager.messages[0]]
+                await sync_stats()
+                refresh_ui()
+                return
+
+            if cmd == "/model":
+                if args.strip():
+                    await apply_model(args.strip())
+                else:
+                    chat_history.text += f"AXON: Current model: {llm_manager.model}\n"
+                    refresh_ui()
+                return
+
+            chat_history.text += f"AXON: Unknown command {cmd}. Type /help.\n"
+            refresh_ui()
+            return
+
+        prefix = "[Web] " if source == "web" else ""
+        chat_history.text += f"\n{prefix}❯ {stripped}\n"
+
+        if source == "terminal":
+            await bridge.broadcast_chat(
+                role="user",
+                text=stripped,
+                source="terminal",
+                message_id=f"terminal-user-{uuid.uuid4().hex[:8]}",
+            )
+
+        state.status = "Thinking..."
+        chat_history.text += "AXON: Thinking...\n"
+        refresh_ui()
+
+        try:
+            llm_manager.reload_credentials()
+            state.model = llm_manager.model
+            result = await llm_manager.send_message_async(stripped)
+
+            chat_history.text = chat_history.text.replace("AXON: Thinking...\n", "")
+            chat_history.text += f"AXON: {result.display_text}\n"
+
+            if result.usage:
+                await sync_stats()
+
+            state.status = "Ready" if result.ok else "Error"
+
+            await bridge.broadcast_chat(
+                role="assistant",
+                text=result.display_text,
+                source=source,
+                message_id=f"{source}-axon-{uuid.uuid4().hex[:8]}",
+            )
+        except Exception as exc:
+            chat_history.text = chat_history.text.replace("AXON: Thinking...\n", "")
+            error_text = f"[ERROR]: {str(exc)}"
+            chat_history.text += f"{error_text}\n"
+            state.status = "Error"
+            await bridge.broadcast_chat(role="assistant", text=error_text, source=source)
+        finally:
+            refresh_ui()
+
+    bridge.configure(
+        process_chat=process_user_message,
+        set_model=lambda model: apply_model(model, announce_cli=True),
+        refresh_ui=refresh_ui,
+        current_model=state.model,
+    )
+
     def accept_input(buff):
         text = buff.text
         if not text.strip():
             return False
-
-        chat_history.text += f"\n❯ {text}\n"
-        get_app().invalidate()
-
-        async def process_ai():
-            if text.strip().startswith("/"):
-                _handle_slash_command(
-                    text,
-                    chat_history=chat_history,
-                    llm_manager=llm_manager,
-                    state=state,
-                    application=get_app(),
-                )
-                get_app().invalidate()
-                return
-
-            state.status = "Thinking..."
-            chat_history.text += "AXON: Thinking...\n"
-            get_app().invalidate()
-
-            try:
-                llm_manager.reload_credentials()
-                state.model = llm_manager.model
-                result = await llm_manager.send_message_async(text)
-
-                chat_history.text = chat_history.text.replace("AXON: Thinking...\n", "")
-                chat_history.text += f"AXON: {result.display_text}\n"
-
-                if result.usage:
-                    state.cost += estimate_cost(
-                        result.usage.prompt_tokens,
-                        result.usage.completion_tokens,
-                    )
-                state.status = "Ready" if result.ok else "Error"
-            except Exception as exc:
-                chat_history.text = chat_history.text.replace("AXON: Thinking...\n", "")
-                chat_history.text += f"[ERROR]: {str(exc)}\n"
-                state.status = "Error"
-
-            get_app().invalidate()
-
-        get_app().create_background_task(process_ai())
+        get_app().create_background_task(process_user_message(text, "terminal"))
         return False
 
     user_input.accept_handler = accept_input
@@ -247,7 +292,18 @@ def main() -> None:
         refresh_interval=0.12,
     )
 
-    asyncio.run(app.run_async())
+    # websockets.serve runs concurrently on this event loop while the CLI is active
+    ws_server = await bridge.start()
+
+    try:
+        await app.run_async()
+    finally:
+        ws_server.close()
+        await ws_server.wait_closed()
+
+
+def main() -> None:
+    asyncio.run(start_axon())
 
 
 if __name__ == "__main__":

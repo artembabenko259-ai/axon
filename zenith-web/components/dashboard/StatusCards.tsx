@@ -9,6 +9,7 @@ interface StatusCardProps {
   model: string;
   uptime: string;
   tokensUsed: string;
+  sessionCost: string;
 }
 
 export function StatusCards({
@@ -16,6 +17,7 @@ export function StatusCards({
   model,
   uptime,
   tokensUsed,
+  sessionCost,
 }: StatusCardProps) {
   const cards = [
     {
@@ -40,8 +42,8 @@ export function StatusCards({
       dot: "bg-purple-400",
     },
     {
-      label: "Tokens Used",
-      value: tokensUsed,
+      label: "Tokens / Cost",
+      value: `${tokensUsed} · ${sessionCost}`,
       icon: Zap,
       accent: "text-foreground",
       dot: "bg-white/40",

@@ -9,17 +9,34 @@ from config_store import get_model, get_openrouter_api_key
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_MODEL = "meta-llama/llama-3.1-8b-instruct"
+COST_PER_TOKEN = 0.000002
 
 AXON_SYSTEM_PROMPT = (
     "You are AXON, a helpful command-line AI assistant. "
     "Provide clear, concise answers."
 )
 
+# Global session counters (CLI + WebSocket bridge)
+TOTAL_TOKENS: int = 0
+TOTAL_COST: float = 0.0
+
+
+def record_token_usage(total_tokens: int) -> None:
+    """Accumulate tokens and estimated cost after each LLM response."""
+    global TOTAL_TOKENS, TOTAL_COST
+    tokens = max(int(total_tokens or 0), 0)
+    TOTAL_TOKENS += tokens
+    TOTAL_COST += tokens * COST_PER_TOKEN
+
+
+def reset_session_counters() -> None:
+    global TOTAL_TOKENS, TOTAL_COST
+    TOTAL_TOKENS = 0
+    TOTAL_COST = 0.0
+
 
 @dataclass(frozen=True)
 class TokenUsage:
-    """Token usage metadata from the OpenRouter API response."""
-
     prompt_tokens: int
     completion_tokens: int
     total_tokens: int
@@ -27,8 +44,6 @@ class TokenUsage:
 
 @dataclass(frozen=True)
 class LLMResult:
-    """Result of an AXON LLM request, including content and usage for cost tracking."""
-
     content: str
     model: str
     usage: TokenUsage | None = None
@@ -67,7 +82,6 @@ class LLMManager:
         )
 
     def reload_credentials(self) -> None:
-        """Reload API key and model from shared config.json / .env."""
         key = get_openrouter_api_key()
         model = get_model()
 
@@ -82,12 +96,10 @@ class LLMManager:
         self.model = model
 
     def send_message(self, user_text: str) -> LLMResult:
-        """Synchronous LLM call (reloads shared config first)."""
         self.reload_credentials()
         return self._send_message_impl(user_text)
 
     async def send_message_async(self, user_text: str) -> LLMResult:
-        """Async wrapper — safe to await from prompt_toolkit background tasks."""
         self.reload_credentials()
         return await asyncio.to_thread(self._send_message_impl, user_text)
 
@@ -145,6 +157,8 @@ class LLMManager:
             self.messages.append({"role": "assistant", "content": content})
 
         usage = self._parse_usage(response.usage)
+        if usage is not None:
+            record_token_usage(usage.total_tokens)
 
         return LLMResult(
             content=content,
@@ -172,13 +186,28 @@ class LLMManager:
     def _parse_usage(usage: object | None) -> TokenUsage | None:
         if usage is None:
             return None
+
+        total = getattr(usage, "total_tokens", None)
         prompt = getattr(usage, "prompt_tokens", None)
         completion = getattr(usage, "completion_tokens", None)
-        total = getattr(usage, "total_tokens", None)
-        if prompt is None and completion is None and total is None:
+
+        if total is None and prompt is None and completion is None:
+            if isinstance(usage, dict):
+                total = usage.get("total_tokens")
+                prompt = usage.get("prompt_tokens")
+                completion = usage.get("completion_tokens")
+            else:
+                return None
+
+        prompt_i = int(prompt or 0)
+        completion_i = int(completion or 0)
+        total_i = int(total or (prompt_i + completion_i))
+
+        if total_i <= 0 and prompt_i <= 0 and completion_i <= 0:
             return None
+
         return TokenUsage(
-            prompt_tokens=int(prompt or 0),
-            completion_tokens=int(completion or 0),
-            total_tokens=int(total or (prompt or 0) + (completion or 0)),
+            prompt_tokens=prompt_i,
+            completion_tokens=completion_i,
+            total_tokens=total_i,
         )

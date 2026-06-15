@@ -10,12 +10,13 @@ import { ModelMarketplace } from "@/components/marketplace/ModelMarketplace";
 import { AgentOrb } from "@/components/ui/AgentOrb";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { StaggerGrid, StaggerItem } from "@/components/ui/StaggerGrid";
-import { useChat } from "@/context/ChatContext";
+import { useChat, formatBridgeStats } from "@/context/ChatContext";
 import { useModel } from "@/context/ModelContext";
 
 export default function DashboardPage() {
   const { activeModelId, isSwitching } = useModel();
-  const { messages } = useChat();
+  const { messages, connected, stats } = useChat();
+  const { tokensLabel, costLabel } = formatBridgeStats(stats);
   const [status, setStatus] = useState<"ready" | "thinking" | "streaming">(
     "ready",
   );
@@ -56,10 +57,17 @@ export default function DashboardPage() {
           <StaggerGrid className="flex flex-col gap-4">
             <StaggerItem>
               <StatusCards
-                status={status === "ready" ? "Ready" : status}
+                status={
+                  connected
+                    ? status === "ready"
+                      ? "Ready"
+                      : status
+                    : "Reconnecting…"
+                }
                 model={shortModel}
                 uptime={uptime}
-                tokensUsed="4.2k"
+                tokensUsed={tokensLabel}
+                sessionCost={costLabel}
               />
             </StaggerItem>
 
