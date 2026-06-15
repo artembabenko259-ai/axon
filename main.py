@@ -56,6 +56,7 @@ from ui.completer import AXON_COMMANDS
 from ui.file_context import build_file_context
 from ui.git_commit import collect_git_changes, run_git_commit
 from ui.git_review import build_review_prompt
+from axon_runtime import bundle_root, install_root
 from ui.theme import DEFAULT_THEME
 
 axon_completer = build_axon_completer()
@@ -667,8 +668,13 @@ async def start_axon() -> None:
             await sync_stats()
 
     async def run_docs() -> None:
-        script = workspace / "scripts" / "docs_gen.py"
-        if not script.is_file():
+        candidates = [
+            workspace / "scripts" / "docs_gen.py",
+            install_root() / "scripts" / "docs_gen.py",
+            bundle_root() / "scripts" / "docs_gen.py",
+        ]
+        script = next((path for path in candidates if path.is_file()), None)
+        if script is None:
             await emit("[red]AXON: scripts/docs_gen.py not found.[/]\n")
             return
 

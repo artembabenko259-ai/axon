@@ -4,8 +4,10 @@ import json
 import os
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).resolve().parent
-CONFIG_PATH = ROOT_DIR / "config.json"
+from axon_runtime import install_root, is_frozen, user_data_dir
+
+ROOT_DIR = install_root()
+CONFIG_PATH = (user_data_dir() if is_frozen() else ROOT_DIR) / "config.json"
 
 DEFAULT_MODEL = "meta-llama/llama-3.1-8b-instruct"
 

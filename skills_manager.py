@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-SKILLS_DIR_NAME = ".axon/skills"
+from axon_runtime import seed_axon_tree
 INLINE_SHELL_PATTERN = re.compile(r"!`([^`]+)`")
 SHELL_TIMEOUT_SECONDS = 30
 MAX_INLINE_OUTPUT = 16_384
@@ -134,7 +134,9 @@ def load_project_memory(workspace: Path | None = None) -> str:
 
 def ensure_skills_workspace(workspace: Path | None = None) -> Path:
     """Create `.axon/skills/` with README and an example skill if missing."""
-    root = skills_root(workspace)
+    ws = workspace or Path.cwd()
+    seed_axon_tree(ws)
+    root = skills_root(ws)
     root.mkdir(parents=True, exist_ok=True)
 
     readme = root / "README.md"

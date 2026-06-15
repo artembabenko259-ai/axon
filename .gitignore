@@ -1,3 +1,10 @@
+# Release artifacts
+dist/
+release/
+.venv-build/
+build/bundle-staging/
+build/pyinstaller/
+
 # Secrets and local config
 .env
 config.json
