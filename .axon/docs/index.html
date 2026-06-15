@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AXON Live Docs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            axon: {
+              bg: '#0b0d12',
+              panel: '#12151c',
+              border: '#1e2430',
+              accent: '#4466ff',
+              accentDim: '#2a3a80',
+              text: '#e8ecf4',
+              muted: '#8b95a8',
+            }
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
+            sans: ['Inter', 'Segoe UI', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    html, body { height: 100%; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0b0d12; }
+    ::-webkit-scrollbar-thumb { background: #2a3142; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4466ff; }
+    .tree-item.active { background: rgba(68, 102, 255, 0.15); border-left: 2px solid #4466ff; }
+    .search-hit:hover { background: rgba(68, 102, 255, 0.1); }
+    .docstring { white-space: pre-wrap; }
+    .signature { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-axon-bg text-axon-text font-sans antialiased h-full overflow-hidden">
+  <div class="flex h-full">
+    <!-- Sidebar -->
+    <aside class="w-72 min-w-[18rem] bg-axon-panel border-r border-axon-border flex flex-col shrink-0">
+      <div class="p-4 border-b border-axon-border">
+        <div class="flex items-center gap-2 mb-1">
+          <div class="w-8 h-8 rounded-lg bg-axon-accent/20 flex items-center justify-center text-axon-accent font-bold text-sm">AX</div>
+          <div>
+            <h1 class="font-semibold text-sm tracking-wide" id="project-name">AXON Live Docs</h1>
+            <p class="text-xs text-axon-muted" id="generated-at">Loading…</p>
+          </div>
+        </div>
+        <div class="mt-3 relative">
+          <input
+            id="search-input"
+            type="search"
+            placeholder="Search symbols…"
+            class="w-full bg-axon-bg border border-axon-border rounded-lg px-3 py-2 text-sm text-axon-text placeholder-axon-muted focus:outline-none focus:border-axon-accent focus:ring-1 focus:ring-axon-accent/40"
+            autocomplete="off"
+          />
+          <div id="search-results" class="hidden absolute left-0 right-0 top-full mt-1 max-h-64 overflow-y-auto bg-axon-panel border border-axon-border rounded-lg shadow-xl z-50"></div>
+        </div>
+      </div>
+      <nav id="file-tree" class="flex-1 overflow-y-auto p-2 text-sm"></nav>
+      <div class="p-3 border-t border-axon-border text-xs text-axon-muted" id="stats-bar"></div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto">
+      <div id="welcome" class="h-full flex items-center justify-center p-8">
+        <div class="text-center max-w-lg">
+          <h2 class="text-2xl font-semibold mb-2">Project Documentation</h2>
+          <p class="text-axon-muted mb-6">Select a file from the sidebar or search for a class, method, or function.</p>
+          <div class="grid grid-cols-3 gap-4 text-center" id="stat-cards"></div>
+        </div>
+      </div>
+      <article id="content" class="hidden max-w-4xl mx-auto p-8"></article>
+    </main>
+  </div>
+
+  <script>
+    let docs = null;
+    let activePath = null;
+
+    async function loadDocs() {
+      const res = await fetch('docs.json');
+      if (!res.ok) throw new Error('Could not load docs.json');
+      docs = await res.json();
+      document.getElementById('project-name').textContent = docs.project + ' — Live Docs';
+      const when = new Date(docs.generated_at);
+      document.getElementById('generated-at').textContent = 'Updated ' + when.toLocaleString();
+      document.getElementById('stats-bar').textContent =
+        `${docs.stats.file_count} files · ${docs.stats.python_count} Python · ${docs.stats.class_count} classes · ${docs.stats.function_count} symbols`;
+      renderStatCards();
+      renderTree(docs.tree, document.getElementById('file-tree'));
+      setupSearch();
+    }
+
+    function renderStatCards() {
+      const el = document.getElementById('stat-cards');
+      const items = [
+        { label: 'Files', value: docs.stats.file_count },
+        { label: 'Classes', value: docs.stats.class_count },
+        { label: 'Symbols', value: docs.stats.function_count },
+      ];
+      el.innerHTML = items.map(i => `
+        <div class="bg-axon-panel border border-axon-border rounded-xl p-4">
+          <div class="text-2xl font-semibold text-axon-accent">${i.value}</div>
+          <div class="text-xs text-axon-muted mt-1">${i.label}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderTree(nodes, container, depth = 0) {
+      nodes.forEach(node => {
+        if (node.type === 'directory') {
+          const folder = document.createElement('div');
+          folder.className = 'mb-0.5';
+          const header = document.createElement('button');
+          header.type = 'button';
+          header.className = 'w-full text-left px-2 py-1 rounded text-axon-muted hover:text-axon-text flex items-center gap-1';
+          header.style.paddingLeft = (8 + depth * 12) + 'px';
+          header.innerHTML = `<span class="text-axon-accent">📁</span><span class="font-medium">${esc(node.name)}</span>`;
+          const children = document.createElement('div');
+          children.className = 'mt-0.5';
+          header.addEventListener('click', () => {
+            children.classList.toggle('hidden');
+            selectFile(node.path);
+          });
+          folder.appendChild(header);
+          folder.appendChild(children);
+          renderTree(node.children || [], children, depth + 1);
+          container.appendChild(folder);
+        } else {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.dataset.path = node.path;
+          btn.className = 'tree-item w-full text-left px-2 py-1 rounded hover:bg-axon-accent/10 flex items-center gap-1.5 text-axon-text/90';
+          btn.style.paddingLeft = (8 + depth * 12) + 'px';
+          const icon = node.kind === 'python' ? '🐍' : '📄';
+          btn.innerHTML = `<span>${icon}</span><span class="truncate">${esc(node.name)}</span>`;
+          btn.addEventListener('click', () => selectFile(node.path));
+          container.appendChild(btn);
+        }
+      });
+    }
+
+    function selectFile(path) {
+      activePath = path;
+      document.querySelectorAll('.tree-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.path === path);
+      });
+      const file = docs.files[path];
+      if (!file) return;
+      document.getElementById('welcome').classList.add('hidden');
+      const content = document.getElementById('content');
+      content.classList.remove('hidden');
+      content.innerHTML = renderFile(file);
+      content.scrollTop = 0;
+      hideSearch();
+    }
+
+    function renderFile(file) {
+      const parts = [];
+      parts.push(`<header class="mb-8 pb-6 border-b border-axon-border">`);
+      parts.push(`<p class="text-xs text-axon-muted font-mono mb-2">${esc(file.path)}</p>`);
+      parts.push(`<h2 class="text-3xl font-bold mb-3">${esc(file.name || file.path)}</h2>`);
+      if (file.summary) {
+        parts.push(`<p class="text-axon-muted text-lg">${esc(file.summary)}</p>`);
+      }
+      if (file.kind === 'python' && file.module_docstring && file.module_docstring !== file.summary) {
+        parts.push(`<div class="mt-4 p-4 bg-axon-panel border border-axon-border rounded-xl docstring text-sm text-axon-muted">${esc(file.module_docstring)}</div>`);
+      }
+      if (file.parse_error) {
+        parts.push(`<p class="mt-3 text-red-400 text-sm">Parse error: ${esc(file.parse_error)}</p>`);
+      }
+      parts.push(`</header>`);
+
+      if (file.kind === 'directory') {
+        parts.push(`<p class="text-axon-muted">Directory — browse files in the sidebar.</p>`);
+        return parts.join('');
+      }
+
+      if (file.functions && file.functions.length) {
+        parts.push(sectionTitle('Functions', file.functions.length));
+        file.functions.forEach(fn => parts.push(renderSymbol(fn, 'function')));
+      }
+
+      if (file.classes && file.classes.length) {
+        parts.push(sectionTitle('Classes', file.classes.length));
+        file.classes.forEach(cls => {
+          parts.push(`<section class="mb-8 p-5 bg-axon-panel border border-axon-border rounded-xl">`);
+          parts.push(`<h3 class="text-xl font-semibold text-axon-accent mb-1">class ${esc(cls.name)}</h3>`);
+          if (cls.bases && cls.bases.length) {
+            parts.push(`<p class="text-xs text-axon-muted font-mono mb-2">extends ${esc(cls.bases.join(', '))}</p>`);
+          }
+          if (cls.docstring) {
+            parts.push(`<p class="docstring text-sm text-axon-muted mb-4">${esc(cls.docstring)}</p>`);
+          }
+          if (cls.methods && cls.methods.length) {
+            parts.push(`<h4 class="text-xs uppercase tracking-wider text-axon-muted mb-3">Methods</h4>`);
+            cls.methods.forEach(m => parts.push(renderSymbol(m, 'method')));
+          }
+          parts.push(`</section>`);
+        });
+      }
+
+      if (file.kind !== 'python') {
+        parts.push(`<div class="p-5 bg-axon-panel border border-axon-border rounded-xl">`);
+        parts.push(`<p class="text-axon-muted text-sm">This file is indexed by role and path. Open it in your editor for full contents.</p>`);
+        if (file.size_bytes != null) {
+          parts.push(`<p class="text-xs text-axon-muted mt-2">Size: ${formatBytes(file.size_bytes)}</p>`);
+        }
+        parts.push(`</div>`);
+      }
+
+      return parts.join('');
+    }
+
+    function sectionTitle(label, count) {
+      return `<h3 class="text-xs uppercase tracking-wider text-axon-muted font-semibold mb-4 mt-2">${label} <span class="text-axon-accent">(${count})</span></h3>`;
+    }
+
+    function renderSymbol(sym, type) {
+      const badge = type === 'method' ? 'method' : (sym.async ? 'async' : 'def');
+      return `
+        <div class="mb-4 pl-4 border-l-2 border-axon-border hover:border-axon-accent transition-colors">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-[10px] uppercase px-1.5 py-0.5 rounded bg-axon-accent/20 text-axon-accent font-semibold">${badge}</span>
+            <code class="signature text-sm text-axon-text">${esc(sym.signature || sym.name)}</code>
+          </div>
+          ${sym.docstring ? `<p class="docstring text-sm text-axon-muted ml-1">${esc(sym.docstring)}</p>` : '<p class="text-xs text-axon-muted/50 ml-1 italic">No docstring</p>'}
+        </div>`;
+    }
+
+    function setupSearch() {
+      const input = document.getElementById('search-input');
+      const results = document.getElementById('search-results');
+      let timer;
+
+      input.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => runSearch(input.value.trim()), 120);
+      });
+
+      input.addEventListener('focus', () => {
+        if (input.value.trim()) runSearch(input.value.trim());
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!results.contains(e.target) && e.target !== input) hideSearch();
+      });
+    }
+
+    function runSearch(query) {
+      const results = document.getElementById('search-results');
+      if (!query || query.length < 2) {
+        hideSearch();
+        return;
+      }
+      const q = query.toLowerCase();
+      const hits = docs.search_index.filter(item =>
+        item.name.toLowerCase().includes(q) ||
+        item.file.toLowerCase().includes(q) ||
+        (item.detail && item.detail.toLowerCase().includes(q)) ||
+        (item.signature && item.signature.toLowerCase().includes(q))
+      ).slice(0, 20);
+
+      if (!hits.length) {
+        results.innerHTML = '<div class="p-3 text-sm text-axon-muted">No matches</div>';
+      } else {
+        results.innerHTML = hits.map(hit => `
+          <button type="button" class="search-hit w-full text-left px-3 py-2 border-b border-axon-border last:border-0" data-file="${esc(hit.file)}">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] uppercase px-1 py-0.5 rounded bg-axon-accent/20 text-axon-accent">${esc(hit.type)}</span>
+              <span class="font-medium text-sm">${esc(hit.name)}</span>
+            </div>
+            <div class="text-xs text-axon-muted font-mono truncate mt-0.5">${esc(hit.file)}</div>
+          </button>
+        `).join('');
+        results.querySelectorAll('button').forEach(btn => {
+          btn.addEventListener('click', () => {
+            selectFile(btn.dataset.file);
+            document.getElementById('search-input').value = '';
+            hideSearch();
+          });
+        });
+      }
+      results.classList.remove('hidden');
+    }
+
+    function hideSearch() {
+      document.getElementById('search-results').classList.add('hidden');
+    }
+
+    function esc(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function formatBytes(n) {
+      if (n < 1024) return n + ' B';
+      if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+      return (n / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    loadDocs().catch(err => {
+      document.getElementById('welcome').innerHTML = `
+        <div class="text-center text-red-400">
+          <p class="text-lg font-semibold">Failed to load documentation</p>
+          <p class="text-sm mt-2 text-axon-muted">${esc(err.message)}</p>
+        </div>`;
+    });
+  </script>
+</body>
+</html>

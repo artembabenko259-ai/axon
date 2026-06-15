@@ -1,0 +1,6129 @@
+{
+  "project": "CLI",
+  "root": "C:\\Users\\User\\Desktop\\CLI",
+  "generated_at": "2026-06-15T04:00:20.275528+00:00",
+  "tree": [
+    {
+      "name": "scripts",
+      "path": "scripts",
+      "type": "directory",
+      "children": [
+        {
+          "name": "docs_gen.py",
+          "path": "scripts/docs_gen.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "serve_docs.py",
+          "path": "scripts/serve_docs.py",
+          "type": "file",
+          "kind": "python"
+        }
+      ]
+    },
+    {
+      "name": "skills",
+      "path": "skills",
+      "type": "directory",
+      "children": [
+        {
+          "name": "__init__.py",
+          "path": "skills/__init__.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "base.py",
+          "path": "skills/base.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "file_read.py",
+          "path": "skills/file_read.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "registry.py",
+          "path": "skills/registry.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "system_info.py",
+          "path": "skills/system_info.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "tasks.py",
+          "path": "skills/tasks.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "tools.py",
+          "path": "skills/tools.py",
+          "type": "file",
+          "kind": "python"
+        }
+      ]
+    },
+    {
+      "name": "ui",
+      "path": "ui",
+      "type": "directory",
+      "children": [
+        {
+          "name": "__init__.py",
+          "path": "ui/__init__.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "axon_completer.py",
+          "path": "ui/axon_completer.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "axon_terminal.py",
+          "path": "ui/axon_terminal.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "axon_tui.py",
+          "path": "ui/axon_tui.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "branding.py",
+          "path": "ui/branding.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "completer.py",
+          "path": "ui/completer.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "docs_template.html",
+          "path": "ui/docs_template.html",
+          "type": "file",
+          "kind": "file"
+        },
+        {
+          "name": "file_context.py",
+          "path": "ui/file_context.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "git_commit.py",
+          "path": "ui/git_commit.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "git_review.py",
+          "path": "ui/git_review.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "protocol.py",
+          "path": "ui/protocol.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "renderer.py",
+          "path": "ui/renderer.py",
+          "type": "file",
+          "kind": "python"
+        },
+        {
+          "name": "theme.py",
+          "path": "ui/theme.py",
+          "type": "file",
+          "kind": "python"
+        }
+      ]
+    },
+    {
+      "name": "zenith-web",
+      "path": "zenith-web",
+      "type": "directory",
+      "children": [
+        {
+          "name": "app",
+          "path": "zenith-web/app",
+          "type": "directory",
+          "children": [
+            {
+              "name": "api",
+              "path": "zenith-web/app/api",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "config",
+                  "path": "zenith-web/app/api/config",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "route.ts",
+                      "path": "zenith-web/app/api/config/route.ts",
+                      "type": "file",
+                      "kind": "file"
+                    }
+                  ]
+                },
+                {
+                  "name": "models",
+                  "path": "zenith-web/app/api/models",
+                  "type": "directory",
+                  "children": [
+                    {
+                      "name": "route.ts",
+                      "path": "zenith-web/app/api/models/route.ts",
+                      "type": "file",
+                      "kind": "file"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "chat",
+              "path": "zenith-web/app/chat",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "page.tsx",
+                  "path": "zenith-web/app/chat/page.tsx",
+                  "type": "file",
+                  "kind": "file"
+                }
+              ]
+            },
+            {
+              "name": "config",
+              "path": "zenith-web/app/config",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "page.tsx",
+                  "path": "zenith-web/app/config/page.tsx",
+                  "type": "file",
+                  "kind": "file"
+                }
+              ]
+            },
+            {
+              "name": "dashboard",
+              "path": "zenith-web/app/dashboard",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "page.tsx",
+                  "path": "zenith-web/app/dashboard/page.tsx",
+                  "type": "file",
+                  "kind": "file"
+                }
+              ]
+            },
+            {
+              "name": "marketplace",
+              "path": "zenith-web/app/marketplace",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "page.tsx",
+                  "path": "zenith-web/app/marketplace/page.tsx",
+                  "type": "file",
+                  "kind": "file"
+                }
+              ]
+            },
+            {
+              "name": "globals.css",
+              "path": "zenith-web/app/globals.css",
+              "type": "file",
+              "kind": "file"
+            },
+            {
+              "name": "layout.tsx",
+              "path": "zenith-web/app/layout.tsx",
+              "type": "file",
+              "kind": "file"
+            },
+            {
+              "name": "page.tsx",
+              "path": "zenith-web/app/page.tsx",
+              "type": "file",
+              "kind": "file"
+            }
+          ]
+        },
+        {
+          "name": "components",
+          "path": "zenith-web/components",
+          "type": "directory",
+          "children": [
+            {
+              "name": "chat",
+              "path": "zenith-web/components/chat",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "ChatInterface.tsx",
+                  "path": "zenith-web/components/chat/ChatInterface.tsx",
+                  "type": "file",
+                  "kind": "file"
+                }
+              ]
+            },
+            {
+              "name": "config",
+              "path": "zenith-web/components/config",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "ConfigWidget.tsx",
+                  "path": "zenith-web/components/config/ConfigWidget.tsx",
+                  "type": "file",
+                  "kind": "file"
+                },
+                {
+                  "name": "CustomModelRegistry.tsx",
+                  "path": "zenith-web/components/config/CustomModelRegistry.tsx",
+                  "type": "file",
+                  "kind": "file"
+                }
+              ]
+            },
+            {
+              "name": "dashboard",
+              "path": "zenith-web/components/dashboard",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "LogsConsole.tsx",
+                  "path": "zenith-web/components/dashboard/LogsConsole.tsx",
+                  "type": "file",
+                  "kind": "file"
+                },
+                {
+                  "name": "ModelSelector.tsx",
+                  "path": "zenith-web/components/dashboard/ModelSelector.tsx",
+                  "type": "file",
+                  "kind": "file"
+                },
+                {
+                  "name": "StatusCards.tsx",
+                  "path": "zenith-web/components/dashboard/StatusCards.tsx",
+                  "type": "file",
+                  "kind": "file"
+                }
+              ]
+            },
+            {
+              "name": "landing",
+              "path": "zenith-web/components/landing",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "LandingHero.tsx",
+                  "path": "zenith-web/components/landing/LandingHero.tsx",
+                  "type": "file",
+                  "kind": "file"
+                }
+              ]
+            },
+            {
+              "name": "layout",
+              "path": "zenith-web/components/layout",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "AppShell.tsx",
+                  "path": "zenith-web/components/layout/AppShell.tsx",
+                  "type": "file",
+                  "kind": "file"
+                },
+                {
+                  "name": "Sidebar.tsx",
+                  "path": "zenith-web/components/layout/Sidebar.tsx",
+                  "type": "file",
+                  "kind": "file"
+                },
+                {
+                  "name": "TopNav.tsx",
+                  "path": "zenith-web/components/layout/TopNav.tsx",
+                  "type": "file",
+                  "kind": "file"
+                }
+              ]
+            },
+            {
+              "name": "marketplace",
+              "path": "zenith-web/components/marketplace",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "ModelAvatar.tsx",
+                  "path": "zenith-web/components/marketplace/ModelAvatar.tsx",
+                  "type": "file",
+                  "kind": "file"
+                },
+                {
+                  "name": "ModelMarketplace.tsx",
+                  "path": "zenith-web/components/marketplace/ModelMarketplace.tsx",
+                  "type": "file",
+                  "kind": "file"
+                }
+              ]
+            },
+            {
+              "name": "providers",
+              "path": "zenith-web/components/providers",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "AppProviders.tsx",
+                  "path": "zenith-web/components/providers/AppProviders.tsx",
+                  "type": "file",
+                  "kind": "file"
+                },
+                {
+                  "name": "ThemeProvider.tsx",
+                  "path": "zenith-web/components/providers/ThemeProvider.tsx",
+                  "type": "file",
+                  "kind": "file"
+                }
+              ]
+            },
+            {
+              "name": "ui",
+              "path": "zenith-web/components/ui",
+              "type": "directory",
+              "children": [
+                {
+                  "name": "AgentOrb.tsx",
+                  "path": "zenith-web/components/ui/AgentOrb.tsx",
+                  "type": "file",
+                  "kind": "file"
+                },
+                {
+                  "name": "GlassCard.tsx",
+                  "path": "zenith-web/components/ui/GlassCard.tsx",
+                  "type": "file",
+                  "kind": "file"
+                },
+                {
+                  "name": "StaggerGrid.tsx",
+                  "path": "zenith-web/components/ui/StaggerGrid.tsx",
+                  "type": "file",
+                  "kind": "file"
+                },
+                {
+                  "name": "ThemeSwitcher.tsx",
+                  "path": "zenith-web/components/ui/ThemeSwitcher.tsx",
+                  "type": "file",
+                  "kind": "file"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "context",
+          "path": "zenith-web/context",
+          "type": "directory",
+          "children": [
+            {
+              "name": "ChatContext.tsx",
+              "path": "zenith-web/context/ChatContext.tsx",
+              "type": "file",
+              "kind": "file"
+            },
+            {
+              "name": "ConfigContext.tsx",
+              "path": "zenith-web/context/ConfigContext.tsx",
+              "type": "file",
+              "kind": "file"
+            },
+            {
+              "name": "ModelContext.tsx",
+              "path": "zenith-web/context/ModelContext.tsx",
+              "type": "file",
+              "kind": "file"
+            }
+          ]
+        },
+        {
+          "name": "hooks",
+          "path": "zenith-web/hooks",
+          "type": "directory",
+          "children": [
+            {
+              "name": "useWebSocket.ts",
+              "path": "zenith-web/hooks/useWebSocket.ts",
+              "type": "file",
+              "kind": "file"
+            }
+          ]
+        },
+        {
+          "name": "lib",
+          "path": "zenith-web/lib",
+          "type": "directory",
+          "children": [
+            {
+              "name": "ai-client.ts",
+              "path": "zenith-web/lib/ai-client.ts",
+              "type": "file",
+              "kind": "file"
+            },
+            {
+              "name": "models.ts",
+              "path": "zenith-web/lib/models.ts",
+              "type": "file",
+              "kind": "file"
+            },
+            {
+              "name": "utils.ts",
+              "path": "zenith-web/lib/utils.ts",
+              "type": "file",
+              "kind": "file"
+            }
+          ]
+        },
+        {
+          "name": "public",
+          "path": "zenith-web/public",
+          "type": "directory",
+          "children": [
+            {
+              "name": "file.svg",
+              "path": "zenith-web/public/file.svg",
+              "type": "file",
+              "kind": "file"
+            },
+            {
+              "name": "globe.svg",
+              "path": "zenith-web/public/globe.svg",
+              "type": "file",
+              "kind": "file"
+            },
+            {
+              "name": "next.svg",
+              "path": "zenith-web/public/next.svg",
+              "type": "file",
+              "kind": "file"
+            },
+            {
+              "name": "vercel.svg",
+              "path": "zenith-web/public/vercel.svg",
+              "type": "file",
+              "kind": "file"
+            },
+            {
+              "name": "window.svg",
+              "path": "zenith-web/public/window.svg",
+              "type": "file",
+              "kind": "file"
+            }
+          ]
+        },
+        {
+          "name": ".gitignore",
+          "path": "zenith-web/.gitignore",
+          "type": "file",
+          "kind": "file"
+        },
+        {
+          "name": "AGENTS.md",
+          "path": "zenith-web/AGENTS.md",
+          "type": "file",
+          "kind": "file"
+        },
+        {
+          "name": "CLAUDE.md",
+          "path": "zenith-web/CLAUDE.md",
+          "type": "file",
+          "kind": "file"
+        },
+        {
+          "name": "eslint.config.mjs",
+          "path": "zenith-web/eslint.config.mjs",
+          "type": "file",
+          "kind": "file"
+        },
+        {
+          "name": "next-env.d.ts",
+          "path": "zenith-web/next-env.d.ts",
+          "type": "file",
+          "kind": "file"
+        },
+        {
+          "name": "next.config.ts",
+          "path": "zenith-web/next.config.ts",
+          "type": "file",
+          "kind": "file"
+        },
+        {
+          "name": "package-lock.json",
+          "path": "zenith-web/package-lock.json",
+          "type": "file",
+          "kind": "file"
+        },
+        {
+          "name": "package.json",
+          "path": "zenith-web/package.json",
+          "type": "file",
+          "kind": "file"
+        },
+        {
+          "name": "postcss.config.mjs",
+          "path": "zenith-web/postcss.config.mjs",
+          "type": "file",
+          "kind": "file"
+        },
+        {
+          "name": "README.md",
+          "path": "zenith-web/README.md",
+          "type": "file",
+          "kind": "file"
+        },
+        {
+          "name": "tsconfig.json",
+          "path": "zenith-web/tsconfig.json",
+          "type": "file",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "name": ".env",
+      "path": ".env",
+      "type": "file",
+      "kind": "file"
+    },
+    {
+      "name": ".env.example",
+      "path": ".env.example",
+      "type": "file",
+      "kind": "file"
+    },
+    {
+      "name": ".gitignore",
+      "path": ".gitignore",
+      "type": "file",
+      "kind": "file"
+    },
+    {
+      "name": "backup_manager.py",
+      "path": "backup_manager.py",
+      "type": "file",
+      "kind": "python"
+    },
+    {
+      "name": "bridge.py",
+      "path": "bridge.py",
+      "type": "file",
+      "kind": "python"
+    },
+    {
+      "name": "commands.py",
+      "path": "commands.py",
+      "type": "file",
+      "kind": "python"
+    },
+    {
+      "name": "config.json",
+      "path": "config.json",
+      "type": "file",
+      "kind": "file"
+    },
+    {
+      "name": "config.json.example",
+      "path": "config.json.example",
+      "type": "file",
+      "kind": "file"
+    },
+    {
+      "name": "config_store.py",
+      "path": "config_store.py",
+      "type": "file",
+      "kind": "python"
+    },
+    {
+      "name": "controller.py",
+      "path": "controller.py",
+      "type": "file",
+      "kind": "python"
+    },
+    {
+      "name": "llm_client.py",
+      "path": "llm_client.py",
+      "type": "file",
+      "kind": "python"
+    },
+    {
+      "name": "main.py",
+      "path": "main.py",
+      "type": "file",
+      "kind": "python"
+    },
+    {
+      "name": "README.md",
+      "path": "README.md",
+      "type": "file",
+      "kind": "file"
+    },
+    {
+      "name": "requirements.txt",
+      "path": "requirements.txt",
+      "type": "file",
+      "kind": "file"
+    },
+    {
+      "name": "skills_manager.py",
+      "path": "skills_manager.py",
+      "type": "file",
+      "kind": "python"
+    },
+    {
+      "name": "task_manager.py",
+      "path": "task_manager.py",
+      "type": "file",
+      "kind": "python"
+    }
+  ],
+  "files": {
+    "scripts/docs_gen.py": {
+      "path": "scripts/docs_gen.py",
+      "kind": "python",
+      "name": "docs_gen.py",
+      "extension": ".py",
+      "summary": "Python source module.",
+      "size_bytes": 15583,
+      "module_docstring": "AXON Live Docs — scan project, build docs.json, serve portal.",
+      "classes": [],
+      "functions": [
+        {
+          "name": "project_root",
+          "signature": "def project_root() -> Path",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "docs_output_dir",
+          "signature": "def docs_output_dir(workspace: Path | None=None) -> Path",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "template_path",
+          "signature": "def template_path() -> Path",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "_format_annotation",
+          "signature": "def _format_annotation(node: ast.expr | None) -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "_format_signature",
+          "signature": "def _format_signature(node: ast.FunctionDef | ast.AsyncFunctionDef) -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "extract_python_symbols",
+          "signature": "def extract_python_symbols(path: Path) -> dict",
+          "docstring": "Parse a Python file with AST and return classes, functions, docstrings.",
+          "async": false
+        },
+        {
+          "name": "infer_file_role",
+          "signature": "def infer_file_role(path: Path, rel: str) -> str",
+          "docstring": "Human-readable summary for non-Python or supplemental context.",
+          "async": false
+        },
+        {
+          "name": "should_skip_dir",
+          "signature": "def should_skip_dir(name: str) -> bool",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "walk_project",
+          "signature": "def walk_project(workspace: Path) -> tuple[list[dict], dict[str, dict]]",
+          "docstring": "Build file tree and per-file documentation index.",
+          "async": false
+        },
+        {
+          "name": "build_search_index",
+          "signature": "def build_search_index(files_index: dict[str, dict]) -> list[dict]",
+          "docstring": "Flatten classes and functions for global search.",
+          "async": false
+        },
+        {
+          "name": "generate_docs",
+          "signature": "def generate_docs(workspace: Path | None=None) -> Path",
+          "docstring": "Walk project, write docs.json and index.html. Returns output directory.",
+          "async": false
+        },
+        {
+          "name": "is_port_open",
+          "signature": "def is_port_open(port: int, host: str='127.0.0.1') -> bool",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "start_server_background",
+          "signature": "def start_server_background(workspace: Path | None=None, port: int=8000) -> subprocess.Popen | None",
+          "docstring": "Start serve_docs.py in background if port is not already in use.",
+          "async": false
+        },
+        {
+          "name": "main",
+          "signature": "def main() -> int",
+          "docstring": "",
+          "async": false
+        }
+      ],
+      "parse_error": null
+    },
+    "scripts/serve_docs.py": {
+      "path": "scripts/serve_docs.py",
+      "kind": "python",
+      "name": "serve_docs.py",
+      "extension": ".py",
+      "summary": "Python source module.",
+      "size_bytes": 2259,
+      "module_docstring": "Serve AXON Live Docs on localhost.",
+      "classes": [
+        {
+          "name": "DocsRequestHandler",
+          "bases": [
+            "SimpleHTTPRequestHandler"
+          ],
+          "docstring": "Static file handler with JSON content-type for docs.json.",
+          "methods": [
+            {
+              "name": "end_headers",
+              "signature": "def end_headers(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "log_message",
+              "signature": "def log_message(self, format: str, *args) -> None",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [
+        {
+          "name": "docs_dir",
+          "signature": "def docs_dir(workspace: Path) -> Path",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "is_port_in_use",
+          "signature": "def is_port_in_use(port: int, host: str='127.0.0.1') -> bool",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "main",
+          "signature": "def main() -> int",
+          "docstring": "",
+          "async": false
+        }
+      ],
+      "parse_error": null
+    },
+    "scripts": {
+      "path": "scripts",
+      "kind": "directory",
+      "summary": "Project directory — scripts/."
+    },
+    "skills/__init__.py": {
+      "path": "skills/__init__.py",
+      "kind": "python",
+      "name": "__init__.py",
+      "extension": ".py",
+      "summary": "Python source module.",
+      "size_bytes": 122,
+      "module_docstring": "Python source module.",
+      "classes": [],
+      "functions": [],
+      "parse_error": null
+    },
+    "skills/base.py": {
+      "path": "skills/base.py",
+      "kind": "python",
+      "name": "base.py",
+      "extension": ".py",
+      "summary": "Python source module.",
+      "size_bytes": 684,
+      "module_docstring": "Python source module.",
+      "classes": [
+        {
+          "name": "BaseSkill",
+          "bases": [
+            "ABC"
+          ],
+          "docstring": "Abstract base class for CLI skills exposed as LLM tools.",
+          "methods": [
+            {
+              "name": "get_name",
+              "signature": "def get_name(self) -> str",
+              "docstring": "Return the stable tool identifier.",
+              "async": false
+            },
+            {
+              "name": "get_description",
+              "signature": "def get_description(self) -> str",
+              "docstring": "Return a description for the LLM.",
+              "async": false
+            },
+            {
+              "name": "get_parameters_schema",
+              "signature": "def get_parameters_schema(self) -> dict[str, Any]",
+              "docstring": "Return JSON Schema for function arguments.",
+              "async": false
+            },
+            {
+              "name": "execute",
+              "signature": "def execute(self, args: dict[str, Any]) -> str",
+              "docstring": "Execute the skill and return a string result.",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [],
+      "parse_error": null
+    },
+    "skills/file_read.py": {
+      "path": "skills/file_read.py",
+      "kind": "python",
+      "name": "file_read.py",
+      "extension": ".py",
+      "summary": "Python source module.",
+      "size_bytes": 2016,
+      "module_docstring": "Python source module.",
+      "classes": [
+        {
+          "name": "FileReadSkill",
+          "bases": [
+            "BaseSkill"
+          ],
+          "docstring": "Reads the contents of a file by path.",
+          "methods": [
+            {
+              "name": "get_name",
+              "signature": "def get_name(self) -> str",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "get_description",
+              "signature": "def get_description(self) -> str",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "get_parameters_schema",
+              "signature": "def get_parameters_schema(self) -> dict[str, Any]",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "execute",
+              "signature": "def execute(self, args: dict[str, Any]) -> str",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [],
+      "parse_error": null
+    },
+    "skills/registry.py": {
+      "path": "skills/registry.py",
+      "kind": "python",
+      "name": "registry.py",
+      "extension": ".py",
+      "summary": "Python source module.",
+      "size_bytes": 1508,
+      "module_docstring": "Python source module.",
+      "classes": [
+        {
+          "name": "SkillRegistry",
+          "bases": [],
+          "docstring": "Registry for loaded skills with OpenAI tools schema generation.",
+          "methods": [
+            {
+              "name": "__init__",
+              "signature": "def __init__(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_register_defaults",
+              "signature": "def _register_defaults(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "register",
+              "signature": "def register(self, skill: BaseSkill) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "list_skills",
+              "signature": "def list_skills(self) -> list[BaseSkill]",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "get_tools_schema",
+              "signature": "def get_tools_schema(self) -> list[dict[str, Any]]",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "execute",
+              "signature": "def execute(self, name: str, args: dict[str, Any]) -> str",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [],
+      "parse_error": null
+    },
+    "skills/system_info.py": {
+      "path": "skills/system_info.py",
+      "kind": "python",
+      "name": "system_info.py",
+      "extension": ".py",
+      "summary": "Python source module.",
+      "size_bytes": 1040,
+      "module_docstring": "Python source module.",
+      "classes": [
+        {
+          "name": "SystemInfoSkill",
+          "bases": [
+            "BaseSkill"
+          ],
+          "docstring": "Returns basic system information.",
+          "methods": [
+            {
+              "name": "get_name",
+              "signature": "def get_name(self) -> str",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "get_description",
+              "signature": "def get_description(self) -> str",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "get_parameters_schema",
+              "signature": "def get_parameters_schema(self) -> dict[str, Any]",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "execute",
+              "signature": "def execute(self, args: dict[str, Any]) -> str",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [],
+      "parse_error": null
+    },
+    "skills/tasks.py": {
+      "path": "skills/tasks.py",
+      "kind": "python",
+      "name": "tasks.py",
+      "extension": ".py",
+      "summary": "Plan mode tools — create_plan and complete_task.",
+      "size_bytes": 4587,
+      "module_docstring": "Plan mode tools — create_plan and complete_task.",
+      "classes": [],
+      "functions": [
+        {
+          "name": "get_task_tool_schemas",
+          "signature": "def get_task_tool_schemas() -> list[dict[str, Any]]",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "set_plan_render_callback",
+          "signature": "def set_plan_render_callback(callback: PlanRenderCallback | None) -> None",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "_render_plan",
+          "signature": "async def _render_plan() -> None",
+          "docstring": "",
+          "async": true
+        },
+        {
+          "name": "execute_task_tool",
+          "signature": "async def execute_task_tool(tool_name: str, arguments: dict[str, Any]) -> str",
+          "docstring": "",
+          "async": true
+        },
+        {
+          "name": "is_task_tool",
+          "signature": "def is_task_tool(tool_name: str) -> bool",
+          "docstring": "",
+          "async": false
+        }
+      ],
+      "parse_error": null
+    },
+    "skills/tools.py": {
+      "path": "skills/tools.py",
+      "kind": "python",
+      "name": "tools.py",
+      "extension": ".py",
+      "summary": "Native agent tools — read_file, write_file, shell, web_search.",
+      "size_bytes": 13092,
+      "module_docstring": "Native agent tools — read_file, write_file, shell, web_search.",
+      "classes": [],
+      "functions": [
+        {
+          "name": "get_tools_schema",
+          "signature": "def get_tools_schema() -> list[dict[str, Any]]",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "clear_session_approvals",
+          "signature": "def clear_session_approvals() -> None",
+          "docstring": "Reset session-scoped tool permissions (e.g. on /clear).",
+          "async": false
+        },
+        {
+          "name": "set_tool_result_callback",
+          "signature": "def set_tool_result_callback(callback: ToolResultCallback | None) -> None",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "session_approval_key",
+          "signature": "def session_approval_key(tool_name: str, detail: str='') -> str",
+          "docstring": "Key used for session-level approval bypass.",
+          "async": false
+        },
+        {
+          "name": "is_session_approved",
+          "signature": "def is_session_approved(tool_name: str, detail: str='') -> bool",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "grant_session_approval",
+          "signature": "def grant_session_approval(tool_name: str, detail: str='') -> None",
+          "docstring": "Remember approval for the tool category for the rest of the session.",
+          "async": false
+        },
+        {
+          "name": "tool_display_label",
+          "signature": "def tool_display_label(tool_name: str) -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "build_permission_panel",
+          "signature": "def build_permission_panel(tool_name: str, detail: str) -> Panel",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "build_rejection_panel",
+          "signature": "def build_rejection_panel(tool_name: str, detail: str) -> Panel",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "build_result_panel",
+          "signature": "def build_result_panel(tool_name: str, detail: str, output: str) -> Panel",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "_resolve_safe_path",
+          "signature": "def _resolve_safe_path(filepath: str) -> Path | str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "read_file",
+          "signature": "def read_file(filepath: str) -> str",
+          "docstring": "Read and return file content.",
+          "async": false
+        },
+        {
+          "name": "write_file",
+          "signature": "def write_file(filepath: str, content: str) -> str",
+          "docstring": "Write content to a file.",
+          "async": false
+        },
+        {
+          "name": "web_search",
+          "signature": "def web_search(query: str) -> str",
+          "docstring": "Search the web via DuckDuckGo and return formatted top results.",
+          "async": false
+        },
+        {
+          "name": "execute_shell",
+          "signature": "def execute_shell(command: str) -> str",
+          "docstring": "Execute a shell command and return stdout/stderr.",
+          "async": false
+        },
+        {
+          "name": "_approval_detail",
+          "signature": "def _approval_detail(tool_name: str, args: dict[str, Any]) -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "_run_tool_sync",
+          "signature": "def _run_tool_sync(tool_name: str, args: dict[str, Any]) -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "execute_tool",
+          "signature": "async def execute_tool(tool_name: str, arguments: dict[str, Any], approve: ApprovalCallback | None=None) -> str",
+          "docstring": "Dispatch a tool call, requesting approval for dangerous operations.",
+          "async": true
+        },
+        {
+          "name": "parse_tool_arguments",
+          "signature": "def parse_tool_arguments(raw: str) -> dict[str, Any]",
+          "docstring": "",
+          "async": false
+        }
+      ],
+      "parse_error": null
+    },
+    "skills": {
+      "path": "skills",
+      "kind": "directory",
+      "summary": "Project directory — skills/."
+    },
+    "ui/__init__.py": {
+      "path": "ui/__init__.py",
+      "kind": "python",
+      "name": "__init__.py",
+      "extension": ".py",
+      "summary": "UI module — __init__.py for the AXON terminal interface.",
+      "size_bytes": 251,
+      "module_docstring": "UI module — __init__.py for the AXON terminal interface.",
+      "classes": [],
+      "functions": [],
+      "parse_error": null
+    },
+    "ui/axon_completer.py": {
+      "path": "ui/axon_completer.py",
+      "kind": "python",
+      "name": "axon_completer.py",
+      "extension": ".py",
+      "summary": "UI module — axon_completer.py for the AXON terminal interface.",
+      "size_bytes": 1818,
+      "module_docstring": "UI module — axon_completer.py for the AXON terminal interface.",
+      "classes": [
+        {
+          "name": "AtPathCompleter",
+          "bases": [
+            "Completer"
+          ],
+          "docstring": "Complete file paths after `@` in the input line.",
+          "methods": [
+            {
+              "name": "get_completions",
+              "signature": "def get_completions(self, document: Document, complete_event)",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        },
+        {
+          "name": "AxonInputCompleter",
+          "bases": [
+            "Completer"
+          ],
+          "docstring": "Slash commands when line starts with `/`, else `@` path completion.",
+          "methods": [
+            {
+              "name": "__init__",
+              "signature": "def __init__(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "get_completions",
+              "signature": "def get_completions(self, document: Document, complete_event)",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [
+        {
+          "name": "build_axon_completer",
+          "signature": "def build_axon_completer() -> AxonInputCompleter",
+          "docstring": "",
+          "async": false
+        }
+      ],
+      "parse_error": null
+    },
+    "ui/axon_terminal.py": {
+      "path": "ui/axon_terminal.py",
+      "kind": "python",
+      "name": "axon_terminal.py",
+      "extension": ".py",
+      "summary": "UI module — axon_terminal.py for the AXON terminal interface.",
+      "size_bytes": 7043,
+      "module_docstring": "UI module — axon_terminal.py for the AXON terminal interface.",
+      "classes": [
+        {
+          "name": "ChatEntry",
+          "bases": [],
+          "docstring": "",
+          "methods": []
+        },
+        {
+          "name": "AxonTerminalUI",
+          "bases": [],
+          "docstring": "Claude Code–inspired permanent frame for the AXON CLI.",
+          "methods": [
+            {
+              "name": "set_model",
+              "signature": "def set_model(self, model: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "set_thinking",
+              "signature": "def set_thinking(self, thinking: bool) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "tick_spinner",
+              "signature": "def tick_spinner(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "add_user",
+              "signature": "def add_user(self, content: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "add_assistant",
+              "signature": "def add_assistant(self, content: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "add_error",
+              "signature": "def add_error(self, content: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "apply_result",
+              "signature": "def apply_result(self, result: LLMResult) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "build_layout",
+              "signature": "def build_layout(self) -> Layout",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_render_header",
+              "signature": "def _render_header(self) -> RenderableType",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_render_chat",
+              "signature": "def _render_chat(self) -> RenderableType",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_render_message",
+              "signature": "def _render_message(self, entry: ChatEntry) -> RenderableType",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_render_footer",
+              "signature": "def _render_footer(self) -> RenderableType",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_visible_messages",
+              "signature": "def _visible_messages(self) -> list[ChatEntry]",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [
+        {
+          "name": "estimate_cost",
+          "signature": "def estimate_cost(prompt_tokens: int, completion_tokens: int) -> float",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "run_with_spinner",
+          "signature": "def run_with_spinner(ui: AxonTerminalUI, live, fn, refresh_interval: float=0.08)",
+          "docstring": "Run a blocking call while animating the thinking spinner in the live frame.",
+          "async": false
+        }
+      ],
+      "parse_error": null
+    },
+    "ui/axon_tui.py": {
+      "path": "ui/axon_tui.py",
+      "kind": "python",
+      "name": "axon_tui.py",
+      "extension": ".py",
+      "summary": "UI module — axon_tui.py for the AXON terminal interface.",
+      "size_bytes": 13934,
+      "module_docstring": "UI module — axon_tui.py for the AXON terminal interface.",
+      "classes": [
+        {
+          "name": "ChatEntry",
+          "bases": [],
+          "docstring": "",
+          "methods": []
+        },
+        {
+          "name": "AxonTUIState",
+          "bases": [],
+          "docstring": "",
+          "methods": [
+            {
+              "name": "tick_spinner",
+              "signature": "def tick_spinner(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "add_user",
+              "signature": "def add_user(self, text: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "add_assistant",
+              "signature": "def add_assistant(self, text: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "add_system",
+              "signature": "def add_system(self, text: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "add_error",
+              "signature": "def add_error(self, text: str) -> None",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        },
+        {
+          "name": "AxonTUI",
+          "bases": [],
+          "docstring": "Full-screen AXON TUI with bottom-bar input and slash-command completion.",
+          "methods": [
+            {
+              "name": "__init__",
+              "signature": "def __init__(self, llm: LLMManager) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_build_keybindings",
+              "signature": "def _build_keybindings(self) -> KeyBindings",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_logo_fragments",
+              "signature": "def _logo_fragments(self)",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_header_fragments",
+              "signature": "def _header_fragments(self)",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_status_fragments",
+              "signature": "def _status_fragments(self)",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_append_to_chat_display",
+              "signature": "def _append_to_chat_display(self, line: str) -> None",
+              "docstring": "Append one line to the read-only chat history buffer.",
+              "async": false
+            },
+            {
+              "name": "_scroll_chat_to_bottom",
+              "signature": "def _scroll_chat_to_bottom(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_spinner_loop",
+              "signature": "async def _spinner_loop(self) -> None",
+              "docstring": "",
+              "async": true
+            },
+            {
+              "name": "_start_spinner",
+              "signature": "def _start_spinner(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_stop_spinner",
+              "signature": "def _stop_spinner(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_handle_command",
+              "signature": "def _handle_command(self, text: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_process_ai_response",
+              "signature": "async def _process_ai_response(self, text: str) -> None",
+              "docstring": "Background coroutine: call LLM without blocking the UI loop.",
+              "async": true
+            },
+            {
+              "name": "_on_accept",
+              "signature": "def _on_accept(self, buff: Buffer) -> bool",
+              "docstring": "Enter handler:\n1. Capture input text\n2. Append 'User: ...' to chat and redraw immediately\n3. Schedule async LLM call as a background task\n4. Return False so prompt_toolkit clears the input field",
+              "async": false
+            },
+            {
+              "name": "run",
+              "signature": "def run(self) -> None",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [
+        {
+          "name": "_terminal_width",
+          "signature": "def _terminal_width() -> int",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "_rich_to_ansi",
+          "signature": "def _rich_to_ansi(renderable, width: int) -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "_build_logo_ansi",
+          "signature": "def _build_logo_ansi(width: int) -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "_build_header_ansi",
+          "signature": "def _build_header_ansi(state: AxonTUIState, width: int) -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "_build_status_ansi",
+          "signature": "def _build_status_ansi(state: AxonTUIState, width: int) -> str",
+          "docstring": "",
+          "async": false
+        }
+      ],
+      "parse_error": null
+    },
+    "ui/branding.py": {
+      "path": "ui/branding.py",
+      "kind": "python",
+      "name": "branding.py",
+      "extension": ".py",
+      "summary": "UI module — branding.py for the AXON terminal interface.",
+      "size_bytes": 3944,
+      "module_docstring": "UI module — branding.py for the AXON terminal interface.",
+      "classes": [],
+      "functions": [
+        {
+          "name": "_interpolate_color",
+          "signature": "def _interpolate_color(ratio: float, start: tuple[int, int, int], end: tuple[int, int, int]) -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "_hex_to_rgb",
+          "signature": "def _hex_to_rgb(value: str) -> tuple[int, int, int]",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "generate_logo_text",
+          "signature": "def generate_logo_text(font: str='slant') -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "build_gradient_logo",
+          "signature": "def build_gradient_logo(theme: CLITheme, font: str='slant') -> Text",
+          "docstring": "Render the AXON ASCII logo with a subtle vertical gradient.",
+          "async": false
+        },
+        {
+          "name": "build_status_line",
+          "signature": "def build_status_line(theme: CLITheme, model: str, status: str) -> Text",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "_status_color",
+          "signature": "def _status_color(theme: CLITheme, status: str) -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "build_header",
+          "signature": "def build_header(theme: CLITheme, model: str, status: str, font: str='slant') -> tuple[RenderableType, int]",
+          "docstring": "Build the static header block and return its layout height.",
+          "async": false
+        },
+        {
+          "name": "splash_renderable",
+          "signature": "def splash_renderable(theme: CLITheme, model: str, status: str='Ready', font: str='slant') -> RenderableType",
+          "docstring": "Full startup splash for initial screen clear.",
+          "async": false
+        }
+      ],
+      "parse_error": null
+    },
+    "ui/completer.py": {
+      "path": "ui/completer.py",
+      "kind": "python",
+      "name": "completer.py",
+      "extension": ".py",
+      "summary": "UI module — completer.py for the AXON terminal interface.",
+      "size_bytes": 4417,
+      "module_docstring": "UI module — completer.py for the AXON terminal interface.",
+      "classes": [
+        {
+          "name": "AxonCommandCompleter",
+          "bases": [
+            "Completer"
+          ],
+          "docstring": "Slash-command completer with descriptions — Tab to complete.",
+          "methods": [
+            {
+              "name": "get_completions",
+              "signature": "def get_completions(self, document: Document, complete_event)",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [
+        {
+          "name": "build_slash_completer",
+          "signature": "def build_slash_completer() -> WordCompleter",
+          "docstring": "",
+          "async": false
+        }
+      ],
+      "parse_error": null
+    },
+    "ui/docs_template.html": {
+      "path": "ui/docs_template.html",
+      "kind": "file",
+      "name": "docs_template.html",
+      "extension": ".html",
+      "summary": "UI module — docs_template.html for the AXON terminal interface.",
+      "size_bytes": 14469
+    },
+    "ui/file_context.py": {
+      "path": "ui/file_context.py",
+      "kind": "python",
+      "name": "file_context.py",
+      "extension": ".py",
+      "summary": "UI module — file_context.py for the AXON terminal interface.",
+      "size_bytes": 3921,
+      "module_docstring": "UI module — file_context.py for the AXON terminal interface.",
+      "classes": [],
+      "functions": [
+        {
+          "name": "_resolve_mention",
+          "signature": "def _resolve_mention(raw: str, cwd: Path) -> Path | None",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "_directory_tree",
+          "signature": "def _directory_tree(path: Path, *, max_depth: int=2, _depth: int=0) -> list[str]",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "_read_file_snippet",
+          "signature": "def _read_file_snippet(path: Path) -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "build_file_context",
+          "signature": "def build_file_context(text: str, cwd: Path | None=None) -> tuple[str, str]",
+          "docstring": "Parse @mentions in user text.\n\nReturns:\n    display_text — user-visible message with @path replaced by tags\n    context_block — hidden context appended for the LLM (empty if none)",
+          "async": false
+        }
+      ],
+      "parse_error": null
+    },
+    "ui/git_commit.py": {
+      "path": "ui/git_commit.py",
+      "kind": "python",
+      "name": "git_commit.py",
+      "extension": ".py",
+      "summary": "UI module — git_commit.py for the AXON terminal interface.",
+      "size_bytes": 2202,
+      "module_docstring": "UI module — git_commit.py for the AXON terminal interface.",
+      "classes": [],
+      "functions": [
+        {
+          "name": "_run_git",
+          "signature": "def _run_git(args: list[str], cwd: Path) -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "collect_git_changes",
+          "signature": "def collect_git_changes(workspace: Path | None=None) -> tuple[str, str, str | None]",
+          "docstring": "Return git status, diff, and optional error.",
+          "async": false
+        },
+        {
+          "name": "run_git_commit",
+          "signature": "def run_git_commit(message: str, workspace: Path | None=None) -> tuple[bool, str]",
+          "docstring": "Execute git commit -am with the given message.",
+          "async": false
+        }
+      ],
+      "parse_error": null
+    },
+    "ui/git_review.py": {
+      "path": "ui/git_review.py",
+      "kind": "python",
+      "name": "git_review.py",
+      "extension": ".py",
+      "summary": "UI module — git_review.py for the AXON terminal interface.",
+      "size_bytes": 1631,
+      "module_docstring": "UI module — git_review.py for the AXON terminal interface.",
+      "classes": [],
+      "functions": [
+        {
+          "name": "_run_git",
+          "signature": "def _run_git(args: list[str], cwd: Path) -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "build_review_prompt",
+          "signature": "def build_review_prompt(workspace: Path | None=None) -> tuple[str, str | None]",
+          "docstring": "Collect git status + diff and build an LLM review prompt.\n\nReturns (prompt, error_message).",
+          "async": false
+        }
+      ],
+      "parse_error": null
+    },
+    "ui/protocol.py": {
+      "path": "ui/protocol.py",
+      "kind": "python",
+      "name": "protocol.py",
+      "extension": ".py",
+      "summary": "UI module — protocol.py for the AXON terminal interface.",
+      "size_bytes": 704,
+      "module_docstring": "UI module — protocol.py for the AXON terminal interface.",
+      "classes": [
+        {
+          "name": "UIOutput",
+          "bases": [
+            "Protocol"
+          ],
+          "docstring": "Protocol for decoupling core logic from terminal rendering.",
+          "methods": [
+            {
+              "name": "set_model",
+              "signature": "def set_model(self, model: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "set_status",
+              "signature": "def set_status(self, status: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "add_user_message",
+              "signature": "def add_user_message(self, content: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "add_assistant_message",
+              "signature": "def add_assistant_message(self, content: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "add_system_message",
+              "signature": "def add_system_message(self, content: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "clear_messages",
+              "signature": "def clear_messages(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "refresh",
+              "signature": "def refresh(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "stream_begin",
+              "signature": "def stream_begin(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "stream_update",
+              "signature": "def stream_update(self, content: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "stream_end",
+              "signature": "def stream_end(self, content: str) -> None",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [],
+      "parse_error": null
+    },
+    "ui/renderer.py": {
+      "path": "ui/renderer.py",
+      "kind": "python",
+      "name": "renderer.py",
+      "extension": ".py",
+      "summary": "UI module — renderer.py for the AXON terminal interface.",
+      "size_bytes": 8211,
+      "module_docstring": "UI module — renderer.py for the AXON terminal interface.",
+      "classes": [
+        {
+          "name": "ChatMessage",
+          "bases": [],
+          "docstring": "",
+          "methods": []
+        },
+        {
+          "name": "UIRenderer",
+          "bases": [],
+          "docstring": "Builds and updates the split-pane terminal layout.",
+          "methods": [
+            {
+              "name": "attach_live",
+              "signature": "def attach_live(self, live: Live) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "set_model",
+              "signature": "def set_model(self, model: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "set_status",
+              "signature": "def set_status(self, status: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "add_user_message",
+              "signature": "def add_user_message(self, content: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "add_assistant_message",
+              "signature": "def add_assistant_message(self, content: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "add_system_message",
+              "signature": "def add_system_message(self, content: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "clear_messages",
+              "signature": "def clear_messages(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "stream_begin",
+              "signature": "def stream_begin(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "stream_update",
+              "signature": "def stream_update(self, content: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "stream_end",
+              "signature": "def stream_end(self, content: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "stream_cancel",
+              "signature": "def stream_cancel(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "refresh",
+              "signature": "def refresh(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_recalculate_header_size",
+              "signature": "def _recalculate_header_size(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "build_layout",
+              "signature": "def build_layout(self) -> Layout",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_render_header_pane",
+              "signature": "def _render_header_pane(self) -> RenderableType",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_render_chat_pane",
+              "signature": "def _render_chat_pane(self) -> RenderableType",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_render_message",
+              "signature": "def _render_message(self, message: ChatMessage) -> RenderableType",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_render_streaming_block",
+              "signature": "def _render_streaming_block(self) -> RenderableType",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_render_input_pane",
+              "signature": "def _render_input_pane(self) -> RenderableType",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "get_display_model",
+              "signature": "def get_display_model(self) -> str",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_short_model_name",
+              "signature": "def _short_model_name(self) -> str",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_visible_messages",
+              "signature": "def _visible_messages(self) -> list[ChatMessage]",
+              "docstring": "Return the tail of chat history that fits the chat pane.",
+              "async": false
+            },
+            {
+              "name": "format_help",
+              "signature": "def format_help(self, rows: list[tuple[str, str]]) -> str",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "format_skills",
+              "signature": "def format_skills(self, rows: list[tuple[str, str]]) -> str",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [],
+      "parse_error": null
+    },
+    "ui/theme.py": {
+      "path": "ui/theme.py",
+      "kind": "python",
+      "name": "theme.py",
+      "extension": ".py",
+      "summary": "UI module — theme.py for the AXON terminal interface.",
+      "size_bytes": 1607,
+      "module_docstring": "UI module — theme.py for the AXON terminal interface.",
+      "classes": [
+        {
+          "name": "CLITheme",
+          "bases": [],
+          "docstring": "Color palette and style tokens. Swap this class to change the look.",
+          "methods": [
+            {
+              "name": "assistant_label",
+              "signature": "def assistant_label(self) -> str",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "user_label",
+              "signature": "def user_label(self) -> str",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "prompt_markup",
+              "signature": "def prompt_markup(self) -> str",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "toolbar_markup",
+              "signature": "def toolbar_markup(self) -> str",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [],
+      "parse_error": null
+    },
+    "ui": {
+      "path": "ui",
+      "kind": "directory",
+      "summary": "Project directory — ui/."
+    },
+    "zenith-web/app/api/config/route.ts": {
+      "path": "zenith-web/app/api/config/route.ts",
+      "kind": "file",
+      "name": "route.ts",
+      "extension": ".ts",
+      "summary": "Zenith web dashboard — route.ts.",
+      "size_bytes": 1983
+    },
+    "zenith-web/app/api/config": {
+      "path": "zenith-web/app/api/config",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — config."
+    },
+    "zenith-web/app/api/models/route.ts": {
+      "path": "zenith-web/app/api/models/route.ts",
+      "kind": "file",
+      "name": "route.ts",
+      "extension": ".ts",
+      "summary": "Zenith web dashboard — route.ts.",
+      "size_bytes": 1031
+    },
+    "zenith-web/app/api/models": {
+      "path": "zenith-web/app/api/models",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — models."
+    },
+    "zenith-web/app/api": {
+      "path": "zenith-web/app/api",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — api."
+    },
+    "zenith-web/app/chat/page.tsx": {
+      "path": "zenith-web/app/chat/page.tsx",
+      "kind": "file",
+      "name": "page.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — page.tsx.",
+      "size_bytes": 527
+    },
+    "zenith-web/app/chat": {
+      "path": "zenith-web/app/chat",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — chat."
+    },
+    "zenith-web/app/config/page.tsx": {
+      "path": "zenith-web/app/config/page.tsx",
+      "kind": "file",
+      "name": "page.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — page.tsx.",
+      "size_bytes": 5071
+    },
+    "zenith-web/app/config": {
+      "path": "zenith-web/app/config",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — config."
+    },
+    "zenith-web/app/dashboard/page.tsx": {
+      "path": "zenith-web/app/dashboard/page.tsx",
+      "kind": "file",
+      "name": "page.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — page.tsx.",
+      "size_bytes": 4843
+    },
+    "zenith-web/app/dashboard": {
+      "path": "zenith-web/app/dashboard",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — dashboard."
+    },
+    "zenith-web/app/marketplace/page.tsx": {
+      "path": "zenith-web/app/marketplace/page.tsx",
+      "kind": "file",
+      "name": "page.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — page.tsx.",
+      "size_bytes": 521
+    },
+    "zenith-web/app/marketplace": {
+      "path": "zenith-web/app/marketplace",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — marketplace."
+    },
+    "zenith-web/app/globals.css": {
+      "path": "zenith-web/app/globals.css",
+      "kind": "file",
+      "name": "globals.css",
+      "extension": ".css",
+      "summary": "Zenith web dashboard — globals.css.",
+      "size_bytes": 4543
+    },
+    "zenith-web/app/layout.tsx": {
+      "path": "zenith-web/app/layout.tsx",
+      "kind": "file",
+      "name": "layout.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — layout.tsx.",
+      "size_bytes": 1127
+    },
+    "zenith-web/app/page.tsx": {
+      "path": "zenith-web/app/page.tsx",
+      "kind": "file",
+      "name": "page.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — page.tsx.",
+      "size_bytes": 130
+    },
+    "zenith-web/app": {
+      "path": "zenith-web/app",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — app."
+    },
+    "zenith-web/components/chat/ChatInterface.tsx": {
+      "path": "zenith-web/components/chat/ChatInterface.tsx",
+      "kind": "file",
+      "name": "ChatInterface.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — ChatInterface.tsx.",
+      "size_bytes": 5720
+    },
+    "zenith-web/components/chat": {
+      "path": "zenith-web/components/chat",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — chat."
+    },
+    "zenith-web/components/config/ConfigWidget.tsx": {
+      "path": "zenith-web/components/config/ConfigWidget.tsx",
+      "kind": "file",
+      "name": "ConfigWidget.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — ConfigWidget.tsx.",
+      "size_bytes": 8922
+    },
+    "zenith-web/components/config/CustomModelRegistry.tsx": {
+      "path": "zenith-web/components/config/CustomModelRegistry.tsx",
+      "kind": "file",
+      "name": "CustomModelRegistry.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — CustomModelRegistry.tsx.",
+      "size_bytes": 4757
+    },
+    "zenith-web/components/config": {
+      "path": "zenith-web/components/config",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — config."
+    },
+    "zenith-web/components/dashboard/LogsConsole.tsx": {
+      "path": "zenith-web/components/dashboard/LogsConsole.tsx",
+      "kind": "file",
+      "name": "LogsConsole.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — LogsConsole.tsx.",
+      "size_bytes": 4388
+    },
+    "zenith-web/components/dashboard/ModelSelector.tsx": {
+      "path": "zenith-web/components/dashboard/ModelSelector.tsx",
+      "kind": "file",
+      "name": "ModelSelector.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — ModelSelector.tsx.",
+      "size_bytes": 3432
+    },
+    "zenith-web/components/dashboard/StatusCards.tsx": {
+      "path": "zenith-web/components/dashboard/StatusCards.tsx",
+      "kind": "file",
+      "name": "StatusCards.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — StatusCards.tsx.",
+      "size_bytes": 2231
+    },
+    "zenith-web/components/dashboard": {
+      "path": "zenith-web/components/dashboard",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — dashboard."
+    },
+    "zenith-web/components/landing/LandingHero.tsx": {
+      "path": "zenith-web/components/landing/LandingHero.tsx",
+      "kind": "file",
+      "name": "LandingHero.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — LandingHero.tsx.",
+      "size_bytes": 6052
+    },
+    "zenith-web/components/landing": {
+      "path": "zenith-web/components/landing",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — landing."
+    },
+    "zenith-web/components/layout/AppShell.tsx": {
+      "path": "zenith-web/components/layout/AppShell.tsx",
+      "kind": "file",
+      "name": "AppShell.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — AppShell.tsx.",
+      "size_bytes": 540
+    },
+    "zenith-web/components/layout/Sidebar.tsx": {
+      "path": "zenith-web/components/layout/Sidebar.tsx",
+      "kind": "file",
+      "name": "Sidebar.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — Sidebar.tsx.",
+      "size_bytes": 2639
+    },
+    "zenith-web/components/layout/TopNav.tsx": {
+      "path": "zenith-web/components/layout/TopNav.tsx",
+      "kind": "file",
+      "name": "TopNav.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — TopNav.tsx.",
+      "size_bytes": 4017
+    },
+    "zenith-web/components/layout": {
+      "path": "zenith-web/components/layout",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — layout."
+    },
+    "zenith-web/components/marketplace/ModelAvatar.tsx": {
+      "path": "zenith-web/components/marketplace/ModelAvatar.tsx",
+      "kind": "file",
+      "name": "ModelAvatar.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — ModelAvatar.tsx.",
+      "size_bytes": 1194
+    },
+    "zenith-web/components/marketplace/ModelMarketplace.tsx": {
+      "path": "zenith-web/components/marketplace/ModelMarketplace.tsx",
+      "kind": "file",
+      "name": "ModelMarketplace.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — ModelMarketplace.tsx.",
+      "size_bytes": 12070
+    },
+    "zenith-web/components/marketplace": {
+      "path": "zenith-web/components/marketplace",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — marketplace."
+    },
+    "zenith-web/components/providers/AppProviders.tsx": {
+      "path": "zenith-web/components/providers/AppProviders.tsx",
+      "kind": "file",
+      "name": "AppProviders.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — AppProviders.tsx.",
+      "size_bytes": 594
+    },
+    "zenith-web/components/providers/ThemeProvider.tsx": {
+      "path": "zenith-web/components/providers/ThemeProvider.tsx",
+      "kind": "file",
+      "name": "ThemeProvider.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — ThemeProvider.tsx.",
+      "size_bytes": 458
+    },
+    "zenith-web/components/providers": {
+      "path": "zenith-web/components/providers",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — providers."
+    },
+    "zenith-web/components/ui/AgentOrb.tsx": {
+      "path": "zenith-web/components/ui/AgentOrb.tsx",
+      "kind": "file",
+      "name": "AgentOrb.tsx",
+      "extension": ".tsx",
+      "summary": "UI module — AgentOrb.tsx for the AXON terminal interface.",
+      "size_bytes": 4749
+    },
+    "zenith-web/components/ui/GlassCard.tsx": {
+      "path": "zenith-web/components/ui/GlassCard.tsx",
+      "kind": "file",
+      "name": "GlassCard.tsx",
+      "extension": ".tsx",
+      "summary": "UI module — GlassCard.tsx for the AXON terminal interface.",
+      "size_bytes": 1128
+    },
+    "zenith-web/components/ui/StaggerGrid.tsx": {
+      "path": "zenith-web/components/ui/StaggerGrid.tsx",
+      "kind": "file",
+      "name": "StaggerGrid.tsx",
+      "extension": ".tsx",
+      "summary": "UI module — StaggerGrid.tsx for the AXON terminal interface.",
+      "size_bytes": 1008
+    },
+    "zenith-web/components/ui/ThemeSwitcher.tsx": {
+      "path": "zenith-web/components/ui/ThemeSwitcher.tsx",
+      "kind": "file",
+      "name": "ThemeSwitcher.tsx",
+      "extension": ".tsx",
+      "summary": "UI module — ThemeSwitcher.tsx for the AXON terminal interface.",
+      "size_bytes": 1314
+    },
+    "zenith-web/components/ui": {
+      "path": "zenith-web/components/ui",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — ui."
+    },
+    "zenith-web/components": {
+      "path": "zenith-web/components",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — components."
+    },
+    "zenith-web/context/ChatContext.tsx": {
+      "path": "zenith-web/context/ChatContext.tsx",
+      "kind": "file",
+      "name": "ChatContext.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — ChatContext.tsx.",
+      "size_bytes": 6024
+    },
+    "zenith-web/context/ConfigContext.tsx": {
+      "path": "zenith-web/context/ConfigContext.tsx",
+      "kind": "file",
+      "name": "ConfigContext.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — ConfigContext.tsx.",
+      "size_bytes": 4950
+    },
+    "zenith-web/context/ModelContext.tsx": {
+      "path": "zenith-web/context/ModelContext.tsx",
+      "kind": "file",
+      "name": "ModelContext.tsx",
+      "extension": ".tsx",
+      "summary": "Zenith web dashboard — ModelContext.tsx.",
+      "size_bytes": 5957
+    },
+    "zenith-web/context": {
+      "path": "zenith-web/context",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — context."
+    },
+    "zenith-web/hooks/useWebSocket.ts": {
+      "path": "zenith-web/hooks/useWebSocket.ts",
+      "kind": "file",
+      "name": "useWebSocket.ts",
+      "extension": ".ts",
+      "summary": "Zenith web dashboard — useWebSocket.ts.",
+      "size_bytes": 190
+    },
+    "zenith-web/hooks": {
+      "path": "zenith-web/hooks",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — hooks."
+    },
+    "zenith-web/lib/ai-client.ts": {
+      "path": "zenith-web/lib/ai-client.ts",
+      "kind": "file",
+      "name": "ai-client.ts",
+      "extension": ".ts",
+      "summary": "Zenith web dashboard — ai-client.ts.",
+      "size_bytes": 1418
+    },
+    "zenith-web/lib/models.ts": {
+      "path": "zenith-web/lib/models.ts",
+      "kind": "file",
+      "name": "models.ts",
+      "extension": ".ts",
+      "summary": "Zenith web dashboard — models.ts.",
+      "size_bytes": 3588
+    },
+    "zenith-web/lib/utils.ts": {
+      "path": "zenith-web/lib/utils.ts",
+      "kind": "file",
+      "name": "utils.ts",
+      "extension": ".ts",
+      "summary": "Zenith web dashboard — utils.ts.",
+      "size_bytes": 175
+    },
+    "zenith-web/lib": {
+      "path": "zenith-web/lib",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — lib."
+    },
+    "zenith-web/public/file.svg": {
+      "path": "zenith-web/public/file.svg",
+      "kind": "file",
+      "name": "file.svg",
+      "extension": ".svg",
+      "summary": "Zenith web dashboard — file.svg.",
+      "size_bytes": 391
+    },
+    "zenith-web/public/globe.svg": {
+      "path": "zenith-web/public/globe.svg",
+      "kind": "file",
+      "name": "globe.svg",
+      "extension": ".svg",
+      "summary": "Zenith web dashboard — globe.svg.",
+      "size_bytes": 1035
+    },
+    "zenith-web/public/next.svg": {
+      "path": "zenith-web/public/next.svg",
+      "kind": "file",
+      "name": "next.svg",
+      "extension": ".svg",
+      "summary": "Zenith web dashboard — next.svg.",
+      "size_bytes": 1375
+    },
+    "zenith-web/public/vercel.svg": {
+      "path": "zenith-web/public/vercel.svg",
+      "kind": "file",
+      "name": "vercel.svg",
+      "extension": ".svg",
+      "summary": "Zenith web dashboard — vercel.svg.",
+      "size_bytes": 128
+    },
+    "zenith-web/public/window.svg": {
+      "path": "zenith-web/public/window.svg",
+      "kind": "file",
+      "name": "window.svg",
+      "extension": ".svg",
+      "summary": "Zenith web dashboard — window.svg.",
+      "size_bytes": 385
+    },
+    "zenith-web/public": {
+      "path": "zenith-web/public",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — public."
+    },
+    "zenith-web/.gitignore": {
+      "path": "zenith-web/.gitignore",
+      "kind": "file",
+      "name": ".gitignore",
+      "extension": "",
+      "summary": "Zenith web dashboard — .gitignore.",
+      "size_bytes": 480
+    },
+    "zenith-web/AGENTS.md": {
+      "path": "zenith-web/AGENTS.md",
+      "kind": "file",
+      "name": "AGENTS.md",
+      "extension": ".md",
+      "summary": "Zenith web dashboard — AGENTS.md.",
+      "size_bytes": 327
+    },
+    "zenith-web/CLAUDE.md": {
+      "path": "zenith-web/CLAUDE.md",
+      "kind": "file",
+      "name": "CLAUDE.md",
+      "extension": ".md",
+      "summary": "Zenith web dashboard — CLAUDE.md.",
+      "size_bytes": 11
+    },
+    "zenith-web/eslint.config.mjs": {
+      "path": "zenith-web/eslint.config.mjs",
+      "kind": "file",
+      "name": "eslint.config.mjs",
+      "extension": ".mjs",
+      "summary": "Zenith web dashboard — eslint.config.mjs.",
+      "size_bytes": 465
+    },
+    "zenith-web/next-env.d.ts": {
+      "path": "zenith-web/next-env.d.ts",
+      "kind": "file",
+      "name": "next-env.d.ts",
+      "extension": ".ts",
+      "summary": "Zenith web dashboard — next-env.d.ts.",
+      "size_bytes": 251
+    },
+    "zenith-web/next.config.ts": {
+      "path": "zenith-web/next.config.ts",
+      "kind": "file",
+      "name": "next.config.ts",
+      "extension": ".ts",
+      "summary": "Zenith web dashboard — next.config.ts.",
+      "size_bytes": 133
+    },
+    "zenith-web/package-lock.json": {
+      "path": "zenith-web/package-lock.json",
+      "kind": "file",
+      "name": "package-lock.json",
+      "extension": ".json",
+      "summary": "Zenith web dashboard — package-lock.json.",
+      "size_bytes": 294874
+    },
+    "zenith-web/package.json": {
+      "path": "zenith-web/package.json",
+      "kind": "file",
+      "name": "package.json",
+      "extension": ".json",
+      "summary": "Node.js dependencies for the Zenith web dashboard.",
+      "size_bytes": 780
+    },
+    "zenith-web/postcss.config.mjs": {
+      "path": "zenith-web/postcss.config.mjs",
+      "kind": "file",
+      "name": "postcss.config.mjs",
+      "extension": ".mjs",
+      "summary": "Zenith web dashboard — postcss.config.mjs.",
+      "size_bytes": 94
+    },
+    "zenith-web/README.md": {
+      "path": "zenith-web/README.md",
+      "kind": "file",
+      "name": "README.md",
+      "extension": ".md",
+      "summary": "Zenith web dashboard — README.md.",
+      "size_bytes": 1678
+    },
+    "zenith-web/tsconfig.json": {
+      "path": "zenith-web/tsconfig.json",
+      "kind": "file",
+      "name": "tsconfig.json",
+      "extension": ".json",
+      "summary": "Zenith web dashboard — tsconfig.json.",
+      "size_bytes": 666
+    },
+    "zenith-web": {
+      "path": "zenith-web",
+      "kind": "directory",
+      "summary": "Zenith web dashboard — zenith-web."
+    },
+    ".env": {
+      "path": ".env",
+      "kind": "file",
+      "name": ".env",
+      "extension": "",
+      "summary": "Project file — .env.",
+      "size_bytes": 49
+    },
+    ".env.example": {
+      "path": ".env.example",
+      "kind": "file",
+      "name": ".env.example",
+      "extension": ".example",
+      "summary": "Project file — .env.example.",
+      "size_bytes": 49
+    },
+    ".gitignore": {
+      "path": ".gitignore",
+      "kind": "file",
+      "name": ".gitignore",
+      "extension": "",
+      "summary": "Project file — .gitignore.",
+      "size_bytes": 240
+    },
+    "backup_manager.py": {
+      "path": "backup_manager.py",
+      "kind": "python",
+      "name": "backup_manager.py",
+      "extension": ".py",
+      "summary": "Time Machine — backs up files before write_file overwrites them.",
+      "size_bytes": 1958,
+      "module_docstring": "Time Machine — backs up files before write_file overwrites them.",
+      "classes": [
+        {
+          "name": "BackupManager",
+          "bases": [],
+          "docstring": "Time Machine — backs up files before write_file overwrites them.",
+          "methods": [
+            {
+              "name": "backup_dir",
+              "signature": "def backup_dir(self) -> Path",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "set_workspace",
+              "signature": "def set_workspace(self, workspace: Path) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "backup_if_exists",
+              "signature": "def backup_if_exists(self, path: Path) -> Path | None",
+              "docstring": "Save current file contents before overwrite. Returns backup path.",
+              "async": false
+            },
+            {
+              "name": "undo_last",
+              "signature": "def undo_last(self) -> tuple[bool, str]",
+              "docstring": "Restore the last backed-up file. Returns (success, message).",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [],
+      "parse_error": null
+    },
+    "bridge.py": {
+      "path": "bridge.py",
+      "kind": "python",
+      "name": "bridge.py",
+      "extension": ".py",
+      "summary": "WebSocket bridge connecting the CLI to the Zenith web dashboard.",
+      "size_bytes": 5248,
+      "module_docstring": "WebSocket bridge connecting the CLI to the Zenith web dashboard.",
+      "classes": [
+        {
+          "name": "AxonBridge",
+          "bases": [],
+          "docstring": "WebSocket hub — ws_handler + broadcast helpers.",
+          "methods": [
+            {
+              "name": "__init__",
+              "signature": "def __init__(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "configure",
+              "signature": "def configure(self, *, process_chat: ProcessChatHandler, set_model: SetModelHandler, refresh_ui: RefreshUIHandler, current_model: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "start",
+              "signature": "async def start(self) -> Any | None",
+              "docstring": "",
+              "async": true
+            },
+            {
+              "name": "stop",
+              "signature": "async def stop(self) -> None",
+              "docstring": "",
+              "async": true
+            },
+            {
+              "name": "ws_handler",
+              "signature": "async def ws_handler(self, websocket: WebSocketServerProtocol) -> None",
+              "docstring": "",
+              "async": true
+            },
+            {
+              "name": "broadcast",
+              "signature": "async def broadcast(self, payload: dict[str, Any]) -> None",
+              "docstring": "",
+              "async": true
+            },
+            {
+              "name": "broadcast_stats",
+              "signature": "async def broadcast_stats(self, tokens: int, cost: float) -> None",
+              "docstring": "",
+              "async": true
+            },
+            {
+              "name": "broadcast_model",
+              "signature": "async def broadcast_model(self, model: str) -> None",
+              "docstring": "",
+              "async": true
+            },
+            {
+              "name": "broadcast_chat",
+              "signature": "async def broadcast_chat(self, *, role: str, text: str, source: str='terminal', message_id: str | None=None) -> None",
+              "docstring": "",
+              "async": true
+            }
+          ]
+        }
+      ],
+      "functions": [],
+      "parse_error": null
+    },
+    "commands.py": {
+      "path": "commands.py",
+      "kind": "python",
+      "name": "commands.py",
+      "extension": ".py",
+      "summary": "Python source module.",
+      "size_bytes": 2495,
+      "module_docstring": "Python source module.",
+      "classes": [
+        {
+          "name": "CommandManager",
+          "bases": [],
+          "docstring": "Handles slash commands routed from the REPL.",
+          "methods": [
+            {
+              "name": "__init__",
+              "signature": "def __init__(self, ui: UIRenderer, llm_manager: LLMManager, skill_registry: SkillRegistry) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "handle",
+              "signature": "def handle(self, command_line: str) -> bool",
+              "docstring": "Process a slash command. Returns False if the REPL should exit.",
+              "async": false
+            },
+            {
+              "name": "_cmd_help",
+              "signature": "def _cmd_help(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_cmd_model",
+              "signature": "def _cmd_model(self, args: str) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_cmd_clear",
+              "signature": "def _cmd_clear(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_cmd_skills",
+              "signature": "def _cmd_skills(self) -> None",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [],
+      "parse_error": null
+    },
+    "config.json": {
+      "path": "config.json",
+      "kind": "file",
+      "name": "config.json",
+      "extension": ".json",
+      "summary": "Runtime configuration (API keys, model selection).",
+      "size_bytes": 167
+    },
+    "config.json.example": {
+      "path": "config.json.example",
+      "kind": "file",
+      "name": "config.json.example",
+      "extension": ".example",
+      "summary": "Project file — config.json.example.",
+      "size_bytes": 111
+    },
+    "config_store.py": {
+      "path": "config_store.py",
+      "kind": "python",
+      "name": "config_store.py",
+      "extension": ".py",
+      "summary": "Python source module.",
+      "size_bytes": 1749,
+      "module_docstring": "Python source module.",
+      "classes": [],
+      "functions": [
+        {
+          "name": "_ensure_config_file",
+          "signature": "def _ensure_config_file() -> None",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "load_config",
+          "signature": "def load_config() -> dict[str, str]",
+          "docstring": "Load shared AXON config from config.json (created on first access).",
+          "async": false
+        },
+        {
+          "name": "save_config",
+          "signature": "def save_config(data: dict[str, str]) -> None",
+          "docstring": "Persist shared AXON config to config.json.",
+          "async": false
+        },
+        {
+          "name": "get_openrouter_api_key",
+          "signature": "def get_openrouter_api_key() -> str",
+          "docstring": "Read API key from config.json, falling back to environment.",
+          "async": false
+        },
+        {
+          "name": "get_model",
+          "signature": "def get_model() -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "save_model",
+          "signature": "def save_model(model: str) -> None",
+          "docstring": "Persist the active model selection to config.json.",
+          "async": false
+        }
+      ],
+      "parse_error": null
+    },
+    "controller.py": {
+      "path": "controller.py",
+      "kind": "python",
+      "name": "controller.py",
+      "extension": ".py",
+      "summary": "Python source module.",
+      "size_bytes": 3969,
+      "module_docstring": "Python source module.",
+      "classes": [
+        {
+          "name": "CLIController",
+          "bases": [],
+          "docstring": "AXON REPL loop with sticky header branding and bottom input.",
+          "methods": [
+            {
+              "name": "__init__",
+              "signature": "def __init__(self, console: Console, ui: UIRenderer, command_manager: CommandManager, llm_manager: LLMManager, history_path: Path | None=None) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_show_startup_splash",
+              "signature": "def _show_startup_splash(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "run",
+              "signature": "def run(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_handle_chat",
+              "signature": "def _handle_chat(self, text: str, live: Live) -> None",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [],
+      "parse_error": null
+    },
+    "llm_client.py": {
+      "path": "llm_client.py",
+      "kind": "python",
+      "name": "llm_client.py",
+      "extension": ".py",
+      "summary": "OpenRouter LLM client — agent loop, tool calls, and system prompts.",
+      "size_bytes": 22548,
+      "module_docstring": "OpenRouter LLM client — agent loop, tool calls, and system prompts.",
+      "classes": [
+        {
+          "name": "TokenUsage",
+          "bases": [],
+          "docstring": "",
+          "methods": []
+        },
+        {
+          "name": "LLMResult",
+          "bases": [],
+          "docstring": "",
+          "methods": [
+            {
+              "name": "ok",
+              "signature": "def ok(self) -> bool",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "display_text",
+              "signature": "def display_text(self) -> str",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        },
+        {
+          "name": "LLMManager",
+          "bases": [],
+          "docstring": "AXON LLM client with OpenRouter tool-calling agent loop.",
+          "methods": [
+            {
+              "name": "__init__",
+              "signature": "def __init__(self, api_key: str | None=None, model: str | None=None, approve: ApprovalCallback | None=None, workspace: Path | None=None) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_build_system_prompt",
+              "signature": "def _build_system_prompt(self) -> str",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "refresh_system_prompt",
+              "signature": "def refresh_system_prompt(self) -> None",
+              "docstring": "Rebuild system message (memory, skills) without clearing chat.",
+              "async": false
+            },
+            {
+              "name": "reload_skills",
+              "signature": "def reload_skills(self) -> int",
+              "docstring": "Rescan `.axon/skills/` and refresh the system prompt.",
+              "async": false
+            },
+            {
+              "name": "_get_all_tool_schemas",
+              "signature": "def _get_all_tool_schemas(self) -> list[dict[str, Any]]",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_dispatch_tool",
+              "signature": "async def _dispatch_tool(self, tool_name: str, arguments: dict[str, Any]) -> str",
+              "docstring": "",
+              "async": true
+            },
+            {
+              "name": "_build_client",
+              "signature": "def _build_client(self, api_key: str) -> OpenAI",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "set_approval_callback",
+              "signature": "def set_approval_callback(self, approve: ApprovalCallback | None) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "set_tool_callback",
+              "signature": "def set_tool_callback(self, callback: ToolNotifyCallback | None) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "reload_credentials",
+              "signature": "def reload_credentials(self) -> None",
+              "docstring": "Reload API key only — never overwrite an explicitly selected model.",
+              "async": false
+            },
+            {
+              "name": "set_model",
+              "signature": "def set_model(self, model: str) -> None",
+              "docstring": "Set active model and persist to shared config.",
+              "async": false
+            },
+            {
+              "name": "_image_media_type",
+              "signature": "def _image_media_type(path: Path) -> str",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "load_image_into_context",
+              "signature": "def load_image_into_context(self, image_path: str, prompt: str='Analyze this image.') -> str | None",
+              "docstring": "Append an OpenAI-compatible vision user message. Returns error or None.",
+              "async": false
+            },
+            {
+              "name": "send_message",
+              "signature": "def send_message(self, user_text: str) -> LLMResult",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "send_message_async",
+              "signature": "async def send_message_async(self, user_text: str, *, file_context: str='') -> LLMResult",
+              "docstring": "",
+              "async": true
+            },
+            {
+              "name": "send_plan_async",
+              "signature": "async def send_plan_async(self, description: str) -> LLMResult",
+              "docstring": "Plan Mode — only create_plan tool, no execution.",
+              "async": true
+            },
+            {
+              "name": "send_execute_async",
+              "signature": "async def send_execute_async(self) -> LLMResult",
+              "docstring": "Execute an existing plan step-by-step.",
+              "async": true
+            },
+            {
+              "name": "generate_commit_message_async",
+              "signature": "async def generate_commit_message_async(self, status: str, diff: str) -> LLMResult",
+              "docstring": "Ask the LLM for a single Conventional Commit message (no tools).",
+              "async": true
+            },
+            {
+              "name": "_agent_loop",
+              "signature": "async def _agent_loop(self, user_text: str) -> LLMResult",
+              "docstring": "",
+              "async": true
+            },
+            {
+              "name": "_call_api",
+              "signature": "def _call_api(self, *, tools: list[dict[str, Any]] | None=None) -> Any",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_accumulate_usage",
+              "signature": "def _accumulate_usage(self, previous: TokenUsage | None, usage: object | None) -> TokenUsage | None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_serialize_assistant_message",
+              "signature": "def _serialize_assistant_message(message: Any) -> dict[str, Any]",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_rollback_last_user_message",
+              "signature": "def _rollback_last_user_message(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_friendly_api_error",
+              "signature": "def _friendly_api_error(exc: APIError) -> str",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_parse_usage",
+              "signature": "def _parse_usage(usage: object | None) -> TokenUsage | None",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [
+        {
+          "name": "record_token_usage",
+          "signature": "def record_token_usage(total_tokens: int) -> None",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "reset_session_counters",
+          "signature": "def reset_session_counters() -> None",
+          "docstring": "",
+          "async": false
+        }
+      ],
+      "parse_error": null
+    },
+    "main.py": {
+      "path": "main.py",
+      "kind": "python",
+      "name": "main.py",
+      "extension": ".py",
+      "summary": "AXON CLI entry point — chat loop, slash commands, and tool orchestration.",
+      "size_bytes": 28743,
+      "module_docstring": "AXON CLI entry point — chat loop, slash commands, and tool orchestration.",
+      "classes": [],
+      "functions": [
+        {
+          "name": "parse_image_command",
+          "signature": "def parse_image_command(text: str) -> tuple[str, str]",
+          "docstring": "Parse `/image <path> [prompt]` supporting quoted paths.",
+          "async": false
+        },
+        {
+          "name": "format_display_mentions",
+          "signature": "def format_display_mentions(display_text: str) -> str",
+          "docstring": "Colorize attached file/dir tags for terminal output.",
+          "async": false
+        },
+        {
+          "name": "clear_terminal",
+          "signature": "def clear_terminal() -> None",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "_prompt_is_active",
+          "signature": "def _prompt_is_active() -> bool",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "_rich_to_ansi",
+          "signature": "def _rich_to_ansi(renderable: Any) -> str",
+          "docstring": "Render a Rich object to an ANSI string via an in-memory buffer.",
+          "async": false
+        },
+        {
+          "name": "safe_print",
+          "signature": "def safe_print(renderable: Any) -> None",
+          "docstring": "Emit Rich output through prompt_toolkit's native ANSI parser.",
+          "async": false
+        },
+        {
+          "name": "safe_async_print",
+          "signature": "async def safe_async_print(renderable: Any) -> None",
+          "docstring": "Async-safe emit: suspend prompt, print ANSI via prompt_toolkit, resume.",
+          "async": true
+        },
+        {
+          "name": "_permission_menu_text",
+          "signature": "def _permission_menu_text(command_detail: str) -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "ask_permission",
+          "signature": "def ask_permission(command_detail: str) -> str",
+          "docstring": "Print permission menu via Rich (safe for shell metacharacters), then input.",
+          "async": false
+        },
+        {
+          "name": "print_banner",
+          "signature": "def print_banner(model: str) -> None",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "start_axon",
+          "signature": "async def start_axon() -> None",
+          "docstring": "",
+          "async": true
+        },
+        {
+          "name": "main",
+          "signature": "def main() -> None",
+          "docstring": "",
+          "async": false
+        }
+      ],
+      "parse_error": null
+    },
+    "README.md": {
+      "path": "README.md",
+      "kind": "file",
+      "name": "README.md",
+      "extension": ".md",
+      "summary": "Markdown documentation.",
+      "size_bytes": 2483
+    },
+    "requirements.txt": {
+      "path": "requirements.txt",
+      "kind": "file",
+      "name": "requirements.txt",
+      "extension": ".txt",
+      "summary": "Python package dependencies for AXON.",
+      "size_bytes": 152
+    },
+    "skills_manager.py": {
+      "path": "skills_manager.py",
+      "kind": "python",
+      "name": "skills_manager.py",
+      "extension": ".py",
+      "summary": "Dynamic SKILL.md loader and project memory reader.",
+      "size_bytes": 14238,
+      "module_docstring": "Dynamic SKILL.md loader and project memory reader.",
+      "classes": [
+        {
+          "name": "Skill",
+          "bases": [],
+          "docstring": "A loaded markdown skill from `.axon/skills/<id>/SKILL.md`.",
+          "methods": [
+            {
+              "name": "tool_name",
+              "signature": "def tool_name(self) -> str",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        },
+        {
+          "name": "SkillManager",
+          "bases": [],
+          "docstring": "Scan, parse, and invoke markdown skills from `.axon/skills/`.",
+          "methods": [
+            {
+              "name": "reload",
+              "signature": "def reload(self) -> int",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "skills",
+              "signature": "def skills(self) -> dict[str, Skill]",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "is_skill_tool",
+              "signature": "def is_skill_tool(self, tool_name: str) -> bool",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "get_skill",
+              "signature": "def get_skill(self, tool_name: str) -> Skill | None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "get_tool_schemas",
+              "signature": "def get_tool_schemas(self) -> list[dict[str, Any]]",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "invoke_skill",
+              "signature": "def invoke_skill(self, tool_name: str, arguments: dict[str, Any]) -> str",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "skills_summary_for_system",
+              "signature": "def skills_summary_for_system(self) -> str",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [
+        {
+          "name": "sanitize_tool_name",
+          "signature": "def sanitize_tool_name(name: str) -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "skills_root",
+          "signature": "def skills_root(workspace: Path | None=None) -> Path",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "project_memory_path",
+          "signature": "def project_memory_path(workspace: Path | None=None) -> Path",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "load_project_memory",
+          "signature": "def load_project_memory(workspace: Path | None=None) -> str",
+          "docstring": "Read `.axon/memory.md` for invisible project context injection.",
+          "async": false
+        },
+        {
+          "name": "ensure_skills_workspace",
+          "signature": "def ensure_skills_workspace(workspace: Path | None=None) -> Path",
+          "docstring": "Create `.axon/skills/` with README and an example skill if missing.",
+          "async": false
+        },
+        {
+          "name": "sanitize_skill_name",
+          "signature": "def sanitize_skill_name(name: str) -> str",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "create_skill_file",
+          "signature": "def create_skill_file(name: str, description: str, shell_command: str='', *, workspace: Path | None=None) -> Path",
+          "docstring": "Write a new `.axon/skills/<name>/SKILL.md` from wizard inputs.",
+          "async": false
+        },
+        {
+          "name": "parse_skill_file",
+          "signature": "def parse_skill_file(path: Path) -> Skill | None",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "parse_frontmatter",
+          "signature": "def parse_frontmatter(text: str) -> tuple[dict[str, Any], str]",
+          "docstring": "Split YAML-like frontmatter and markdown body.",
+          "async": false
+        },
+        {
+          "name": "_parse_simple_yaml",
+          "signature": "def _parse_simple_yaml(block: str) -> dict[str, Any]",
+          "docstring": "Minimal YAML parser for SKILL.md frontmatter (no external dependency).",
+          "async": false
+        },
+        {
+          "name": "_parse_bool",
+          "signature": "def _parse_bool(value: Any) -> bool",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "_parse_allowed_tools",
+          "signature": "def _parse_allowed_tools(value: Any) -> tuple[str, ...]",
+          "docstring": "",
+          "async": false
+        },
+        {
+          "name": "run_inline_shell",
+          "signature": "def run_inline_shell(command: str) -> str",
+          "docstring": "Execute a shell command for `!`cmd`` injection (no user approval).",
+          "async": false
+        },
+        {
+          "name": "inject_shell_context",
+          "signature": "def inject_shell_context(body: str) -> str",
+          "docstring": "Replace all `!`command`` placeholders with local shell stdout.",
+          "async": false
+        }
+      ],
+      "parse_error": null
+    },
+    "task_manager.py": {
+      "path": "task_manager.py",
+      "kind": "python",
+      "name": "task_manager.py",
+      "extension": ".py",
+      "summary": "Plan mode TODO board and execution state.",
+      "size_bytes": 3911,
+      "module_docstring": "Plan mode TODO board and execution state.",
+      "classes": [
+        {
+          "name": "PlanTask",
+          "bases": [],
+          "docstring": "",
+          "methods": []
+        },
+        {
+          "name": "TaskManager",
+          "bases": [],
+          "docstring": "In-memory plan / TODO board for AXON Plan Mode.",
+          "methods": [
+            {
+              "name": "has_plan",
+              "signature": "def has_plan(self) -> bool",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "clear",
+              "signature": "def clear(self) -> None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "create_plan",
+              "signature": "def create_plan(self, tasks: list[str], *, goal: str='') -> list[PlanTask]",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "update_task_status",
+              "signature": "def update_task_status(self, task_id: int, status: str) -> PlanTask | None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "complete_task",
+              "signature": "def complete_task(self, task_id: int) -> PlanTask | None",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "get_plan_markdown",
+              "signature": "def get_plan_markdown(self) -> str",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "build_plan_panel",
+              "signature": "def build_plan_panel(self) -> Panel",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "all_done",
+              "signature": "def all_done(self) -> bool",
+              "docstring": "",
+              "async": false
+            },
+            {
+              "name": "_find",
+              "signature": "def _find(self, task_id: int) -> PlanTask | None",
+              "docstring": "",
+              "async": false
+            }
+          ]
+        }
+      ],
+      "functions": [],
+      "parse_error": null
+    }
+  },
+  "search_index": [
+    {
+      "type": "file",
+      "name": "docs_gen.py",
+      "file": "scripts/docs_gen.py",
+      "signature": "",
+      "detail": "Python source module."
+    },
+    {
+      "type": "function",
+      "name": "project_root",
+      "file": "scripts/docs_gen.py",
+      "signature": "def project_root() -> Path",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "docs_output_dir",
+      "file": "scripts/docs_gen.py",
+      "signature": "def docs_output_dir(workspace: Path | None=None) -> Path",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "template_path",
+      "file": "scripts/docs_gen.py",
+      "signature": "def template_path() -> Path",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "_format_annotation",
+      "file": "scripts/docs_gen.py",
+      "signature": "def _format_annotation(node: ast.expr | None) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "_format_signature",
+      "file": "scripts/docs_gen.py",
+      "signature": "def _format_signature(node: ast.FunctionDef | ast.AsyncFunctionDef) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "extract_python_symbols",
+      "file": "scripts/docs_gen.py",
+      "signature": "def extract_python_symbols(path: Path) -> dict",
+      "detail": "Parse a Python file with AST and return classes, functions, docstrings."
+    },
+    {
+      "type": "function",
+      "name": "infer_file_role",
+      "file": "scripts/docs_gen.py",
+      "signature": "def infer_file_role(path: Path, rel: str) -> str",
+      "detail": "Human-readable summary for non-Python or supplemental context."
+    },
+    {
+      "type": "function",
+      "name": "should_skip_dir",
+      "file": "scripts/docs_gen.py",
+      "signature": "def should_skip_dir(name: str) -> bool",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "walk_project",
+      "file": "scripts/docs_gen.py",
+      "signature": "def walk_project(workspace: Path) -> tuple[list[dict], dict[str, dict]]",
+      "detail": "Build file tree and per-file documentation index."
+    },
+    {
+      "type": "function",
+      "name": "build_search_index",
+      "file": "scripts/docs_gen.py",
+      "signature": "def build_search_index(files_index: dict[str, dict]) -> list[dict]",
+      "detail": "Flatten classes and functions for global search."
+    },
+    {
+      "type": "function",
+      "name": "generate_docs",
+      "file": "scripts/docs_gen.py",
+      "signature": "def generate_docs(workspace: Path | None=None) -> Path",
+      "detail": "Walk project, write docs.json and index.html. Returns output directory."
+    },
+    {
+      "type": "function",
+      "name": "is_port_open",
+      "file": "scripts/docs_gen.py",
+      "signature": "def is_port_open(port: int, host: str='127.0.0.1') -> bool",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "start_server_background",
+      "file": "scripts/docs_gen.py",
+      "signature": "def start_server_background(workspace: Path | None=None, port: int=8000) -> subprocess.Popen | None",
+      "detail": "Start serve_docs.py in background if port is not already in use."
+    },
+    {
+      "type": "function",
+      "name": "main",
+      "file": "scripts/docs_gen.py",
+      "signature": "def main() -> int",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "serve_docs.py",
+      "file": "scripts/serve_docs.py",
+      "signature": "",
+      "detail": "Python source module."
+    },
+    {
+      "type": "function",
+      "name": "docs_dir",
+      "file": "scripts/serve_docs.py",
+      "signature": "def docs_dir(workspace: Path) -> Path",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "is_port_in_use",
+      "file": "scripts/serve_docs.py",
+      "signature": "def is_port_in_use(port: int, host: str='127.0.0.1') -> bool",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "main",
+      "file": "scripts/serve_docs.py",
+      "signature": "def main() -> int",
+      "detail": ""
+    },
+    {
+      "type": "class",
+      "name": "DocsRequestHandler",
+      "file": "scripts/serve_docs.py",
+      "signature": "class DocsRequestHandler",
+      "detail": "Static file handler with JSON content-type for docs.json."
+    },
+    {
+      "type": "method",
+      "name": "DocsRequestHandler.end_headers",
+      "file": "scripts/serve_docs.py",
+      "signature": "def end_headers(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "DocsRequestHandler.log_message",
+      "file": "scripts/serve_docs.py",
+      "signature": "def log_message(self, format: str, *args) -> None",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "__init__.py",
+      "file": "skills/__init__.py",
+      "signature": "",
+      "detail": "Python source module."
+    },
+    {
+      "type": "file",
+      "name": "base.py",
+      "file": "skills/base.py",
+      "signature": "",
+      "detail": "Python source module."
+    },
+    {
+      "type": "class",
+      "name": "BaseSkill",
+      "file": "skills/base.py",
+      "signature": "class BaseSkill",
+      "detail": "Abstract base class for CLI skills exposed as LLM tools."
+    },
+    {
+      "type": "method",
+      "name": "BaseSkill.get_name",
+      "file": "skills/base.py",
+      "signature": "def get_name(self) -> str",
+      "detail": "Return the stable tool identifier."
+    },
+    {
+      "type": "method",
+      "name": "BaseSkill.get_description",
+      "file": "skills/base.py",
+      "signature": "def get_description(self) -> str",
+      "detail": "Return a description for the LLM."
+    },
+    {
+      "type": "method",
+      "name": "BaseSkill.get_parameters_schema",
+      "file": "skills/base.py",
+      "signature": "def get_parameters_schema(self) -> dict[str, Any]",
+      "detail": "Return JSON Schema for function arguments."
+    },
+    {
+      "type": "method",
+      "name": "BaseSkill.execute",
+      "file": "skills/base.py",
+      "signature": "def execute(self, args: dict[str, Any]) -> str",
+      "detail": "Execute the skill and return a string result."
+    },
+    {
+      "type": "file",
+      "name": "file_read.py",
+      "file": "skills/file_read.py",
+      "signature": "",
+      "detail": "Python source module."
+    },
+    {
+      "type": "class",
+      "name": "FileReadSkill",
+      "file": "skills/file_read.py",
+      "signature": "class FileReadSkill",
+      "detail": "Reads the contents of a file by path."
+    },
+    {
+      "type": "method",
+      "name": "FileReadSkill.get_name",
+      "file": "skills/file_read.py",
+      "signature": "def get_name(self) -> str",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "FileReadSkill.get_description",
+      "file": "skills/file_read.py",
+      "signature": "def get_description(self) -> str",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "FileReadSkill.get_parameters_schema",
+      "file": "skills/file_read.py",
+      "signature": "def get_parameters_schema(self) -> dict[str, Any]",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "FileReadSkill.execute",
+      "file": "skills/file_read.py",
+      "signature": "def execute(self, args: dict[str, Any]) -> str",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "registry.py",
+      "file": "skills/registry.py",
+      "signature": "",
+      "detail": "Python source module."
+    },
+    {
+      "type": "class",
+      "name": "SkillRegistry",
+      "file": "skills/registry.py",
+      "signature": "class SkillRegistry",
+      "detail": "Registry for loaded skills with OpenAI tools schema generation."
+    },
+    {
+      "type": "method",
+      "name": "SkillRegistry.__init__",
+      "file": "skills/registry.py",
+      "signature": "def __init__(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "SkillRegistry._register_defaults",
+      "file": "skills/registry.py",
+      "signature": "def _register_defaults(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "SkillRegistry.register",
+      "file": "skills/registry.py",
+      "signature": "def register(self, skill: BaseSkill) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "SkillRegistry.list_skills",
+      "file": "skills/registry.py",
+      "signature": "def list_skills(self) -> list[BaseSkill]",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "SkillRegistry.get_tools_schema",
+      "file": "skills/registry.py",
+      "signature": "def get_tools_schema(self) -> list[dict[str, Any]]",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "SkillRegistry.execute",
+      "file": "skills/registry.py",
+      "signature": "def execute(self, name: str, args: dict[str, Any]) -> str",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "system_info.py",
+      "file": "skills/system_info.py",
+      "signature": "",
+      "detail": "Python source module."
+    },
+    {
+      "type": "class",
+      "name": "SystemInfoSkill",
+      "file": "skills/system_info.py",
+      "signature": "class SystemInfoSkill",
+      "detail": "Returns basic system information."
+    },
+    {
+      "type": "method",
+      "name": "SystemInfoSkill.get_name",
+      "file": "skills/system_info.py",
+      "signature": "def get_name(self) -> str",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "SystemInfoSkill.get_description",
+      "file": "skills/system_info.py",
+      "signature": "def get_description(self) -> str",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "SystemInfoSkill.get_parameters_schema",
+      "file": "skills/system_info.py",
+      "signature": "def get_parameters_schema(self) -> dict[str, Any]",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "SystemInfoSkill.execute",
+      "file": "skills/system_info.py",
+      "signature": "def execute(self, args: dict[str, Any]) -> str",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "tasks.py",
+      "file": "skills/tasks.py",
+      "signature": "",
+      "detail": "Plan mode tools — create_plan and complete_task."
+    },
+    {
+      "type": "function",
+      "name": "get_task_tool_schemas",
+      "file": "skills/tasks.py",
+      "signature": "def get_task_tool_schemas() -> list[dict[str, Any]]",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "set_plan_render_callback",
+      "file": "skills/tasks.py",
+      "signature": "def set_plan_render_callback(callback: PlanRenderCallback | None) -> None",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "_render_plan",
+      "file": "skills/tasks.py",
+      "signature": "async def _render_plan() -> None",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "execute_task_tool",
+      "file": "skills/tasks.py",
+      "signature": "async def execute_task_tool(tool_name: str, arguments: dict[str, Any]) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "is_task_tool",
+      "file": "skills/tasks.py",
+      "signature": "def is_task_tool(tool_name: str) -> bool",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "tools.py",
+      "file": "skills/tools.py",
+      "signature": "",
+      "detail": "Native agent tools — read_file, write_file, shell, web_search."
+    },
+    {
+      "type": "function",
+      "name": "get_tools_schema",
+      "file": "skills/tools.py",
+      "signature": "def get_tools_schema() -> list[dict[str, Any]]",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "clear_session_approvals",
+      "file": "skills/tools.py",
+      "signature": "def clear_session_approvals() -> None",
+      "detail": "Reset session-scoped tool permissions (e.g. on /clear)."
+    },
+    {
+      "type": "function",
+      "name": "set_tool_result_callback",
+      "file": "skills/tools.py",
+      "signature": "def set_tool_result_callback(callback: ToolResultCallback | None) -> None",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "session_approval_key",
+      "file": "skills/tools.py",
+      "signature": "def session_approval_key(tool_name: str, detail: str='') -> str",
+      "detail": "Key used for session-level approval bypass."
+    },
+    {
+      "type": "function",
+      "name": "is_session_approved",
+      "file": "skills/tools.py",
+      "signature": "def is_session_approved(tool_name: str, detail: str='') -> bool",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "grant_session_approval",
+      "file": "skills/tools.py",
+      "signature": "def grant_session_approval(tool_name: str, detail: str='') -> None",
+      "detail": "Remember approval for the tool category for the rest of the session."
+    },
+    {
+      "type": "function",
+      "name": "tool_display_label",
+      "file": "skills/tools.py",
+      "signature": "def tool_display_label(tool_name: str) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "build_permission_panel",
+      "file": "skills/tools.py",
+      "signature": "def build_permission_panel(tool_name: str, detail: str) -> Panel",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "build_rejection_panel",
+      "file": "skills/tools.py",
+      "signature": "def build_rejection_panel(tool_name: str, detail: str) -> Panel",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "build_result_panel",
+      "file": "skills/tools.py",
+      "signature": "def build_result_panel(tool_name: str, detail: str, output: str) -> Panel",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "_resolve_safe_path",
+      "file": "skills/tools.py",
+      "signature": "def _resolve_safe_path(filepath: str) -> Path | str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "read_file",
+      "file": "skills/tools.py",
+      "signature": "def read_file(filepath: str) -> str",
+      "detail": "Read and return file content."
+    },
+    {
+      "type": "function",
+      "name": "write_file",
+      "file": "skills/tools.py",
+      "signature": "def write_file(filepath: str, content: str) -> str",
+      "detail": "Write content to a file."
+    },
+    {
+      "type": "function",
+      "name": "web_search",
+      "file": "skills/tools.py",
+      "signature": "def web_search(query: str) -> str",
+      "detail": "Search the web via DuckDuckGo and return formatted top results."
+    },
+    {
+      "type": "function",
+      "name": "execute_shell",
+      "file": "skills/tools.py",
+      "signature": "def execute_shell(command: str) -> str",
+      "detail": "Execute a shell command and return stdout/stderr."
+    },
+    {
+      "type": "function",
+      "name": "_approval_detail",
+      "file": "skills/tools.py",
+      "signature": "def _approval_detail(tool_name: str, args: dict[str, Any]) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "_run_tool_sync",
+      "file": "skills/tools.py",
+      "signature": "def _run_tool_sync(tool_name: str, args: dict[str, Any]) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "execute_tool",
+      "file": "skills/tools.py",
+      "signature": "async def execute_tool(tool_name: str, arguments: dict[str, Any], approve: ApprovalCallback | None=None) -> str",
+      "detail": "Dispatch a tool call, requesting approval for dangerous operations."
+    },
+    {
+      "type": "function",
+      "name": "parse_tool_arguments",
+      "file": "skills/tools.py",
+      "signature": "def parse_tool_arguments(raw: str) -> dict[str, Any]",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "__init__.py",
+      "file": "ui/__init__.py",
+      "signature": "",
+      "detail": "UI module — __init__.py for the AXON terminal interface."
+    },
+    {
+      "type": "file",
+      "name": "axon_completer.py",
+      "file": "ui/axon_completer.py",
+      "signature": "",
+      "detail": "UI module — axon_completer.py for the AXON terminal interface."
+    },
+    {
+      "type": "function",
+      "name": "build_axon_completer",
+      "file": "ui/axon_completer.py",
+      "signature": "def build_axon_completer() -> AxonInputCompleter",
+      "detail": ""
+    },
+    {
+      "type": "class",
+      "name": "AtPathCompleter",
+      "file": "ui/axon_completer.py",
+      "signature": "class AtPathCompleter",
+      "detail": "Complete file paths after `@` in the input line."
+    },
+    {
+      "type": "method",
+      "name": "AtPathCompleter.get_completions",
+      "file": "ui/axon_completer.py",
+      "signature": "def get_completions(self, document: Document, complete_event)",
+      "detail": ""
+    },
+    {
+      "type": "class",
+      "name": "AxonInputCompleter",
+      "file": "ui/axon_completer.py",
+      "signature": "class AxonInputCompleter",
+      "detail": "Slash commands when line starts with `/`, else `@` path completion."
+    },
+    {
+      "type": "method",
+      "name": "AxonInputCompleter.__init__",
+      "file": "ui/axon_completer.py",
+      "signature": "def __init__(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonInputCompleter.get_completions",
+      "file": "ui/axon_completer.py",
+      "signature": "def get_completions(self, document: Document, complete_event)",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "axon_terminal.py",
+      "file": "ui/axon_terminal.py",
+      "signature": "",
+      "detail": "UI module — axon_terminal.py for the AXON terminal interface."
+    },
+    {
+      "type": "function",
+      "name": "estimate_cost",
+      "file": "ui/axon_terminal.py",
+      "signature": "def estimate_cost(prompt_tokens: int, completion_tokens: int) -> float",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "run_with_spinner",
+      "file": "ui/axon_terminal.py",
+      "signature": "def run_with_spinner(ui: AxonTerminalUI, live, fn, refresh_interval: float=0.08)",
+      "detail": "Run a blocking call while animating the thinking spinner in the live frame."
+    },
+    {
+      "type": "class",
+      "name": "ChatEntry",
+      "file": "ui/axon_terminal.py",
+      "signature": "class ChatEntry",
+      "detail": ""
+    },
+    {
+      "type": "class",
+      "name": "AxonTerminalUI",
+      "file": "ui/axon_terminal.py",
+      "signature": "class AxonTerminalUI",
+      "detail": "Claude Code–inspired permanent frame for the AXON CLI."
+    },
+    {
+      "type": "method",
+      "name": "AxonTerminalUI.set_model",
+      "file": "ui/axon_terminal.py",
+      "signature": "def set_model(self, model: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTerminalUI.set_thinking",
+      "file": "ui/axon_terminal.py",
+      "signature": "def set_thinking(self, thinking: bool) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTerminalUI.tick_spinner",
+      "file": "ui/axon_terminal.py",
+      "signature": "def tick_spinner(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTerminalUI.add_user",
+      "file": "ui/axon_terminal.py",
+      "signature": "def add_user(self, content: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTerminalUI.add_assistant",
+      "file": "ui/axon_terminal.py",
+      "signature": "def add_assistant(self, content: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTerminalUI.add_error",
+      "file": "ui/axon_terminal.py",
+      "signature": "def add_error(self, content: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTerminalUI.apply_result",
+      "file": "ui/axon_terminal.py",
+      "signature": "def apply_result(self, result: LLMResult) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTerminalUI.build_layout",
+      "file": "ui/axon_terminal.py",
+      "signature": "def build_layout(self) -> Layout",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTerminalUI._render_header",
+      "file": "ui/axon_terminal.py",
+      "signature": "def _render_header(self) -> RenderableType",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTerminalUI._render_chat",
+      "file": "ui/axon_terminal.py",
+      "signature": "def _render_chat(self) -> RenderableType",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTerminalUI._render_message",
+      "file": "ui/axon_terminal.py",
+      "signature": "def _render_message(self, entry: ChatEntry) -> RenderableType",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTerminalUI._render_footer",
+      "file": "ui/axon_terminal.py",
+      "signature": "def _render_footer(self) -> RenderableType",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTerminalUI._visible_messages",
+      "file": "ui/axon_terminal.py",
+      "signature": "def _visible_messages(self) -> list[ChatEntry]",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "axon_tui.py",
+      "file": "ui/axon_tui.py",
+      "signature": "",
+      "detail": "UI module — axon_tui.py for the AXON terminal interface."
+    },
+    {
+      "type": "function",
+      "name": "_terminal_width",
+      "file": "ui/axon_tui.py",
+      "signature": "def _terminal_width() -> int",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "_rich_to_ansi",
+      "file": "ui/axon_tui.py",
+      "signature": "def _rich_to_ansi(renderable, width: int) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "_build_logo_ansi",
+      "file": "ui/axon_tui.py",
+      "signature": "def _build_logo_ansi(width: int) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "_build_header_ansi",
+      "file": "ui/axon_tui.py",
+      "signature": "def _build_header_ansi(state: AxonTUIState, width: int) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "_build_status_ansi",
+      "file": "ui/axon_tui.py",
+      "signature": "def _build_status_ansi(state: AxonTUIState, width: int) -> str",
+      "detail": ""
+    },
+    {
+      "type": "class",
+      "name": "ChatEntry",
+      "file": "ui/axon_tui.py",
+      "signature": "class ChatEntry",
+      "detail": ""
+    },
+    {
+      "type": "class",
+      "name": "AxonTUIState",
+      "file": "ui/axon_tui.py",
+      "signature": "class AxonTUIState",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTUIState.tick_spinner",
+      "file": "ui/axon_tui.py",
+      "signature": "def tick_spinner(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTUIState.add_user",
+      "file": "ui/axon_tui.py",
+      "signature": "def add_user(self, text: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTUIState.add_assistant",
+      "file": "ui/axon_tui.py",
+      "signature": "def add_assistant(self, text: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTUIState.add_system",
+      "file": "ui/axon_tui.py",
+      "signature": "def add_system(self, text: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTUIState.add_error",
+      "file": "ui/axon_tui.py",
+      "signature": "def add_error(self, text: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "class",
+      "name": "AxonTUI",
+      "file": "ui/axon_tui.py",
+      "signature": "class AxonTUI",
+      "detail": "Full-screen AXON TUI with bottom-bar input and slash-command completion."
+    },
+    {
+      "type": "method",
+      "name": "AxonTUI.__init__",
+      "file": "ui/axon_tui.py",
+      "signature": "def __init__(self, llm: LLMManager) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTUI._build_keybindings",
+      "file": "ui/axon_tui.py",
+      "signature": "def _build_keybindings(self) -> KeyBindings",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTUI._logo_fragments",
+      "file": "ui/axon_tui.py",
+      "signature": "def _logo_fragments(self)",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTUI._header_fragments",
+      "file": "ui/axon_tui.py",
+      "signature": "def _header_fragments(self)",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTUI._status_fragments",
+      "file": "ui/axon_tui.py",
+      "signature": "def _status_fragments(self)",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTUI._append_to_chat_display",
+      "file": "ui/axon_tui.py",
+      "signature": "def _append_to_chat_display(self, line: str) -> None",
+      "detail": "Append one line to the read-only chat history buffer."
+    },
+    {
+      "type": "method",
+      "name": "AxonTUI._scroll_chat_to_bottom",
+      "file": "ui/axon_tui.py",
+      "signature": "def _scroll_chat_to_bottom(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTUI._spinner_loop",
+      "file": "ui/axon_tui.py",
+      "signature": "async def _spinner_loop(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTUI._start_spinner",
+      "file": "ui/axon_tui.py",
+      "signature": "def _start_spinner(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTUI._stop_spinner",
+      "file": "ui/axon_tui.py",
+      "signature": "def _stop_spinner(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTUI._handle_command",
+      "file": "ui/axon_tui.py",
+      "signature": "def _handle_command(self, text: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonTUI._process_ai_response",
+      "file": "ui/axon_tui.py",
+      "signature": "async def _process_ai_response(self, text: str) -> None",
+      "detail": "Background coroutine: call LLM without blocking the UI loop."
+    },
+    {
+      "type": "method",
+      "name": "AxonTUI._on_accept",
+      "file": "ui/axon_tui.py",
+      "signature": "def _on_accept(self, buff: Buffer) -> bool",
+      "detail": "Enter handler:\n1. Capture input text\n2. Append 'User: ...' to chat and redraw immediately\n3. Schedule async LLM call as a background task\n4. Return False so prompt_toolkit clears the input field"
+    },
+    {
+      "type": "method",
+      "name": "AxonTUI.run",
+      "file": "ui/axon_tui.py",
+      "signature": "def run(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "branding.py",
+      "file": "ui/branding.py",
+      "signature": "",
+      "detail": "UI module — branding.py for the AXON terminal interface."
+    },
+    {
+      "type": "function",
+      "name": "_interpolate_color",
+      "file": "ui/branding.py",
+      "signature": "def _interpolate_color(ratio: float, start: tuple[int, int, int], end: tuple[int, int, int]) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "_hex_to_rgb",
+      "file": "ui/branding.py",
+      "signature": "def _hex_to_rgb(value: str) -> tuple[int, int, int]",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "generate_logo_text",
+      "file": "ui/branding.py",
+      "signature": "def generate_logo_text(font: str='slant') -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "build_gradient_logo",
+      "file": "ui/branding.py",
+      "signature": "def build_gradient_logo(theme: CLITheme, font: str='slant') -> Text",
+      "detail": "Render the AXON ASCII logo with a subtle vertical gradient."
+    },
+    {
+      "type": "function",
+      "name": "build_status_line",
+      "file": "ui/branding.py",
+      "signature": "def build_status_line(theme: CLITheme, model: str, status: str) -> Text",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "_status_color",
+      "file": "ui/branding.py",
+      "signature": "def _status_color(theme: CLITheme, status: str) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "build_header",
+      "file": "ui/branding.py",
+      "signature": "def build_header(theme: CLITheme, model: str, status: str, font: str='slant') -> tuple[RenderableType, int]",
+      "detail": "Build the static header block and return its layout height."
+    },
+    {
+      "type": "function",
+      "name": "splash_renderable",
+      "file": "ui/branding.py",
+      "signature": "def splash_renderable(theme: CLITheme, model: str, status: str='Ready', font: str='slant') -> RenderableType",
+      "detail": "Full startup splash for initial screen clear."
+    },
+    {
+      "type": "file",
+      "name": "completer.py",
+      "file": "ui/completer.py",
+      "signature": "",
+      "detail": "UI module — completer.py for the AXON terminal interface."
+    },
+    {
+      "type": "function",
+      "name": "build_slash_completer",
+      "file": "ui/completer.py",
+      "signature": "def build_slash_completer() -> WordCompleter",
+      "detail": ""
+    },
+    {
+      "type": "class",
+      "name": "AxonCommandCompleter",
+      "file": "ui/completer.py",
+      "signature": "class AxonCommandCompleter",
+      "detail": "Slash-command completer with descriptions — Tab to complete."
+    },
+    {
+      "type": "method",
+      "name": "AxonCommandCompleter.get_completions",
+      "file": "ui/completer.py",
+      "signature": "def get_completions(self, document: Document, complete_event)",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "docs_template.html",
+      "file": "ui/docs_template.html",
+      "signature": "",
+      "detail": "UI module — docs_template.html for the AXON terminal interface."
+    },
+    {
+      "type": "file",
+      "name": "file_context.py",
+      "file": "ui/file_context.py",
+      "signature": "",
+      "detail": "UI module — file_context.py for the AXON terminal interface."
+    },
+    {
+      "type": "function",
+      "name": "_resolve_mention",
+      "file": "ui/file_context.py",
+      "signature": "def _resolve_mention(raw: str, cwd: Path) -> Path | None",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "_directory_tree",
+      "file": "ui/file_context.py",
+      "signature": "def _directory_tree(path: Path, *, max_depth: int=2, _depth: int=0) -> list[str]",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "_read_file_snippet",
+      "file": "ui/file_context.py",
+      "signature": "def _read_file_snippet(path: Path) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "build_file_context",
+      "file": "ui/file_context.py",
+      "signature": "def build_file_context(text: str, cwd: Path | None=None) -> tuple[str, str]",
+      "detail": "Parse @mentions in user text.\n\nReturns:\n    display_text — user-visible message with @path replaced by tags\n    context_block — hidden context appended for the LLM (empty if none)"
+    },
+    {
+      "type": "file",
+      "name": "git_commit.py",
+      "file": "ui/git_commit.py",
+      "signature": "",
+      "detail": "UI module — git_commit.py for the AXON terminal interface."
+    },
+    {
+      "type": "function",
+      "name": "_run_git",
+      "file": "ui/git_commit.py",
+      "signature": "def _run_git(args: list[str], cwd: Path) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "collect_git_changes",
+      "file": "ui/git_commit.py",
+      "signature": "def collect_git_changes(workspace: Path | None=None) -> tuple[str, str, str | None]",
+      "detail": "Return git status, diff, and optional error."
+    },
+    {
+      "type": "function",
+      "name": "run_git_commit",
+      "file": "ui/git_commit.py",
+      "signature": "def run_git_commit(message: str, workspace: Path | None=None) -> tuple[bool, str]",
+      "detail": "Execute git commit -am with the given message."
+    },
+    {
+      "type": "file",
+      "name": "git_review.py",
+      "file": "ui/git_review.py",
+      "signature": "",
+      "detail": "UI module — git_review.py for the AXON terminal interface."
+    },
+    {
+      "type": "function",
+      "name": "_run_git",
+      "file": "ui/git_review.py",
+      "signature": "def _run_git(args: list[str], cwd: Path) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "build_review_prompt",
+      "file": "ui/git_review.py",
+      "signature": "def build_review_prompt(workspace: Path | None=None) -> tuple[str, str | None]",
+      "detail": "Collect git status + diff and build an LLM review prompt.\n\nReturns (prompt, error_message)."
+    },
+    {
+      "type": "file",
+      "name": "protocol.py",
+      "file": "ui/protocol.py",
+      "signature": "",
+      "detail": "UI module — protocol.py for the AXON terminal interface."
+    },
+    {
+      "type": "class",
+      "name": "UIOutput",
+      "file": "ui/protocol.py",
+      "signature": "class UIOutput",
+      "detail": "Protocol for decoupling core logic from terminal rendering."
+    },
+    {
+      "type": "method",
+      "name": "UIOutput.set_model",
+      "file": "ui/protocol.py",
+      "signature": "def set_model(self, model: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIOutput.set_status",
+      "file": "ui/protocol.py",
+      "signature": "def set_status(self, status: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIOutput.add_user_message",
+      "file": "ui/protocol.py",
+      "signature": "def add_user_message(self, content: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIOutput.add_assistant_message",
+      "file": "ui/protocol.py",
+      "signature": "def add_assistant_message(self, content: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIOutput.add_system_message",
+      "file": "ui/protocol.py",
+      "signature": "def add_system_message(self, content: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIOutput.clear_messages",
+      "file": "ui/protocol.py",
+      "signature": "def clear_messages(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIOutput.refresh",
+      "file": "ui/protocol.py",
+      "signature": "def refresh(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIOutput.stream_begin",
+      "file": "ui/protocol.py",
+      "signature": "def stream_begin(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIOutput.stream_update",
+      "file": "ui/protocol.py",
+      "signature": "def stream_update(self, content: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIOutput.stream_end",
+      "file": "ui/protocol.py",
+      "signature": "def stream_end(self, content: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "renderer.py",
+      "file": "ui/renderer.py",
+      "signature": "",
+      "detail": "UI module — renderer.py for the AXON terminal interface."
+    },
+    {
+      "type": "class",
+      "name": "ChatMessage",
+      "file": "ui/renderer.py",
+      "signature": "class ChatMessage",
+      "detail": ""
+    },
+    {
+      "type": "class",
+      "name": "UIRenderer",
+      "file": "ui/renderer.py",
+      "signature": "class UIRenderer",
+      "detail": "Builds and updates the split-pane terminal layout."
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer.attach_live",
+      "file": "ui/renderer.py",
+      "signature": "def attach_live(self, live: Live) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer.set_model",
+      "file": "ui/renderer.py",
+      "signature": "def set_model(self, model: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer.set_status",
+      "file": "ui/renderer.py",
+      "signature": "def set_status(self, status: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer.add_user_message",
+      "file": "ui/renderer.py",
+      "signature": "def add_user_message(self, content: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer.add_assistant_message",
+      "file": "ui/renderer.py",
+      "signature": "def add_assistant_message(self, content: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer.add_system_message",
+      "file": "ui/renderer.py",
+      "signature": "def add_system_message(self, content: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer.clear_messages",
+      "file": "ui/renderer.py",
+      "signature": "def clear_messages(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer.stream_begin",
+      "file": "ui/renderer.py",
+      "signature": "def stream_begin(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer.stream_update",
+      "file": "ui/renderer.py",
+      "signature": "def stream_update(self, content: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer.stream_end",
+      "file": "ui/renderer.py",
+      "signature": "def stream_end(self, content: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer.stream_cancel",
+      "file": "ui/renderer.py",
+      "signature": "def stream_cancel(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer.refresh",
+      "file": "ui/renderer.py",
+      "signature": "def refresh(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer._recalculate_header_size",
+      "file": "ui/renderer.py",
+      "signature": "def _recalculate_header_size(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer.build_layout",
+      "file": "ui/renderer.py",
+      "signature": "def build_layout(self) -> Layout",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer._render_header_pane",
+      "file": "ui/renderer.py",
+      "signature": "def _render_header_pane(self) -> RenderableType",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer._render_chat_pane",
+      "file": "ui/renderer.py",
+      "signature": "def _render_chat_pane(self) -> RenderableType",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer._render_message",
+      "file": "ui/renderer.py",
+      "signature": "def _render_message(self, message: ChatMessage) -> RenderableType",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer._render_streaming_block",
+      "file": "ui/renderer.py",
+      "signature": "def _render_streaming_block(self) -> RenderableType",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer._render_input_pane",
+      "file": "ui/renderer.py",
+      "signature": "def _render_input_pane(self) -> RenderableType",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer.get_display_model",
+      "file": "ui/renderer.py",
+      "signature": "def get_display_model(self) -> str",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer._short_model_name",
+      "file": "ui/renderer.py",
+      "signature": "def _short_model_name(self) -> str",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer._visible_messages",
+      "file": "ui/renderer.py",
+      "signature": "def _visible_messages(self) -> list[ChatMessage]",
+      "detail": "Return the tail of chat history that fits the chat pane."
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer.format_help",
+      "file": "ui/renderer.py",
+      "signature": "def format_help(self, rows: list[tuple[str, str]]) -> str",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "UIRenderer.format_skills",
+      "file": "ui/renderer.py",
+      "signature": "def format_skills(self, rows: list[tuple[str, str]]) -> str",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "theme.py",
+      "file": "ui/theme.py",
+      "signature": "",
+      "detail": "UI module — theme.py for the AXON terminal interface."
+    },
+    {
+      "type": "class",
+      "name": "CLITheme",
+      "file": "ui/theme.py",
+      "signature": "class CLITheme",
+      "detail": "Color palette and style tokens. Swap this class to change the look."
+    },
+    {
+      "type": "method",
+      "name": "CLITheme.assistant_label",
+      "file": "ui/theme.py",
+      "signature": "def assistant_label(self) -> str",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "CLITheme.user_label",
+      "file": "ui/theme.py",
+      "signature": "def user_label(self) -> str",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "CLITheme.prompt_markup",
+      "file": "ui/theme.py",
+      "signature": "def prompt_markup(self) -> str",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "CLITheme.toolbar_markup",
+      "file": "ui/theme.py",
+      "signature": "def toolbar_markup(self) -> str",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "route.ts",
+      "file": "zenith-web/app/api/config/route.ts",
+      "signature": "",
+      "detail": "Zenith web dashboard — route.ts."
+    },
+    {
+      "type": "file",
+      "name": "route.ts",
+      "file": "zenith-web/app/api/models/route.ts",
+      "signature": "",
+      "detail": "Zenith web dashboard — route.ts."
+    },
+    {
+      "type": "file",
+      "name": "page.tsx",
+      "file": "zenith-web/app/chat/page.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — page.tsx."
+    },
+    {
+      "type": "file",
+      "name": "page.tsx",
+      "file": "zenith-web/app/config/page.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — page.tsx."
+    },
+    {
+      "type": "file",
+      "name": "page.tsx",
+      "file": "zenith-web/app/dashboard/page.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — page.tsx."
+    },
+    {
+      "type": "file",
+      "name": "page.tsx",
+      "file": "zenith-web/app/marketplace/page.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — page.tsx."
+    },
+    {
+      "type": "file",
+      "name": "globals.css",
+      "file": "zenith-web/app/globals.css",
+      "signature": "",
+      "detail": "Zenith web dashboard — globals.css."
+    },
+    {
+      "type": "file",
+      "name": "layout.tsx",
+      "file": "zenith-web/app/layout.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — layout.tsx."
+    },
+    {
+      "type": "file",
+      "name": "page.tsx",
+      "file": "zenith-web/app/page.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — page.tsx."
+    },
+    {
+      "type": "file",
+      "name": "ChatInterface.tsx",
+      "file": "zenith-web/components/chat/ChatInterface.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — ChatInterface.tsx."
+    },
+    {
+      "type": "file",
+      "name": "ConfigWidget.tsx",
+      "file": "zenith-web/components/config/ConfigWidget.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — ConfigWidget.tsx."
+    },
+    {
+      "type": "file",
+      "name": "CustomModelRegistry.tsx",
+      "file": "zenith-web/components/config/CustomModelRegistry.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — CustomModelRegistry.tsx."
+    },
+    {
+      "type": "file",
+      "name": "LogsConsole.tsx",
+      "file": "zenith-web/components/dashboard/LogsConsole.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — LogsConsole.tsx."
+    },
+    {
+      "type": "file",
+      "name": "ModelSelector.tsx",
+      "file": "zenith-web/components/dashboard/ModelSelector.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — ModelSelector.tsx."
+    },
+    {
+      "type": "file",
+      "name": "StatusCards.tsx",
+      "file": "zenith-web/components/dashboard/StatusCards.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — StatusCards.tsx."
+    },
+    {
+      "type": "file",
+      "name": "LandingHero.tsx",
+      "file": "zenith-web/components/landing/LandingHero.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — LandingHero.tsx."
+    },
+    {
+      "type": "file",
+      "name": "AppShell.tsx",
+      "file": "zenith-web/components/layout/AppShell.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — AppShell.tsx."
+    },
+    {
+      "type": "file",
+      "name": "Sidebar.tsx",
+      "file": "zenith-web/components/layout/Sidebar.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — Sidebar.tsx."
+    },
+    {
+      "type": "file",
+      "name": "TopNav.tsx",
+      "file": "zenith-web/components/layout/TopNav.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — TopNav.tsx."
+    },
+    {
+      "type": "file",
+      "name": "ModelAvatar.tsx",
+      "file": "zenith-web/components/marketplace/ModelAvatar.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — ModelAvatar.tsx."
+    },
+    {
+      "type": "file",
+      "name": "ModelMarketplace.tsx",
+      "file": "zenith-web/components/marketplace/ModelMarketplace.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — ModelMarketplace.tsx."
+    },
+    {
+      "type": "file",
+      "name": "AppProviders.tsx",
+      "file": "zenith-web/components/providers/AppProviders.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — AppProviders.tsx."
+    },
+    {
+      "type": "file",
+      "name": "ThemeProvider.tsx",
+      "file": "zenith-web/components/providers/ThemeProvider.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — ThemeProvider.tsx."
+    },
+    {
+      "type": "file",
+      "name": "AgentOrb.tsx",
+      "file": "zenith-web/components/ui/AgentOrb.tsx",
+      "signature": "",
+      "detail": "UI module — AgentOrb.tsx for the AXON terminal interface."
+    },
+    {
+      "type": "file",
+      "name": "GlassCard.tsx",
+      "file": "zenith-web/components/ui/GlassCard.tsx",
+      "signature": "",
+      "detail": "UI module — GlassCard.tsx for the AXON terminal interface."
+    },
+    {
+      "type": "file",
+      "name": "StaggerGrid.tsx",
+      "file": "zenith-web/components/ui/StaggerGrid.tsx",
+      "signature": "",
+      "detail": "UI module — StaggerGrid.tsx for the AXON terminal interface."
+    },
+    {
+      "type": "file",
+      "name": "ThemeSwitcher.tsx",
+      "file": "zenith-web/components/ui/ThemeSwitcher.tsx",
+      "signature": "",
+      "detail": "UI module — ThemeSwitcher.tsx for the AXON terminal interface."
+    },
+    {
+      "type": "file",
+      "name": "ChatContext.tsx",
+      "file": "zenith-web/context/ChatContext.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — ChatContext.tsx."
+    },
+    {
+      "type": "file",
+      "name": "ConfigContext.tsx",
+      "file": "zenith-web/context/ConfigContext.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — ConfigContext.tsx."
+    },
+    {
+      "type": "file",
+      "name": "ModelContext.tsx",
+      "file": "zenith-web/context/ModelContext.tsx",
+      "signature": "",
+      "detail": "Zenith web dashboard — ModelContext.tsx."
+    },
+    {
+      "type": "file",
+      "name": "useWebSocket.ts",
+      "file": "zenith-web/hooks/useWebSocket.ts",
+      "signature": "",
+      "detail": "Zenith web dashboard — useWebSocket.ts."
+    },
+    {
+      "type": "file",
+      "name": "ai-client.ts",
+      "file": "zenith-web/lib/ai-client.ts",
+      "signature": "",
+      "detail": "Zenith web dashboard — ai-client.ts."
+    },
+    {
+      "type": "file",
+      "name": "models.ts",
+      "file": "zenith-web/lib/models.ts",
+      "signature": "",
+      "detail": "Zenith web dashboard — models.ts."
+    },
+    {
+      "type": "file",
+      "name": "utils.ts",
+      "file": "zenith-web/lib/utils.ts",
+      "signature": "",
+      "detail": "Zenith web dashboard — utils.ts."
+    },
+    {
+      "type": "file",
+      "name": "file.svg",
+      "file": "zenith-web/public/file.svg",
+      "signature": "",
+      "detail": "Zenith web dashboard — file.svg."
+    },
+    {
+      "type": "file",
+      "name": "globe.svg",
+      "file": "zenith-web/public/globe.svg",
+      "signature": "",
+      "detail": "Zenith web dashboard — globe.svg."
+    },
+    {
+      "type": "file",
+      "name": "next.svg",
+      "file": "zenith-web/public/next.svg",
+      "signature": "",
+      "detail": "Zenith web dashboard — next.svg."
+    },
+    {
+      "type": "file",
+      "name": "vercel.svg",
+      "file": "zenith-web/public/vercel.svg",
+      "signature": "",
+      "detail": "Zenith web dashboard — vercel.svg."
+    },
+    {
+      "type": "file",
+      "name": "window.svg",
+      "file": "zenith-web/public/window.svg",
+      "signature": "",
+      "detail": "Zenith web dashboard — window.svg."
+    },
+    {
+      "type": "file",
+      "name": ".gitignore",
+      "file": "zenith-web/.gitignore",
+      "signature": "",
+      "detail": "Zenith web dashboard — .gitignore."
+    },
+    {
+      "type": "file",
+      "name": "AGENTS.md",
+      "file": "zenith-web/AGENTS.md",
+      "signature": "",
+      "detail": "Zenith web dashboard — AGENTS.md."
+    },
+    {
+      "type": "file",
+      "name": "CLAUDE.md",
+      "file": "zenith-web/CLAUDE.md",
+      "signature": "",
+      "detail": "Zenith web dashboard — CLAUDE.md."
+    },
+    {
+      "type": "file",
+      "name": "eslint.config.mjs",
+      "file": "zenith-web/eslint.config.mjs",
+      "signature": "",
+      "detail": "Zenith web dashboard — eslint.config.mjs."
+    },
+    {
+      "type": "file",
+      "name": "next-env.d.ts",
+      "file": "zenith-web/next-env.d.ts",
+      "signature": "",
+      "detail": "Zenith web dashboard — next-env.d.ts."
+    },
+    {
+      "type": "file",
+      "name": "next.config.ts",
+      "file": "zenith-web/next.config.ts",
+      "signature": "",
+      "detail": "Zenith web dashboard — next.config.ts."
+    },
+    {
+      "type": "file",
+      "name": "package-lock.json",
+      "file": "zenith-web/package-lock.json",
+      "signature": "",
+      "detail": "Zenith web dashboard — package-lock.json."
+    },
+    {
+      "type": "file",
+      "name": "package.json",
+      "file": "zenith-web/package.json",
+      "signature": "",
+      "detail": "Node.js dependencies for the Zenith web dashboard."
+    },
+    {
+      "type": "file",
+      "name": "postcss.config.mjs",
+      "file": "zenith-web/postcss.config.mjs",
+      "signature": "",
+      "detail": "Zenith web dashboard — postcss.config.mjs."
+    },
+    {
+      "type": "file",
+      "name": "README.md",
+      "file": "zenith-web/README.md",
+      "signature": "",
+      "detail": "Zenith web dashboard — README.md."
+    },
+    {
+      "type": "file",
+      "name": "tsconfig.json",
+      "file": "zenith-web/tsconfig.json",
+      "signature": "",
+      "detail": "Zenith web dashboard — tsconfig.json."
+    },
+    {
+      "type": "file",
+      "name": ".env",
+      "file": ".env",
+      "signature": "",
+      "detail": "Project file — .env."
+    },
+    {
+      "type": "file",
+      "name": ".env.example",
+      "file": ".env.example",
+      "signature": "",
+      "detail": "Project file — .env.example."
+    },
+    {
+      "type": "file",
+      "name": ".gitignore",
+      "file": ".gitignore",
+      "signature": "",
+      "detail": "Project file — .gitignore."
+    },
+    {
+      "type": "file",
+      "name": "backup_manager.py",
+      "file": "backup_manager.py",
+      "signature": "",
+      "detail": "Time Machine — backs up files before write_file overwrites them."
+    },
+    {
+      "type": "class",
+      "name": "BackupManager",
+      "file": "backup_manager.py",
+      "signature": "class BackupManager",
+      "detail": "Time Machine — backs up files before write_file overwrites them."
+    },
+    {
+      "type": "method",
+      "name": "BackupManager.backup_dir",
+      "file": "backup_manager.py",
+      "signature": "def backup_dir(self) -> Path",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "BackupManager.set_workspace",
+      "file": "backup_manager.py",
+      "signature": "def set_workspace(self, workspace: Path) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "BackupManager.backup_if_exists",
+      "file": "backup_manager.py",
+      "signature": "def backup_if_exists(self, path: Path) -> Path | None",
+      "detail": "Save current file contents before overwrite. Returns backup path."
+    },
+    {
+      "type": "method",
+      "name": "BackupManager.undo_last",
+      "file": "backup_manager.py",
+      "signature": "def undo_last(self) -> tuple[bool, str]",
+      "detail": "Restore the last backed-up file. Returns (success, message)."
+    },
+    {
+      "type": "file",
+      "name": "bridge.py",
+      "file": "bridge.py",
+      "signature": "",
+      "detail": "WebSocket bridge connecting the CLI to the Zenith web dashboard."
+    },
+    {
+      "type": "class",
+      "name": "AxonBridge",
+      "file": "bridge.py",
+      "signature": "class AxonBridge",
+      "detail": "WebSocket hub — ws_handler + broadcast helpers."
+    },
+    {
+      "type": "method",
+      "name": "AxonBridge.__init__",
+      "file": "bridge.py",
+      "signature": "def __init__(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonBridge.configure",
+      "file": "bridge.py",
+      "signature": "def configure(self, *, process_chat: ProcessChatHandler, set_model: SetModelHandler, refresh_ui: RefreshUIHandler, current_model: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonBridge.start",
+      "file": "bridge.py",
+      "signature": "async def start(self) -> Any | None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonBridge.stop",
+      "file": "bridge.py",
+      "signature": "async def stop(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonBridge.ws_handler",
+      "file": "bridge.py",
+      "signature": "async def ws_handler(self, websocket: WebSocketServerProtocol) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonBridge.broadcast",
+      "file": "bridge.py",
+      "signature": "async def broadcast(self, payload: dict[str, Any]) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonBridge.broadcast_stats",
+      "file": "bridge.py",
+      "signature": "async def broadcast_stats(self, tokens: int, cost: float) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonBridge.broadcast_model",
+      "file": "bridge.py",
+      "signature": "async def broadcast_model(self, model: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "AxonBridge.broadcast_chat",
+      "file": "bridge.py",
+      "signature": "async def broadcast_chat(self, *, role: str, text: str, source: str='terminal', message_id: str | None=None) -> None",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "commands.py",
+      "file": "commands.py",
+      "signature": "",
+      "detail": "Python source module."
+    },
+    {
+      "type": "class",
+      "name": "CommandManager",
+      "file": "commands.py",
+      "signature": "class CommandManager",
+      "detail": "Handles slash commands routed from the REPL."
+    },
+    {
+      "type": "method",
+      "name": "CommandManager.__init__",
+      "file": "commands.py",
+      "signature": "def __init__(self, ui: UIRenderer, llm_manager: LLMManager, skill_registry: SkillRegistry) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "CommandManager.handle",
+      "file": "commands.py",
+      "signature": "def handle(self, command_line: str) -> bool",
+      "detail": "Process a slash command. Returns False if the REPL should exit."
+    },
+    {
+      "type": "method",
+      "name": "CommandManager._cmd_help",
+      "file": "commands.py",
+      "signature": "def _cmd_help(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "CommandManager._cmd_model",
+      "file": "commands.py",
+      "signature": "def _cmd_model(self, args: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "CommandManager._cmd_clear",
+      "file": "commands.py",
+      "signature": "def _cmd_clear(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "CommandManager._cmd_skills",
+      "file": "commands.py",
+      "signature": "def _cmd_skills(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "config.json",
+      "file": "config.json",
+      "signature": "",
+      "detail": "Runtime configuration (API keys, model selection)."
+    },
+    {
+      "type": "file",
+      "name": "config.json.example",
+      "file": "config.json.example",
+      "signature": "",
+      "detail": "Project file — config.json.example."
+    },
+    {
+      "type": "file",
+      "name": "config_store.py",
+      "file": "config_store.py",
+      "signature": "",
+      "detail": "Python source module."
+    },
+    {
+      "type": "function",
+      "name": "_ensure_config_file",
+      "file": "config_store.py",
+      "signature": "def _ensure_config_file() -> None",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "load_config",
+      "file": "config_store.py",
+      "signature": "def load_config() -> dict[str, str]",
+      "detail": "Load shared AXON config from config.json (created on first access)."
+    },
+    {
+      "type": "function",
+      "name": "save_config",
+      "file": "config_store.py",
+      "signature": "def save_config(data: dict[str, str]) -> None",
+      "detail": "Persist shared AXON config to config.json."
+    },
+    {
+      "type": "function",
+      "name": "get_openrouter_api_key",
+      "file": "config_store.py",
+      "signature": "def get_openrouter_api_key() -> str",
+      "detail": "Read API key from config.json, falling back to environment."
+    },
+    {
+      "type": "function",
+      "name": "get_model",
+      "file": "config_store.py",
+      "signature": "def get_model() -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "save_model",
+      "file": "config_store.py",
+      "signature": "def save_model(model: str) -> None",
+      "detail": "Persist the active model selection to config.json."
+    },
+    {
+      "type": "file",
+      "name": "controller.py",
+      "file": "controller.py",
+      "signature": "",
+      "detail": "Python source module."
+    },
+    {
+      "type": "class",
+      "name": "CLIController",
+      "file": "controller.py",
+      "signature": "class CLIController",
+      "detail": "AXON REPL loop with sticky header branding and bottom input."
+    },
+    {
+      "type": "method",
+      "name": "CLIController.__init__",
+      "file": "controller.py",
+      "signature": "def __init__(self, console: Console, ui: UIRenderer, command_manager: CommandManager, llm_manager: LLMManager, history_path: Path | None=None) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "CLIController._show_startup_splash",
+      "file": "controller.py",
+      "signature": "def _show_startup_splash(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "CLIController.run",
+      "file": "controller.py",
+      "signature": "def run(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "CLIController._handle_chat",
+      "file": "controller.py",
+      "signature": "def _handle_chat(self, text: str, live: Live) -> None",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "llm_client.py",
+      "file": "llm_client.py",
+      "signature": "",
+      "detail": "OpenRouter LLM client — agent loop, tool calls, and system prompts."
+    },
+    {
+      "type": "function",
+      "name": "record_token_usage",
+      "file": "llm_client.py",
+      "signature": "def record_token_usage(total_tokens: int) -> None",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "reset_session_counters",
+      "file": "llm_client.py",
+      "signature": "def reset_session_counters() -> None",
+      "detail": ""
+    },
+    {
+      "type": "class",
+      "name": "TokenUsage",
+      "file": "llm_client.py",
+      "signature": "class TokenUsage",
+      "detail": ""
+    },
+    {
+      "type": "class",
+      "name": "LLMResult",
+      "file": "llm_client.py",
+      "signature": "class LLMResult",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMResult.ok",
+      "file": "llm_client.py",
+      "signature": "def ok(self) -> bool",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMResult.display_text",
+      "file": "llm_client.py",
+      "signature": "def display_text(self) -> str",
+      "detail": ""
+    },
+    {
+      "type": "class",
+      "name": "LLMManager",
+      "file": "llm_client.py",
+      "signature": "class LLMManager",
+      "detail": "AXON LLM client with OpenRouter tool-calling agent loop."
+    },
+    {
+      "type": "method",
+      "name": "LLMManager.__init__",
+      "file": "llm_client.py",
+      "signature": "def __init__(self, api_key: str | None=None, model: str | None=None, approve: ApprovalCallback | None=None, workspace: Path | None=None) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMManager._build_system_prompt",
+      "file": "llm_client.py",
+      "signature": "def _build_system_prompt(self) -> str",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMManager.refresh_system_prompt",
+      "file": "llm_client.py",
+      "signature": "def refresh_system_prompt(self) -> None",
+      "detail": "Rebuild system message (memory, skills) without clearing chat."
+    },
+    {
+      "type": "method",
+      "name": "LLMManager.reload_skills",
+      "file": "llm_client.py",
+      "signature": "def reload_skills(self) -> int",
+      "detail": "Rescan `.axon/skills/` and refresh the system prompt."
+    },
+    {
+      "type": "method",
+      "name": "LLMManager._get_all_tool_schemas",
+      "file": "llm_client.py",
+      "signature": "def _get_all_tool_schemas(self) -> list[dict[str, Any]]",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMManager._dispatch_tool",
+      "file": "llm_client.py",
+      "signature": "async def _dispatch_tool(self, tool_name: str, arguments: dict[str, Any]) -> str",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMManager._build_client",
+      "file": "llm_client.py",
+      "signature": "def _build_client(self, api_key: str) -> OpenAI",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMManager.set_approval_callback",
+      "file": "llm_client.py",
+      "signature": "def set_approval_callback(self, approve: ApprovalCallback | None) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMManager.set_tool_callback",
+      "file": "llm_client.py",
+      "signature": "def set_tool_callback(self, callback: ToolNotifyCallback | None) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMManager.reload_credentials",
+      "file": "llm_client.py",
+      "signature": "def reload_credentials(self) -> None",
+      "detail": "Reload API key only — never overwrite an explicitly selected model."
+    },
+    {
+      "type": "method",
+      "name": "LLMManager.set_model",
+      "file": "llm_client.py",
+      "signature": "def set_model(self, model: str) -> None",
+      "detail": "Set active model and persist to shared config."
+    },
+    {
+      "type": "method",
+      "name": "LLMManager._image_media_type",
+      "file": "llm_client.py",
+      "signature": "def _image_media_type(path: Path) -> str",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMManager.load_image_into_context",
+      "file": "llm_client.py",
+      "signature": "def load_image_into_context(self, image_path: str, prompt: str='Analyze this image.') -> str | None",
+      "detail": "Append an OpenAI-compatible vision user message. Returns error or None."
+    },
+    {
+      "type": "method",
+      "name": "LLMManager.send_message",
+      "file": "llm_client.py",
+      "signature": "def send_message(self, user_text: str) -> LLMResult",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMManager.send_message_async",
+      "file": "llm_client.py",
+      "signature": "async def send_message_async(self, user_text: str, *, file_context: str='') -> LLMResult",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMManager.send_plan_async",
+      "file": "llm_client.py",
+      "signature": "async def send_plan_async(self, description: str) -> LLMResult",
+      "detail": "Plan Mode — only create_plan tool, no execution."
+    },
+    {
+      "type": "method",
+      "name": "LLMManager.send_execute_async",
+      "file": "llm_client.py",
+      "signature": "async def send_execute_async(self) -> LLMResult",
+      "detail": "Execute an existing plan step-by-step."
+    },
+    {
+      "type": "method",
+      "name": "LLMManager.generate_commit_message_async",
+      "file": "llm_client.py",
+      "signature": "async def generate_commit_message_async(self, status: str, diff: str) -> LLMResult",
+      "detail": "Ask the LLM for a single Conventional Commit message (no tools)."
+    },
+    {
+      "type": "method",
+      "name": "LLMManager._agent_loop",
+      "file": "llm_client.py",
+      "signature": "async def _agent_loop(self, user_text: str) -> LLMResult",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMManager._call_api",
+      "file": "llm_client.py",
+      "signature": "def _call_api(self, *, tools: list[dict[str, Any]] | None=None) -> Any",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMManager._accumulate_usage",
+      "file": "llm_client.py",
+      "signature": "def _accumulate_usage(self, previous: TokenUsage | None, usage: object | None) -> TokenUsage | None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMManager._serialize_assistant_message",
+      "file": "llm_client.py",
+      "signature": "def _serialize_assistant_message(message: Any) -> dict[str, Any]",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMManager._rollback_last_user_message",
+      "file": "llm_client.py",
+      "signature": "def _rollback_last_user_message(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMManager._friendly_api_error",
+      "file": "llm_client.py",
+      "signature": "def _friendly_api_error(exc: APIError) -> str",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "LLMManager._parse_usage",
+      "file": "llm_client.py",
+      "signature": "def _parse_usage(usage: object | None) -> TokenUsage | None",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "main.py",
+      "file": "main.py",
+      "signature": "",
+      "detail": "AXON CLI entry point — chat loop, slash commands, and tool orchestration."
+    },
+    {
+      "type": "function",
+      "name": "parse_image_command",
+      "file": "main.py",
+      "signature": "def parse_image_command(text: str) -> tuple[str, str]",
+      "detail": "Parse `/image <path> [prompt]` supporting quoted paths."
+    },
+    {
+      "type": "function",
+      "name": "format_display_mentions",
+      "file": "main.py",
+      "signature": "def format_display_mentions(display_text: str) -> str",
+      "detail": "Colorize attached file/dir tags for terminal output."
+    },
+    {
+      "type": "function",
+      "name": "clear_terminal",
+      "file": "main.py",
+      "signature": "def clear_terminal() -> None",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "_prompt_is_active",
+      "file": "main.py",
+      "signature": "def _prompt_is_active() -> bool",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "_rich_to_ansi",
+      "file": "main.py",
+      "signature": "def _rich_to_ansi(renderable: Any) -> str",
+      "detail": "Render a Rich object to an ANSI string via an in-memory buffer."
+    },
+    {
+      "type": "function",
+      "name": "safe_print",
+      "file": "main.py",
+      "signature": "def safe_print(renderable: Any) -> None",
+      "detail": "Emit Rich output through prompt_toolkit's native ANSI parser."
+    },
+    {
+      "type": "function",
+      "name": "safe_async_print",
+      "file": "main.py",
+      "signature": "async def safe_async_print(renderable: Any) -> None",
+      "detail": "Async-safe emit: suspend prompt, print ANSI via prompt_toolkit, resume."
+    },
+    {
+      "type": "function",
+      "name": "_permission_menu_text",
+      "file": "main.py",
+      "signature": "def _permission_menu_text(command_detail: str) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "ask_permission",
+      "file": "main.py",
+      "signature": "def ask_permission(command_detail: str) -> str",
+      "detail": "Print permission menu via Rich (safe for shell metacharacters), then input."
+    },
+    {
+      "type": "function",
+      "name": "print_banner",
+      "file": "main.py",
+      "signature": "def print_banner(model: str) -> None",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "start_axon",
+      "file": "main.py",
+      "signature": "async def start_axon() -> None",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "main",
+      "file": "main.py",
+      "signature": "def main() -> None",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "README.md",
+      "file": "README.md",
+      "signature": "",
+      "detail": "Markdown documentation."
+    },
+    {
+      "type": "file",
+      "name": "requirements.txt",
+      "file": "requirements.txt",
+      "signature": "",
+      "detail": "Python package dependencies for AXON."
+    },
+    {
+      "type": "file",
+      "name": "skills_manager.py",
+      "file": "skills_manager.py",
+      "signature": "",
+      "detail": "Dynamic SKILL.md loader and project memory reader."
+    },
+    {
+      "type": "function",
+      "name": "sanitize_tool_name",
+      "file": "skills_manager.py",
+      "signature": "def sanitize_tool_name(name: str) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "skills_root",
+      "file": "skills_manager.py",
+      "signature": "def skills_root(workspace: Path | None=None) -> Path",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "project_memory_path",
+      "file": "skills_manager.py",
+      "signature": "def project_memory_path(workspace: Path | None=None) -> Path",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "load_project_memory",
+      "file": "skills_manager.py",
+      "signature": "def load_project_memory(workspace: Path | None=None) -> str",
+      "detail": "Read `.axon/memory.md` for invisible project context injection."
+    },
+    {
+      "type": "function",
+      "name": "ensure_skills_workspace",
+      "file": "skills_manager.py",
+      "signature": "def ensure_skills_workspace(workspace: Path | None=None) -> Path",
+      "detail": "Create `.axon/skills/` with README and an example skill if missing."
+    },
+    {
+      "type": "function",
+      "name": "sanitize_skill_name",
+      "file": "skills_manager.py",
+      "signature": "def sanitize_skill_name(name: str) -> str",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "create_skill_file",
+      "file": "skills_manager.py",
+      "signature": "def create_skill_file(name: str, description: str, shell_command: str='', *, workspace: Path | None=None) -> Path",
+      "detail": "Write a new `.axon/skills/<name>/SKILL.md` from wizard inputs."
+    },
+    {
+      "type": "function",
+      "name": "parse_skill_file",
+      "file": "skills_manager.py",
+      "signature": "def parse_skill_file(path: Path) -> Skill | None",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "parse_frontmatter",
+      "file": "skills_manager.py",
+      "signature": "def parse_frontmatter(text: str) -> tuple[dict[str, Any], str]",
+      "detail": "Split YAML-like frontmatter and markdown body."
+    },
+    {
+      "type": "function",
+      "name": "_parse_simple_yaml",
+      "file": "skills_manager.py",
+      "signature": "def _parse_simple_yaml(block: str) -> dict[str, Any]",
+      "detail": "Minimal YAML parser for SKILL.md frontmatter (no external dependency)."
+    },
+    {
+      "type": "function",
+      "name": "_parse_bool",
+      "file": "skills_manager.py",
+      "signature": "def _parse_bool(value: Any) -> bool",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "_parse_allowed_tools",
+      "file": "skills_manager.py",
+      "signature": "def _parse_allowed_tools(value: Any) -> tuple[str, ...]",
+      "detail": ""
+    },
+    {
+      "type": "function",
+      "name": "run_inline_shell",
+      "file": "skills_manager.py",
+      "signature": "def run_inline_shell(command: str) -> str",
+      "detail": "Execute a shell command for `!`cmd`` injection (no user approval)."
+    },
+    {
+      "type": "function",
+      "name": "inject_shell_context",
+      "file": "skills_manager.py",
+      "signature": "def inject_shell_context(body: str) -> str",
+      "detail": "Replace all `!`command`` placeholders with local shell stdout."
+    },
+    {
+      "type": "class",
+      "name": "Skill",
+      "file": "skills_manager.py",
+      "signature": "class Skill",
+      "detail": "A loaded markdown skill from `.axon/skills/<id>/SKILL.md`."
+    },
+    {
+      "type": "method",
+      "name": "Skill.tool_name",
+      "file": "skills_manager.py",
+      "signature": "def tool_name(self) -> str",
+      "detail": ""
+    },
+    {
+      "type": "class",
+      "name": "SkillManager",
+      "file": "skills_manager.py",
+      "signature": "class SkillManager",
+      "detail": "Scan, parse, and invoke markdown skills from `.axon/skills/`."
+    },
+    {
+      "type": "method",
+      "name": "SkillManager.reload",
+      "file": "skills_manager.py",
+      "signature": "def reload(self) -> int",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "SkillManager.skills",
+      "file": "skills_manager.py",
+      "signature": "def skills(self) -> dict[str, Skill]",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "SkillManager.is_skill_tool",
+      "file": "skills_manager.py",
+      "signature": "def is_skill_tool(self, tool_name: str) -> bool",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "SkillManager.get_skill",
+      "file": "skills_manager.py",
+      "signature": "def get_skill(self, tool_name: str) -> Skill | None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "SkillManager.get_tool_schemas",
+      "file": "skills_manager.py",
+      "signature": "def get_tool_schemas(self) -> list[dict[str, Any]]",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "SkillManager.invoke_skill",
+      "file": "skills_manager.py",
+      "signature": "def invoke_skill(self, tool_name: str, arguments: dict[str, Any]) -> str",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "SkillManager.skills_summary_for_system",
+      "file": "skills_manager.py",
+      "signature": "def skills_summary_for_system(self) -> str",
+      "detail": ""
+    },
+    {
+      "type": "file",
+      "name": "task_manager.py",
+      "file": "task_manager.py",
+      "signature": "",
+      "detail": "Plan mode TODO board and execution state."
+    },
+    {
+      "type": "class",
+      "name": "PlanTask",
+      "file": "task_manager.py",
+      "signature": "class PlanTask",
+      "detail": ""
+    },
+    {
+      "type": "class",
+      "name": "TaskManager",
+      "file": "task_manager.py",
+      "signature": "class TaskManager",
+      "detail": "In-memory plan / TODO board for AXON Plan Mode."
+    },
+    {
+      "type": "method",
+      "name": "TaskManager.has_plan",
+      "file": "task_manager.py",
+      "signature": "def has_plan(self) -> bool",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "TaskManager.clear",
+      "file": "task_manager.py",
+      "signature": "def clear(self) -> None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "TaskManager.create_plan",
+      "file": "task_manager.py",
+      "signature": "def create_plan(self, tasks: list[str], *, goal: str='') -> list[PlanTask]",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "TaskManager.update_task_status",
+      "file": "task_manager.py",
+      "signature": "def update_task_status(self, task_id: int, status: str) -> PlanTask | None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "TaskManager.complete_task",
+      "file": "task_manager.py",
+      "signature": "def complete_task(self, task_id: int) -> PlanTask | None",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "TaskManager.get_plan_markdown",
+      "file": "task_manager.py",
+      "signature": "def get_plan_markdown(self) -> str",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "TaskManager.build_plan_panel",
+      "file": "task_manager.py",
+      "signature": "def build_plan_panel(self) -> Panel",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "TaskManager.all_done",
+      "file": "task_manager.py",
+      "signature": "def all_done(self) -> bool",
+      "detail": ""
+    },
+    {
+      "type": "method",
+      "name": "TaskManager._find",
+      "file": "task_manager.py",
+      "signature": "def _find(self, task_id: int) -> PlanTask | None",
+      "detail": ""
+    }
+  ],
+  "stats": {
+    "file_count": 88,
+    "python_count": 30,
+    "class_count": 28,
+    "function_count": 262
+  }
+}

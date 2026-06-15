@@ -4,6 +4,7 @@ import asyncio
 import io
 import os
 import re
+import subprocess
 import sys
 import uuid
 from pathlib import Path
@@ -545,6 +546,47 @@ async def start_axon() -> None:
         if result.usage:
             await sync_stats()
 
+    async def run_docs() -> None:
+        script = workspace / "scripts" / "docs_gen.py"
+        if not script.is_file():
+            await emit("[red]AXON: scripts/docs_gen.py not found.[/]\n")
+            return
+
+        await emit("\n[bold cyan]❯ You:[/]\n/docs")
+        await emit("[bold magenta]📚 Generating Live Docs...[/]")
+
+        def _generate() -> tuple[int, str]:
+            proc = subprocess.run(
+                [sys.executable, str(script), "--workspace", str(workspace)],
+                cwd=str(workspace),
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            output = (proc.stdout or "") + (proc.stderr or "")
+            return proc.returncode, output.strip()
+
+        try:
+            code, output = await asyncio.to_thread(_generate)
+        except subprocess.TimeoutExpired:
+            await emit("[red]AXON: Docs generation timed out.[/]\n")
+            return
+        except OSError as exc:
+            await emit(f"[red]AXON: Could not run docs generator — {exc}[/]\n")
+            return
+
+        if code != 0:
+            detail = output or "docs_gen.py failed"
+            await emit(f"[red]{detail}[/]\n")
+            return
+
+        if output:
+            for line in output.splitlines():
+                if line.strip():
+                    await emit(f"[dim]{line}[/]\n")
+
+        await emit("[green][✓] Docs available at http://localhost:8000[/]\n")
+
     async def execute_slash_command(stripped: str, *, background: bool = False) -> bool:
         """Handle slash commands locally — returns True if handled (no LLM call)."""
         if not stripped.startswith("/"):
@@ -626,6 +668,10 @@ async def start_axon() -> None:
 
         if cmd == "/commit":
             await run_commit(background=background)
+            return True
+
+        if cmd == "/docs":
+            await run_docs()
             return True
 
         await emit(f"[yellow]AXON: Unknown command {cmd}. Type /help.[/]\n")

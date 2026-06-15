@@ -17,6 +17,7 @@ SLASH_COMMANDS = [
     "/review",
     "/undo",
     "/commit",
+    "/docs",
 ]
 
 AXON_COMMANDS: dict[str, str] = {
@@ -33,6 +34,7 @@ AXON_COMMANDS: dict[str, str] = {
     "/review": "Review current git diff for bugs and code smells",
     "/undo": "Restore last file overwritten by write_file",
     "/commit": "AI-generated Conventional Commit with confirmation",
+    "/docs": "Generate and serve interactive project docs at localhost:8000",
 }
 
 
@@ -64,6 +66,14 @@ class AxonCommandCompleter(Completer):
                     display=command,
                     display_meta=description,
                 )
+
+        if word.startswith("/doc") and "/docs" not in word:
+            yield Completion(
+                "/docs",
+                start_position=-len(word),
+                display="/docs",
+                display_meta=AXON_COMMANDS["/docs"],
+            )
 
         if word.startswith("/com") and "/commit" not in word:
             yield Completion(
