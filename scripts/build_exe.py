@@ -61,18 +61,14 @@ def stage_bundle_assets() -> Path:
 
 
 def collect_add_data_args() -> list[str]:
+    """Ship runtime data inside the PyInstaller folder.
+
+    .axon skills/docs are NOT embedded — Inno Setup copies them to {app}\\.axon
+  beside axon.exe. Embedding them in onefile caused PyInstaller extraction
+  failures (PYI-15668) on some machines.
+    """
     args: list[str] = []
     sep = ";" if sys.platform == "win32" else ":"
-
-    axon_src = BUNDLE_DIR / ".axon"
-    if axon_src.is_dir():
-        args.extend(["--add-data", f"{axon_src}{sep}.axon"])
-
-    scripts_src = ROOT / "scripts"
-    for name in ("docs_gen.py", "merge_docs_content.py", "serve_docs.py"):
-        script = scripts_src / name
-        if script.is_file():
-            args.extend(["--add-data", f"{script}{sep}scripts"])
 
     env_example = ROOT / ".env.example"
     if env_example.is_file():
@@ -102,6 +98,8 @@ def collect_hidden_imports() -> list[str]:
         "audit_log",
         "mcp_client",
         "axon_doctor",
+        "axon_auth",
+        "zenith_server",
         "ui.repl",
         "ui.headless",
         "ui.axon_completer",
@@ -119,11 +117,27 @@ def collect_hidden_imports() -> list[str]:
         "websockets",
         "ddgs",
         "pyfiglet",
+        "pyfiglet.fonts",
         "dotenv",
     ]
     args: list[str] = []
     for module in modules:
         args.extend(["--hidden-import", module])
+    return args
+
+
+def collect_pyfiglet_data() -> list[str]:
+    """Bundle full pyfiglet package (fonts subpackage + .flf files)."""
+    import pyfiglet
+
+    sep = ";" if sys.platform == "win32" else ":"
+    fonts_init = Path(pyfiglet.__file__).resolve().parent / "fonts" / "__init__.py"
+    args = [
+        "--collect-all",
+        "pyfiglet",
+    ]
+    if fonts_init.is_file():
+        args.extend(["--add-data", f"{fonts_init}{sep}pyfiglet/fonts"])
     return args
 
 
@@ -172,7 +186,7 @@ def run_pyinstaller(*, clean: bool) -> Path:
     cmd = [
         str(ROOT / "cli.py"),
         "--name=axon",
-        "--onefile",
+        "--onedir",
         "--console",
         f"--distpath={DIST_EXE_DIR}",
         f"--workpath={WORK_DIR}",
@@ -184,13 +198,14 @@ def run_pyinstaller(*, clean: bool) -> Path:
 
     cmd.extend(collect_add_data_args())
     cmd.extend(collect_hidden_imports())
+    cmd.extend(collect_pyfiglet_data())
     cmd.extend(collect_exclude_modules())
     cmd.append("--noupx")
 
     print("Running PyInstaller...")
     PyInstaller.__main__.run(cmd)
 
-    exe_path = DIST_EXE_DIR / "axon.exe"
+    exe_path = DIST_EXE_DIR / "axon" / "axon.exe"
     if not exe_path.is_file():
         raise SystemExit(f"Build failed — {exe_path} was not created.")
     return exe_path

@@ -29,10 +29,17 @@ def _hex_to_rgb(value: str) -> tuple[int, int, int]:
 
 
 def generate_logo_text(font: str = "slant") -> str:
-    try:
-        return pyfiglet.figlet_format(APP_NAME, font=font)
-    except pyfiglet.FontNotFound:
-        return pyfiglet.figlet_format(APP_NAME, font="small")
+    for candidate in (font, *LOGO_FONTS, "standard"):
+        try:
+            return pyfiglet.figlet_format(APP_NAME, font=candidate)
+        except Exception:
+            continue
+    return """\
+    _    ____  ___  _   _
+   / \\  |  _ \\_ _|| \\ | |
+  / _ \\ | |_) | | |  \\| |
+ / ___ \\|  __/| | | |\\  |
+/_/   \\_\\_|  |___||_| \\_|"""
 
 
 def build_gradient_logo(theme: CLITheme, font: str = "slant") -> Text:

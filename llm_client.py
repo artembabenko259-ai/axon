@@ -627,13 +627,16 @@ class LLMManager:
 
     async def _agent_loop(self, user_text: str) -> LLMResult:
         if not self._api_key:
+            try:
+                from zenith_server import config_url
+
+                hint = f"Add your key at {config_url()}"
+            except Exception:
+                hint = "Save your key in the web dashboard or config.json"
             return LLMResult(
                 content="",
                 model=self.model,
-                error=(
-                    "AXON: OPENROUTER_API_KEY is not set. "
-                    "Save your key in the web dashboard or config.json."
-                ),
+                error=f"AXON: OPENROUTER_API_KEY is not set. {hint}",
             )
 
         self.clear_cancel()

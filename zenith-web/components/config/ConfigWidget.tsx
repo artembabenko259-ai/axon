@@ -28,6 +28,12 @@ export function ConfigWidget() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const openWidget = () => setIsOpen(true);
+    window.addEventListener("axon-open-config-widget", openWidget);
+    return () => window.removeEventListener("axon-open-config-widget", openWidget);
+  }, [setIsOpen]);
+
+  useEffect(() => {
     if (!isOpen) return;
 
     const handleClickOutside = (event: MouseEvent) => {

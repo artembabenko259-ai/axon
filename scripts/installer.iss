@@ -12,7 +12,7 @@ AppId={#MyAppId}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-DefaultDirName={autopf}\Core\AXON
+DefaultDirName={localappdata}\Programs\AXON
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=..\dist\setup
@@ -20,7 +20,7 @@ OutputBaseFilename=AXON_Setup_v{#MyAppVersion}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
-PrivilegesRequired=admin
+PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\{#MyAppExeName}
@@ -37,8 +37,10 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "..\dist\exe\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\exe\axon\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\build\bundle-staging\.axon\*"; DestDir: "{app}\.axon"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\build\bundle-staging\zenith-web\*"; DestDir: "{app}\zenith-web"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\build\bundle-staging\node\*"; DestDir: "{app}\node"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -49,7 +51,7 @@ Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: no
 
 [Code]
 const
-  EnvironmentKey = 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment';
+  EnvironmentKey = 'Environment';
 
 function SendMessageTimeout(hWnd: HWND; Msg: UINT; wParam: LongWord; lParam: String; fuFlags: UINT; uTimeout: UINT; var lpdwResult: LongWord): LongInt; external 'SendMessageTimeoutW@user32.dll stdcall';
 
@@ -64,7 +66,7 @@ procedure EnvAddPath(InstallPath: string);
 var
   Paths: string;
 begin
-  if not RegQueryStringValue(HKEY_LOCAL_MACHINE, EnvironmentKey, 'Path', Paths) then
+  if not RegQueryStringValue(HKEY_CURRENT_USER, EnvironmentKey, 'Path', Paths) then
     Paths := '';
   if Pos(';' + Uppercase(InstallPath) + ';', ';' + Uppercase(Paths) + ';') = 0 then
   begin
@@ -72,8 +74,8 @@ begin
       Paths := InstallPath
     else
       Paths := Paths + ';' + InstallPath;
-    if not RegWriteExpandStringValue(HKEY_LOCAL_MACHINE, EnvironmentKey, 'Path', Paths) then
-      RegWriteStringValue(HKEY_LOCAL_MACHINE, EnvironmentKey, 'Path', Paths);
+    if not RegWriteExpandStringValue(HKEY_CURRENT_USER, EnvironmentKey, 'Path', Paths) then
+      RegWriteStringValue(HKEY_CURRENT_USER, EnvironmentKey, 'Path', Paths);
     EnvBroadcastChange;
   end;
 end;
@@ -82,13 +84,13 @@ procedure EnvRemovePath(InstallPath: string);
 var
   Paths: string;
 begin
-  if RegQueryStringValue(HKEY_LOCAL_MACHINE, EnvironmentKey, 'Path', Paths) then
+  if RegQueryStringValue(HKEY_CURRENT_USER, EnvironmentKey, 'Path', Paths) then
   begin
     StringChangeEx(Paths, ';' + InstallPath, '', True);
     StringChangeEx(Paths, InstallPath + ';', '', True);
     StringChangeEx(Paths, InstallPath, '', True);
-    if not RegWriteExpandStringValue(HKEY_LOCAL_MACHINE, EnvironmentKey, 'Path', Paths) then
-      RegWriteStringValue(HKEY_LOCAL_MACHINE, EnvironmentKey, 'Path', Paths);
+    if not RegWriteExpandStringValue(HKEY_CURRENT_USER, EnvironmentKey, 'Path', Paths) then
+      RegWriteStringValue(HKEY_CURRENT_USER, EnvironmentKey, 'Path', Paths);
     EnvBroadcastChange;
   end;
 end;
@@ -112,3 +114,5 @@ end;
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\.axon"
+Type: filesandordirs; Name: "{app}\zenith-web"
+Type: filesandordirs; Name: "{app}\node"

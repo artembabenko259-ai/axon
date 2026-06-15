@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import { ApiKeySetupBanner } from "@/components/config/ApiKeySetupBanner";
 import { Sidebar } from "./Sidebar";
 import { TopNav } from "./TopNav";
 
@@ -16,6 +17,7 @@ export function AppShell({ children, title }: AppShellProps) {
         <div aria-hidden className="axon-grid-decor" />
         <TopNav title={title} />
         <main className="relative z-[1] flex min-h-0 flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <ApiKeySetupBanner />
           {children}
         </main>
       </div>

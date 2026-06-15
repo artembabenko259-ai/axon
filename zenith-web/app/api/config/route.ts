@@ -41,13 +41,17 @@ export async function POST(request: NextRequest) {
       provider?: string;
     };
 
+    const incomingKey =
+      body.apiKey !== undefined
+        ? body.apiKey.trim()
+        : body.openrouter_api_key?.trim();
+
     const current = (await readAxonConfig()) as SharedConfig;
     const next: SharedConfig = {
       ...current,
-      openrouter_api_key:
-        body.apiKey?.trim() ??
-        body.openrouter_api_key?.trim() ??
-        current.openrouter_api_key,
+      openrouter_api_key: incomingKey
+        ? incomingKey
+        : current.openrouter_api_key,
       model: body.model?.trim() || current.model,
       provider: body.provider || current.provider,
     };

@@ -24,7 +24,7 @@ echo.
 
 REM --- Step 0: Python venv (lean PyInstaller, no manual setup) ---------------
 if not exist "%VENV_PY%" (
-    echo [1/5] Creating build virtualenv .venv-build ...
+    echo [1/6] Creating build virtualenv .venv-build ...
     python -m venv "%ROOT%\.venv-build"
     if errorlevel 1 goto :fail
     "%VENV_PY%" -m pip install --upgrade pip -q
@@ -32,28 +32,41 @@ if not exist "%VENV_PY%" (
     "%VENV_PY%" -m pip install -r "%ROOT%\requirements-build.txt" -q
     if errorlevel 1 goto :fail
 ) else (
-    echo [1/5] Using existing .venv-build
+    echo [1/6] Using existing .venv-build
 )
 
-REM --- Step 1: PyInstaller ---------------------------------------------------
+REM --- Step 1: Zenith panel (Next.js standalone + portable Node) ------------
 echo.
-echo [2/5] Building axon.exe with PyInstaller ...
+echo [2/6] Building Zenith control panel ...
+"%VENV_PY%" "%ROOT%\scripts\build_zenith.py"
+if errorlevel 1 goto :fail
+if not exist "%ROOT%\build\bundle-staging\zenith-web\server.js" (
+    echo [ERROR] build\bundle-staging\zenith-web\server.js was not created.
+    goto :fail
+)
+
+REM --- Step 2: PyInstaller ---------------------------------------------------
+echo.
+echo [3/6] Building axon.exe with PyInstaller ...
 "%VENV_PY%" "%ROOT%\scripts\build_exe.py" --clean
 if errorlevel 1 goto :fail
-if not exist "%ROOT%\dist\exe\axon.exe" (
-    echo [ERROR] dist\exe\axon.exe was not created.
+if not exist "%ROOT%\dist\exe\axon\axon.exe" (
+    echo [ERROR] dist\exe\axon\axon.exe was not created.
     goto :fail
 )
 
 REM --- Step 2: Locate Inno Setup compiler ------------------------------------
 echo.
-echo [3/5] Locating Inno Setup compiler (ISCC.exe) ...
+echo [4/6] Locating Inno Setup compiler (ISCC.exe) ...
 
 if exist "%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" (
     set "ISCC=%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe"
 )
 if not defined ISCC if exist "%ProgramFiles%\Inno Setup 6\ISCC.exe" (
     set "ISCC=%ProgramFiles%\Inno Setup 6\ISCC.exe"
+)
+if not defined ISCC if exist "%LocalAppData%\Programs\Inno Setup 6\ISCC.exe" (
+    set "ISCC=%LocalAppData%\Programs\Inno Setup 6\ISCC.exe"
 )
 if not defined ISCC (
     for /f "delims=" %%I in ('where ISCC.exe 2^>nul') do (
@@ -73,7 +86,7 @@ echo         Found: !ISCC!
 
 REM --- Step 3: Compile installer (silent ISCC) ---------------------------------
 echo.
-echo [4/5] Compiling installer.iss ...
+echo [5/6] Compiling installer.iss ...
 "!ISCC!" /Q "%ROOT%\scripts\installer.iss"
 if errorlevel 1 goto :fail
 if not exist "%ROOT%\dist\setup\%SETUP_NAME%" (
@@ -83,7 +96,7 @@ if not exist "%ROOT%\dist\setup\%SETUP_NAME%" (
 
 REM --- Step 4: Move to release/ + hash + patch Winget manifest ----------------
 echo.
-echo [5/5] Publishing to release\ and computing SHA-256 ...
+echo [6/6] Publishing to release\ and computing SHA-256 ...
 
 if not exist "%RELEASE_DIR%" mkdir "%RELEASE_DIR%"
 copy /Y "%ROOT%\dist\setup\%SETUP_NAME%" "%RELEASE_DIR%\%SETUP_NAME%" >nul

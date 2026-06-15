@@ -61,6 +61,8 @@ from request_context import get_request_source, reset_request_source, set_reques
 from runtime_policy import load_runtime_policy
 from mcp_client import load_mcp_servers, save_mcp_servers, McpServer
 from session_store import list_sessions, load_session, save_session
+from config_store import get_openrouter_api_key
+from zenith_server import config_url, has_bundled_zenith, panel_url
 from ui.system_prompt_cmd import handle_system_command
 from ui.welcome import build_welcome_screen, should_show_welcome
 from ui.file_context import build_file_context
@@ -922,6 +924,43 @@ async def start_axon() -> None:
             await emit(f"[green][✓] Session saved ({current_session_id['id']}).[/]\n")
             return True
 
+        if cmd == "/login":
+            from axon_auth import load_session, logout, run_login_flow, session_summary
+
+            if args.strip().lower() == "force":
+                logout()
+            else:
+                existing = load_session()
+                if existing:
+                    await emit(f"[green][✓] {session_summary()}[/]\n")
+                    await emit(
+                        "[dim]Use [cyan]/logout[/cyan] or [cyan]/login force[/cyan] to switch accounts.[/dim]\n"
+                    )
+                    return True
+
+            await emit("[dim]Opening runaxon.xyz for sign-in…[/dim]\n")
+
+            def _login() -> None:
+                run_login_flow(open_browser=True)
+
+            try:
+                await asyncio.to_thread(_login)
+            except RuntimeError as exc:
+                await emit(f"[red]AXON: {exc}[/]\n")
+                return True
+
+            session = load_session()
+            if session:
+                await emit(f"[green][✓] Signed in as {session.email}[/]\n")
+            return True
+
+        if cmd == "/logout":
+            from axon_auth import logout
+
+            logout()
+            await emit("[green][✓] Signed out.[/]\n")
+            return True
+
         if cmd == "/mcp":
             parts = stripped.split(maxsplit=2)
             sub = (parts[1].lower() if len(parts) > 1 else "list")
@@ -1037,7 +1076,9 @@ async def start_axon() -> None:
 
         policy = load_runtime_policy()
         if source == "web" and not policy.web_control_enabled:
-            await emit("[red]Web control is disabled. Enable it at /config (localhost).[/]\n")
+            await emit(
+                f"[red]Web control is disabled. Enable it at {config_url()}[/]\n"
+            )
             return
         if source == "terminal" and not policy.terminal_control_enabled:
             await emit("[red]Terminal control is disabled in runtime policy.[/]\n")
@@ -1199,14 +1240,30 @@ async def start_axon() -> None:
     print_banner(llm_manager.model, workspace)
 
     runtime = load_runtime_policy()
+
     console.print(
         f"[dim]Bridge ws://127.0.0.1:8765 · PIN [cyan]{runtime.bridge_pin}[/cyan] · "
         f"autonomy [cyan]{'on' if runtime.autonomy_enabled else 'off'}[/cyan] · "
         f"web [cyan]{'on' if runtime.web_control_enabled else 'off'}[/cyan][/dim]"
     )
-    console.print(
-        "[dim]Configure runtime policy at [cyan]http://localhost:3000/config[/cyan][/dim]\n"
-    )
+    if has_bundled_zenith():
+        console.print(
+            f"[dim]Control panel: [cyan]{panel_url()}[/cyan] · "
+            f"settings: [cyan]{config_url()}[/cyan][/dim]"
+        )
+        if not get_openrouter_api_key():
+            console.print(
+                f"[yellow]API key not set — open [cyan]{config_url()}[/cyan] "
+                f"and paste your OpenRouter key.[/yellow]"
+            )
+        console.print(
+            "[dim]If the panel is not open yet, run [cyan]axon web --open[/cyan] in another terminal.[/dim]\n"
+        )
+    else:
+        console.print(
+            f"[dim]Control panel: [cyan]{panel_url()}[/cyan] · "
+            f"start with [cyan]axon web --open[/cyan][/dim]\n"
+        )
 
     async def chat_loop() -> None:
         while not shutdown.is_set():

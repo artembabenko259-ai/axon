@@ -10,7 +10,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from config_store import CONFIG_PATH, get_model, get_openrouter_api_key
-from axon_runtime import user_data_dir
+from axon_runtime import has_zenith_web, user_data_dir
 
 WS_PORT = 8765
 
@@ -32,12 +32,34 @@ def _check_python() -> CheckResult:
     )
 
 
+def _check_account() -> CheckResult:
+    try:
+        from axon_auth import load_session
+
+        session = load_session()
+    except Exception:
+        session = None
+    if session:
+        return CheckResult("account", True, session.email)
+    return CheckResult("account", False, "not signed in — run /login in axon")
+
+
 def _check_api_key() -> CheckResult:
     key = get_openrouter_api_key()
+    if key:
+        return CheckResult("api_key", True, "configured")
+    if has_zenith_web():
+        from zenith_server import config_url
+
+        return CheckResult(
+            "api_key",
+            False,
+            f"missing — open {config_url()} and paste your OpenRouter key",
+        )
     return CheckResult(
         "api_key",
-        bool(key),
-        "configured" if key else "missing — set in config.json or OPENROUTER_API_KEY",
+        False,
+        "missing — set OPENROUTER_API_KEY or edit config.json",
     )
 
 
@@ -85,6 +107,7 @@ def _check_config_path() -> CheckResult:
 def run_doctor(*, json_output: bool = False, check_updates: bool = False) -> int:
     checks = [
         _check_python(),
+        _check_account(),
         _check_api_key(),
         _check_model(),
         _check_config_path(),
@@ -106,7 +129,7 @@ def run_doctor(*, json_output: bool = False, check_updates: bool = False) -> int
         else:
             checks.append(CheckResult("update", True, message))
 
-    all_ok = all(c.ok or c.name in {"ripgrep", "update"} for c in checks)
+    all_ok = all(c.ok or c.name in {"ripgrep", "update", "account"} for c in checks)
 
     if json_output:
         print(json.dumps({"ok": all_ok, "checks": [asdict(c) for c in checks]}, indent=2))
@@ -120,5 +143,24 @@ def run_doctor(*, json_output: bool = False, check_updates: bool = False) -> int
             print(update_line)
             print()
         print("All critical checks passed." if all_ok else "Some checks failed.")
+        print()
+        print("Next steps:")
+        if has_zenith_web():
+            from zenith_server import config_url, panel_url
+
+            if not get_openrouter_api_key():
+                print(f"  axon web --open              Open panel → {panel_url()}")
+                print(f"  {config_url()}               Add OpenRouter API key (recommended)")
+            else:
+                print(f"  axon web --open              Control panel → {panel_url()}")
+                print(f"  {config_url()}               Runtime policy & models")
+        else:
+            print(f"  {CONFIG_PATH}   API key & model")
+            print("  axon web --open              Zenith panel (not bundled in this build)")
+        print("  axon                         Start the assistant (CLI)")
+        print("  axon login                   Sign in at runaxon.xyz (or /login in REPL)")
+        if get_openrouter_api_key():
+            print(f"  {CONFIG_PATH}   Advanced config")
+        print("  axon /help                   All slash commands")
 
     return 0 if all_ok else 1

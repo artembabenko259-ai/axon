@@ -42,6 +42,20 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Open http://localhost:<port> in the default browser",
     )
 
+    login = sub.add_parser("login", help="Sign in via runaxon.xyz (email)")
+    login.add_argument(
+        "--force",
+        action="store_true",
+        help="Sign out and start a new browser login flow",
+    )
+    login.add_argument(
+        "--no-open",
+        action="store_true",
+        help="Do not open the browser automatically",
+    )
+
+    sub.add_parser("logout", help="Sign out of AXON account on this machine")
+
     # Headless flags (Phase 4) — attached to root for `axon -p "..."`
     parser.add_argument(
         "-p",
@@ -100,10 +114,13 @@ def _run_update(*, json_output: bool) -> int:
 
 
 def _run_web(port: int, *, open_browser: bool) -> int:
-    web_dir = ROOT / "zenith-web"
-    if not (web_dir / "package.json").is_file():
-        print("AXON: zenith-web not found.", file=sys.stderr)
-        return 1
+    from zenith_server import (
+        DEFAULT_ZENITH_PORT,
+        has_bundled_zenith,
+        panel_url,
+        run_zenith_dev,
+        run_zenith_foreground,
+    )
 
     if open_browser:
         import threading
@@ -112,18 +129,48 @@ def _run_web(port: int, *, open_browser: bool) -> int:
 
         def _open() -> None:
             time.sleep(2.5)
-            webbrowser.open(f"http://localhost:{port}")
+            webbrowser.open(panel_url(port))
 
         threading.Thread(target=_open, daemon=True).start()
 
+    if has_bundled_zenith():
+        return run_zenith_foreground(port)
+
+    web_dir = ROOT / "zenith-web"
+    if (web_dir / "package.json").is_file():
+        return run_zenith_dev(port)
+
+    print("AXON: Zenith panel not found.", file=sys.stderr)
+    print("AXON: Reinstall AXON or run from the development repository.", file=sys.stderr)
+    return 1
+
+
+def _run_logout() -> int:
+    from axon_auth import logout
+
+    logout()
+    print("Signed out.")
+    return 0
+
+
+def _run_login(*, force: bool, open_browser: bool) -> int:
+    from axon_auth import load_session, logout, run_login_flow, session_summary
+
+    if force:
+        logout()
+    else:
+        existing = load_session()
+        if existing:
+            print(session_summary())
+            print("Use: axon login --force   or   axon logout")
+            return 0
+
     try:
-        return subprocess.call(
-            ["npm", "run", "dev", "--", "-p", str(port)],
-            cwd=str(web_dir),
-            shell=sys.platform == "win32",
-        )
-    except OSError as exc:
-        print(f"AXON: could not start web server — {exc}", file=sys.stderr)
+        session = run_login_flow(open_browser=open_browser)
+        print(f"Signed in as {session.email}")
+        return 0
+    except RuntimeError as exc:
+        print(f"AXON: {exc}", file=sys.stderr)
         return 1
 
 
@@ -169,6 +216,15 @@ def main(argv: list[str] | None = None) -> int:
 
     if command == "web":
         return _run_web(args.port, open_browser=getattr(args, "open", False))
+
+    if command == "login":
+        return _run_login(
+            force=getattr(args, "force", False),
+            open_browser=not getattr(args, "no_open", False),
+        )
+
+    if command == "logout":
+        return _run_logout()
 
     from ui.repl import start_axon
 

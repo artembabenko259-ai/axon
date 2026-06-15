@@ -46,6 +46,18 @@ def bundled_axon_dir() -> Path | None:
     return None
 
 
+def zenith_web_dir() -> Path | None:
+    """Bundled Zenith standalone directory, if shipped with the installer."""
+    candidate = install_root() / "zenith-web"
+    if (candidate / "server.js").is_file():
+        return candidate
+    return None
+
+
+def has_zenith_web() -> bool:
+    return zenith_web_dir() is not None
+
+
 def seed_axon_tree(target_workspace: Path) -> None:
     """Copy bundled .axon templates into the user's workspace when missing."""
     source = bundled_axon_dir()

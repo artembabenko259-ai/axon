@@ -22,13 +22,14 @@ export interface AIConfig {
 interface ConfigContextValue {
   config: AIConfig;
   draft: AIConfig;
+  hasServerApiKey: boolean;
   isOpen: boolean;
   isSaving: boolean;
   setIsOpen: (open: boolean) => void;
   setDraftProvider: (provider: ProviderType) => void;
   setDraftApiKey: (key: string) => void;
   setDraftEndpointUrl: (url: string) => void;
-  saveAndConnect: () => Promise<void>;
+  saveAndConnect: () => Promise<boolean>;
   getRequestConfig: () => {
     baseUrl: string;
     apiKey: string | null;
@@ -68,15 +69,45 @@ function loadStoredConfig(): AIConfig {
 export function ConfigProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<AIConfig>(defaultConfig);
   const [draft, setDraft] = useState<AIConfig>(defaultConfig);
+  const [hasServerApiKey, setHasServerApiKey] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     const stored = loadStoredConfig();
-    setConfig(stored);
-    setDraft(stored);
-    setHydrated(true);
+
+    void fetch("/api/config")
+      .then((res) => res.json())
+      .then(
+        (data: {
+          model?: string;
+          provider?: ProviderType;
+          hasApiKey?: boolean;
+        }) => {
+          const provider = data.provider ?? stored.provider;
+          const hasKey = Boolean(data.hasApiKey);
+          const merged: AIConfig = {
+            ...defaultConfig,
+            ...stored,
+            provider,
+            isConnected: hasKey || stored.isConnected,
+            endpointUrl:
+              provider === "openrouter"
+                ? DEFAULT_ENDPOINTS.openrouter
+                : stored.endpointUrl,
+          };
+          setHasServerApiKey(hasKey);
+          setConfig(merged);
+          setDraft(merged);
+          setHydrated(true);
+        },
+      )
+      .catch(() => {
+        setConfig(stored);
+        setDraft(stored);
+        setHydrated(true);
+      });
   }, []);
 
   const setDraftProvider = useCallback((provider: ProviderType) => {
@@ -133,30 +164,41 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          apiKey: draft.apiKey,
+          ...(draft.apiKey.trim() ? { apiKey: draft.apiKey.trim() } : {}),
           provider: draft.provider,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to save configuration");
+      const payload = (await response.json()) as {
+        ok?: boolean;
+        hasApiKey?: boolean;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || "Failed to save configuration");
       }
 
+      const hasKey = Boolean(payload.hasApiKey);
       const next: AIConfig = {
         ...draft,
-        isConnected: true,
+        apiKey: "",
+        isConnected: hasKey,
         endpointUrl:
           draft.provider === "openrouter"
             ? DEFAULT_ENDPOINTS.openrouter
             : draft.endpointUrl,
       };
 
+      setHasServerApiKey(hasKey);
       setConfig(next);
       setDraft(next);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       setIsOpen(false);
+      return true;
     } catch (error) {
       console.error(error);
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -166,6 +208,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     () => ({
       config: hydrated ? config : defaultConfig,
       draft,
+      hasServerApiKey,
       isOpen,
       isSaving,
       setIsOpen,
@@ -178,6 +221,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     [
       config,
       draft,
+      hasServerApiKey,
       hydrated,
       isOpen,
       isSaving,

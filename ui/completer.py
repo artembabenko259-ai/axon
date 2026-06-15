@@ -26,6 +26,8 @@ SLASH_COMMANDS = [
     "/resume",
     "/save",
     "/mcp",
+    "/login",
+    "/logout",
 ]
 
 AXON_COMMANDS: dict[str, str] = {
@@ -51,6 +53,8 @@ AXON_COMMANDS: dict[str, str] = {
     "/resume": "Resume session — /resume <id>",
     "/save": "Save current session — /save [title]",
     "/mcp": "MCP servers — /mcp list | /mcp add <name> <command...>",
+    "/login": "Sign in via runaxon.xyz — opens browser for email registration",
+    "/logout": "Sign out of AXON account on this machine",
 }
 
 
