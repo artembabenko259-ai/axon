@@ -72,8 +72,22 @@ htmlcov/
 .ruff_cache/
 
 # =============================================================================
-# OS & editor
+# Deploy / site (runaxon.xyz) — keep private, do not commit secrets
 # =============================================================================
+deploy/site/
+deploy/dist/
+deploy/.env
+deploy/*.local
+.wrangler/
+.vercel/
+.netlify/
+
+# Local release artifacts (upload to hosting manually)
+deploy/downloads/
+*.7z
+
+# User AXON data (if ever copied into repo by mistake)
+.axon/backups/
 .DS_Store
 Thumbs.db
 Desktop.ini

@@ -82,7 +82,7 @@ def _check_config_path() -> CheckResult:
     return CheckResult("config", CONFIG_PATH.is_file(), str(CONFIG_PATH))
 
 
-def run_doctor(*, json_output: bool = False) -> int:
+def run_doctor(*, json_output: bool = False, check_updates: bool = False) -> int:
     checks = [
         _check_python(),
         _check_api_key(),
@@ -92,7 +92,21 @@ def run_doctor(*, json_output: bool = False) -> int:
         _check_bridge_port(),
         _check_data_dir(),
     ]
-    all_ok = all(c.ok or c.name == "ripgrep" for c in checks)
+
+    update_line = ""
+    if check_updates:
+        from version_check import check_for_update
+
+        available, message, _ = check_for_update()
+        update_line = message
+        if available:
+            checks.append(
+                CheckResult("update", False, message.replace("\n", " · "))
+            )
+        else:
+            checks.append(CheckResult("update", True, message))
+
+    all_ok = all(c.ok or c.name in {"ripgrep", "update"} for c in checks)
 
     if json_output:
         print(json.dumps({"ok": all_ok, "checks": [asdict(c) for c in checks]}, indent=2))
@@ -102,6 +116,9 @@ def run_doctor(*, json_output: bool = False) -> int:
             mark = "[OK]" if c.ok else "[!!]"
             print(f"  {mark} {c.name}: {c.detail}")
         print()
+        if update_line:
+            print(update_line)
+            print()
         print("All critical checks passed." if all_ok else "Some checks failed.")
 
     return 0 if all_ok else 1

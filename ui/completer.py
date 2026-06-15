@@ -25,6 +25,7 @@ SLASH_COMMANDS = [
     "/sessions",
     "/resume",
     "/save",
+    "/mcp",
 ]
 
 AXON_COMMANDS: dict[str, str] = {
@@ -49,6 +50,7 @@ AXON_COMMANDS: dict[str, str] = {
     "/sessions": "List saved chat sessions",
     "/resume": "Resume session — /resume <id>",
     "/save": "Save current session — /save [title]",
+    "/mcp": "MCP servers — /mcp list | /mcp add <name> <command...>",
 }
 
 

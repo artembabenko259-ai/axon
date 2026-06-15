@@ -59,7 +59,7 @@ from ui.completer import AXON_COMMANDS
 from message_router import try_chitchat_reply
 from request_context import get_request_source, reset_request_source, set_request_source
 from runtime_policy import load_runtime_policy
-from mcp_client import load_mcp_servers
+from mcp_client import load_mcp_servers, save_mcp_servers, McpServer
 from session_store import list_sessions, load_session, save_session
 from ui.system_prompt_cmd import handle_system_command
 from ui.welcome import build_welcome_screen, should_show_welcome
@@ -923,7 +923,8 @@ async def start_axon() -> None:
             return True
 
         if cmd == "/mcp":
-            sub = (args.split(maxsplit=1)[0] if args else "list").lower()
+            parts = stripped.split(maxsplit=2)
+            sub = (parts[1].lower() if len(parts) > 1 else "list")
             if sub == "list":
                 servers = load_mcp_servers()
                 if not servers:
@@ -934,8 +935,26 @@ async def start_axon() -> None:
                         for s in servers
                     ]
                     await emit("[bold]MCP servers[/bold]\n" + "\n".join(lines) + "\n")
+            elif sub == "add" and len(parts) >= 3:
+                rest = parts[2].strip()
+                name, _, command_line = rest.partition(" ")
+                if not name or not command_line:
+                    await emit(
+                        "[yellow]Usage: /mcp add <name> <command> [args...][/]\n"
+                    )
+                    return True
+                cmd_parts = command_line.split()
+                servers = load_mcp_servers()
+                servers = [s for s in servers if s.name != name]
+                servers.append(
+                    McpServer(name=name, command=cmd_parts[0], args=cmd_parts[1:])
+                )
+                save_mcp_servers(servers)
+                await emit(f"[green][✓] MCP server [cyan]{name}[/] saved.[/]\n")
             else:
-                await emit("[yellow]Usage: /mcp list[/]\n")
+                await emit(
+                    "[yellow]Usage: /mcp list | /mcp add <name> <command>[/]\n"
+                )
             return True
 
         if cmd == "/model":

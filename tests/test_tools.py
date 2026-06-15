@@ -66,5 +66,14 @@ class AuditTests(unittest.TestCase):
         self.assertTrue(hits)
 
 
+class VersionTests(unittest.TestCase):
+    def test_compare_versions(self) -> None:
+        from version_check import compare_versions
+
+        self.assertEqual(compare_versions("1.0.0", "1.0.1"), -1)
+        self.assertEqual(compare_versions("1.0.0", "1.0.0"), 0)
+        self.assertEqual(compare_versions("1.2.0", "1.1.9"), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

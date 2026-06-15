@@ -23,13 +23,16 @@ python main.py # backward-compatible
 | `axon` / `axon repl` | Interactive REPL with WebSocket bridge |
 | `axon -p "task"` | Headless single prompt (CI/scripts) |
 | `axon doctor` | Environment checks |
-| `axon web` | Start Zenith dashboard (`npm run dev`) |
+| `axon version` | Print version |
+| `axon update` | Check runaxon.xyz for updates |
+| `axon doctor --check-updates` | Doctor + update check |
+| `axon web --open` | Dashboard and open browser |
 
 ### Headless
 
 ```bash
 axon -p "summarize README.md" --cwd ./project
-axon -p "fix tests" --json --yes
+echo "task" | axon -p --json
 ```
 
 ## Slash commands (REPL)
