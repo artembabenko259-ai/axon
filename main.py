@@ -8,6 +8,7 @@ import re
 import subprocess
 import sys
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
@@ -55,6 +56,8 @@ from ui.axon_completer import build_axon_completer
 from ui.branding import INSTRUCTIONS, VERSION, build_gradient_logo
 from ui.completer import AXON_COMMANDS
 from message_router import try_chitchat_reply
+from request_context import get_request_source, reset_request_source, set_request_source
+from runtime_policy import load_runtime_policy
 from ui.system_prompt_cmd import handle_system_command
 from ui.welcome import build_welcome_screen, should_show_welcome
 from ui.file_context import build_file_context
@@ -208,8 +211,23 @@ async def start_axon() -> None:
 
     llm_manager = LLMManager(workspace=workspace)
     bridge = AxonBridge()
-    llm_lock = asyncio.Lock()
+    agent_lock = asyncio.Lock()
+    agent_semaphore = asyncio.Semaphore(3)
     shutdown = asyncio.Event()
+
+    @asynccontextmanager
+    async def agent_slot():
+        policy = load_runtime_policy()
+        if policy.allow_parallel_agents:
+            await agent_semaphore.acquire()
+            try:
+                yield
+            finally:
+                agent_semaphore.release()
+        else:
+            async with agent_lock:
+                yield
+
     # When True, Rich output must go through safe_print (inside in_terminal).
     background_render = {"active": False}
 
@@ -278,6 +296,14 @@ async def start_axon() -> None:
         label = tool_display_label(tool_name)
         display_detail = detail.strip() or "(no details)"
         command_detail = f"{label}: {display_detail}"
+        policy = load_runtime_policy()
+        source = get_request_source()
+
+        if source == "web" and not policy.web_control_enabled:
+            return "deny"
+
+        if policy.autonomy_enabled:
+            return "once"
 
         def _ask() -> ApprovalDecision:
             choice = ask_permission(command_detail)
@@ -296,6 +322,18 @@ async def start_axon() -> None:
                 safe_print("[red][X] Execution denied by user.[/]\n")
                 sys.stdout.flush()
             return decision
+
+        if source == "web" and policy.require_desktop_confirmation:
+            await bridge.broadcast_approval_request(tool_name, command_detail)
+            await emit(
+                "[bold yellow]⚠ Web action needs confirmation in this terminal[/]\n"
+                f"[white]{command_detail}[/]\n"
+            )
+
+            def _ask_web() -> ApprovalDecision:
+                return _ask()
+
+            return await run_in_terminal(_ask_web)
 
         app = get_app_or_none()
         if background_render["active"] or (
@@ -410,7 +448,7 @@ async def start_axon() -> None:
         await emit(f"\n[bold cyan]❯ You:[/]\n/plan {description}")
         await emit("[bold magenta]📋 Entering Plan Mode — building task board...[/]")
 
-        async with llm_lock:
+        async with agent_slot():
             try:
                 result = await llm_manager.send_plan_async(description)
                 await emit("\n[bold green]✦ AXON:[/]")
@@ -440,7 +478,7 @@ async def start_axon() -> None:
         if not background:
             await render_plan_board()
 
-        async with llm_lock:
+        async with agent_slot():
             try:
                 result = await llm_manager.send_execute_async()
                 await emit("\n[bold green]✦ AXON:[/]")
@@ -468,7 +506,7 @@ async def start_axon() -> None:
         await emit("\n[bold cyan]❯ You:[/]\n/gen-skill")
         await emit("[bold magenta]🛠 Generating skill with AI...[/]")
 
-        async with llm_lock:
+        async with agent_slot():
             result = await llm_manager.generate_skill_file_async(description.strip())
 
         if not result.ok:
@@ -594,7 +632,7 @@ async def start_axon() -> None:
 
         display_text, file_context = build_file_context(task, workspace)
 
-        async with llm_lock:
+        async with agent_slot():
             result = await llm_manager.send_delegated_async(
                 agent_name.strip(),
                 display_text,
@@ -619,7 +657,7 @@ async def start_axon() -> None:
         await emit("\n[bold cyan]❯ You:[/]\n/review")
         await emit("[bold magenta]🔍 Reviewing git changes...[/]")
 
-        async with llm_lock:
+        async with agent_slot():
             await run_llm(
                 prompt,
                 background=background,
@@ -644,7 +682,7 @@ async def start_axon() -> None:
         await emit("\n[bold cyan]❯ You:[/]\n/commit")
         await emit("[bold magenta]📝 Generating commit message...[/]")
 
-        async with llm_lock:
+        async with agent_slot():
             result = await llm_manager.generate_commit_message_async(status, diff)
 
         if not result.ok:
@@ -860,6 +898,32 @@ async def start_axon() -> None:
         if not stripped:
             return
 
+        policy = load_runtime_policy()
+        if source == "web" and not policy.web_control_enabled:
+            await emit("[red]Web control is disabled. Enable it at /config (localhost).[/]\n")
+            return
+        if source == "terminal" and not policy.terminal_control_enabled:
+            await emit("[red]Terminal control is disabled in runtime policy.[/]\n")
+            return
+
+        source_token = set_request_source(source)
+        try:
+            await _handle_single_input_body(
+                text,
+                source,
+                background=background,
+                stripped=stripped,
+            )
+        finally:
+            reset_request_source(source_token)
+
+    async def _handle_single_input_body(
+        text: str,
+        source: str,
+        *,
+        background: bool,
+        stripped: str,
+    ) -> None:
         if stripped.lower().startswith("/plan"):
             description = stripped[5:].strip()
             if description:
@@ -920,7 +984,7 @@ async def start_axon() -> None:
             )
             return
 
-        async with llm_lock:
+        async with agent_slot():
             try:
                 result = await run_llm(
                     stripped,
@@ -996,6 +1060,16 @@ async def start_axon() -> None:
 
     clear_terminal()
     print_banner(llm_manager.model, workspace)
+
+    runtime = load_runtime_policy()
+    console.print(
+        f"[dim]Bridge ws://127.0.0.1:8765 · PIN [cyan]{runtime.bridge_pin}[/cyan] · "
+        f"autonomy [cyan]{'on' if runtime.autonomy_enabled else 'off'}[/cyan] · "
+        f"web [cyan]{'on' if runtime.web_control_enabled else 'off'}[/cyan][/dim]"
+    )
+    console.print(
+        "[dim]Configure runtime policy at [cyan]http://localhost:3000/config[/cyan][/dim]\n"
+    )
 
     async def chat_loop() -> None:
         while not shutdown.is_set():

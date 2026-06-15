@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Eye, EyeOff, FolderOpen, Key, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CustomModelRegistry } from "@/components/config/CustomModelRegistry";
+import { RuntimePolicyPanel } from "@/components/config/RuntimePolicyPanel";
 import { AppShell } from "@/components/layout/AppShell";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { useConfig } from "@/context/ConfigContext";
@@ -92,6 +93,8 @@ export default function ConfigPage() {
             className="input-vercel mt-1.5 font-mono"
           />
         </GlassCard>
+
+        <RuntimePolicyPanel />
 
         <CustomModelRegistry />
 

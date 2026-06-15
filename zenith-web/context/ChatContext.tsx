@@ -47,6 +47,23 @@ interface BridgeContextValue {
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8765";
 const SESSION_START_KEY = "axon-cli-session-start";
+const BRIDGE_TOKEN_KEY = "axon-bridge-token";
+
+async function resolveBridgeToken(): Promise<string> {
+  if (typeof window === "undefined") return "";
+  const cached = localStorage.getItem(BRIDGE_TOKEN_KEY);
+  if (cached) return cached;
+  try {
+    const res = await fetch("/api/runtime");
+    if (!res.ok) return "";
+    const data = (await res.json()) as { policy?: { bridge_token?: string } };
+    const token = data.policy?.bridge_token?.trim() ?? "";
+    if (token) localStorage.setItem(BRIDGE_TOKEN_KEY, token);
+    return token;
+  } catch {
+    return "";
+  }
+}
 
 const BridgeContext = createContext<BridgeContextValue | null>(null);
 
@@ -160,7 +177,14 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
 
-    ws.onopen = () => setConnected(true);
+    ws.onopen = () => {
+      void (async () => {
+        const token = await resolveBridgeToken();
+        if (token) {
+          ws.send(JSON.stringify({ type: "auth", token }));
+        }
+      })();
+    };
 
     ws.onclose = () => {
       setConnected(false);
@@ -182,9 +206,35 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
           cost?: number;
           session_started_at?: number;
           model?: string;
+          tool?: string;
+          detail?: string;
+          policy?: { bridge_token?: string };
         };
 
+        if (data.type === "auth_required") {
+          setConnected(false);
+          return;
+        }
+
+        if (data.type === "auth_failed") {
+          setConnected(false);
+          appendMessage({
+            id: `auth-fail-${Date.now()}`,
+            role: "system",
+            content:
+              data.content ??
+              "Bridge auth failed — open /config and save runtime policy.",
+            source: "terminal",
+            timestamp: Date.now(),
+          });
+          return;
+        }
+
         if (data.type === "connected") {
+          setConnected(true);
+          if (data.policy?.bridge_token) {
+            localStorage.setItem(BRIDGE_TOKEN_KEY, data.policy.bridge_token);
+          }
           applyStats(
             Number(data.tokens ?? 0),
             Number(data.cost ?? 0),
@@ -194,6 +244,28 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
             id: `sys-${Date.now()}`,
             role: "system",
             content: data.content ?? "Bridge connected",
+            source: "terminal",
+            timestamp: Date.now(),
+          });
+          return;
+        }
+
+        if (data.type === "approval_request") {
+          appendMessage({
+            id: `approval-${Date.now()}`,
+            role: "system",
+            content: `⚠ Confirm in AXON terminal: ${data.tool ?? "tool"} — ${data.detail ?? ""}`,
+            source: "terminal",
+            timestamp: Date.now(),
+          });
+          return;
+        }
+
+        if (data.type === "error") {
+          appendMessage({
+            id: `err-${Date.now()}`,
+            role: "system",
+            content: data.content ?? "Bridge error",
             source: "terminal",
             timestamp: Date.now(),
           });

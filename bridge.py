@@ -10,6 +10,13 @@ import websockets
 from websockets.server import WebSocketServerProtocol
 
 from llm_client import SESSION_STARTED_AT, TOTAL_COST, TOTAL_TOKENS
+from runtime_policy import (
+    load_runtime_policy,
+    policy_for_client,
+    save_runtime_policy,
+    verify_bridge_token,
+    RuntimePolicy,
+)
 
 WS_HOST = "127.0.0.1"
 WS_PORT = 8765
@@ -20,6 +27,7 @@ SetModelHandler = Callable[[str], Awaitable[None]]
 RefreshUIHandler = Callable[[], None]
 
 connected_clients: set[WebSocketServerProtocol] = set()
+authenticated_clients: set[WebSocketServerProtocol] = set()
 
 
 class AxonBridge:
@@ -75,23 +83,44 @@ class AxonBridge:
         await self._server.wait_closed()
         self._server = None
 
+    async def _send_session_snapshot(self, websocket: WebSocketServerProtocol) -> None:
+        policy = load_runtime_policy()
+        await websocket.send(
+            json.dumps(
+                {
+                    "type": "connected",
+                    "content": "AXON bridge connected",
+                    "session_started_at": SESSION_STARTED_AT,
+                    "tokens": TOTAL_TOKENS,
+                    "cost": TOTAL_COST,
+                    "policy": policy_for_client(),
+                    "web_control_enabled": policy.web_control_enabled,
+                }
+            )
+        )
+        await self.broadcast_stats(TOTAL_TOKENS, TOTAL_COST)
+        if self._current_model:
+            await self.broadcast_model(self._current_model)
+
     async def ws_handler(self, websocket: WebSocketServerProtocol) -> None:
         connected_clients.add(websocket)
+        policy = load_runtime_policy()
+        is_authenticated = not policy.bridge_auth_enabled
+
         try:
             await websocket.send(
                 json.dumps(
                     {
-                        "type": "connected",
-                        "content": "AXON bridge connected",
-                        "session_started_at": SESSION_STARTED_AT,
-                        "tokens": TOTAL_TOKENS,
-                        "cost": TOTAL_COST,
+                        "type": "auth_required",
+                        "bridge_auth_enabled": policy.bridge_auth_enabled,
+                        "pin": policy.bridge_pin if policy.bridge_auth_enabled else "",
                     }
                 )
             )
-            await self.broadcast_stats(TOTAL_TOKENS, TOTAL_COST)
-            if self._current_model:
-                await self.broadcast_model(self._current_model)
+
+            if is_authenticated:
+                authenticated_clients.add(websocket)
+                await self._send_session_snapshot(websocket)
 
             async for raw in websocket:
                 try:
@@ -101,7 +130,105 @@ class AxonBridge:
 
                 msg_type = data.get("type")
 
+                if msg_type == "auth":
+                    token = str(data.get("token", ""))
+                    if verify_bridge_token(token):
+                        is_authenticated = True
+                        authenticated_clients.add(websocket)
+                        await self._send_session_snapshot(websocket)
+                    else:
+                        await websocket.send(
+                            json.dumps(
+                                {
+                                    "type": "auth_failed",
+                                    "content": "Invalid bridge token",
+                                }
+                            )
+                        )
+                        await websocket.close()
+                    continue
+
+                if not is_authenticated:
+                    await websocket.send(
+                        json.dumps(
+                            {
+                                "type": "auth_required",
+                                "content": "Send {type: auth, token: ...}",
+                            }
+                        )
+                    )
+                    continue
+
+                if msg_type == "get_policy":
+                    await websocket.send(
+                        json.dumps(
+                            {
+                                "type": "policy",
+                                "policy": policy_for_client(),
+                            }
+                        )
+                    )
+                    continue
+
+                if msg_type == "set_policy":
+                    updates = data.get("policy") or data
+                    current = load_runtime_policy()
+                    merged = RuntimePolicy(
+                        autonomy_enabled=bool(
+                            updates.get("autonomy_enabled", current.autonomy_enabled)
+                        ),
+                        web_control_enabled=bool(
+                            updates.get(
+                                "web_control_enabled", current.web_control_enabled
+                            )
+                        ),
+                        terminal_control_enabled=bool(
+                            updates.get(
+                                "terminal_control_enabled",
+                                current.terminal_control_enabled,
+                            )
+                        ),
+                        require_desktop_confirmation=bool(
+                            updates.get(
+                                "require_desktop_confirmation",
+                                current.require_desktop_confirmation,
+                            )
+                        ),
+                        allow_parallel_agents=bool(
+                            updates.get(
+                                "allow_parallel_agents", current.allow_parallel_agents
+                            )
+                        ),
+                        bridge_auth_enabled=bool(
+                            updates.get(
+                                "bridge_auth_enabled", current.bridge_auth_enabled
+                            )
+                        ),
+                        bridge_token=str(
+                            updates.get("bridge_token", current.bridge_token)
+                        ),
+                        bridge_pin=str(updates.get("bridge_pin", current.bridge_pin)),
+                    )
+                    save_runtime_policy(merged)
+                    await self.broadcast(
+                        {
+                            "type": "policy",
+                            "policy": policy_for_client(),
+                        }
+                    )
+                    continue
+
                 if msg_type == "chat":
+                    if not load_runtime_policy().web_control_enabled:
+                        await websocket.send(
+                            json.dumps(
+                                {
+                                    "type": "error",
+                                    "content": "Web control is disabled in runtime policy",
+                                }
+                            )
+                        )
+                        continue
                     text = (data.get("text") or data.get("content") or "").strip()
                     if text and self._process_chat is not None:
                         asyncio.create_task(self._process_chat(text, "web"))
@@ -113,6 +240,7 @@ class AxonBridge:
 
         finally:
             connected_clients.discard(websocket)
+            authenticated_clients.discard(websocket)
 
     async def broadcast(self, payload: dict[str, Any]) -> None:
         if not connected_clients:
@@ -129,6 +257,7 @@ class AxonBridge:
 
         for client in stale:
             connected_clients.discard(client)
+            authenticated_clients.discard(client)
 
     async def broadcast_stats(self, tokens: int, cost: float) -> None:
         await self.broadcast(
@@ -162,5 +291,14 @@ class AxonBridge:
                 "content": text,
                 "source": source,
                 "id": message_id,
+            }
+        )
+
+    async def broadcast_approval_request(self, tool_name: str, detail: str) -> None:
+        await self.broadcast(
+            {
+                "type": "approval_request",
+                "tool": tool_name,
+                "detail": detail,
             }
         )
