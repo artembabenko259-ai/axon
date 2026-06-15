@@ -35,31 +35,27 @@ export default function ConfigPage() {
       >
         <GlassCard delay={0}>
           <div className="flex items-center gap-2">
-            <Key className="h-4 w-4 text-cyan-400" />
-            <h2 className="font-display text-sm font-medium text-white">
-              API Keys
-            </h2>
+            <Key className="h-4 w-4 text-white" />
+            <h2 className="text-sm font-medium tracking-tight text-white">API Keys</h2>
           </div>
-          <p className="mt-1 text-xs text-muted">
+          <p className="mt-1 text-xs text-[#888]">
             Provider settings sync with the Global Config widget. Current:{" "}
-            <span className="text-cyan-400">{config.provider}</span>
+            <span className="text-white">{config.provider}</span>
           </p>
 
-          <label className="mt-4 block text-[10px] uppercase tracking-wider text-muted">
-            API Key
-          </label>
+          <label className="label-caps mt-4 block">API Key</label>
           <div className="relative mt-1.5">
             <input
               type={showKey ? "text" : "password"}
               value={draft.apiKey}
               onChange={(e) => setDraftApiKey(e.target.value)}
               placeholder="sk-or-v1-..."
-              className="w-full rounded-xl border border-white/8 bg-white/4 px-4 py-3 pr-10 font-mono text-sm text-foreground outline-none transition-all placeholder:text-muted/50 focus:border-cyan-400/30 focus:ring-1 focus:ring-cyan-400/20"
+              className="input-vercel pr-10 font-mono"
             />
             <button
               type="button"
               onClick={() => setShowKey(!showKey)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#666] hover:text-white"
               aria-label={showKey ? "Hide key" : "Show key"}
             >
               {showKey ? (
@@ -73,33 +69,27 @@ export default function ConfigPage() {
 
         <GlassCard delay={0.1}>
           <div className="flex items-center gap-2">
-            <FolderOpen className="h-4 w-4 text-purple-400" />
-            <h2 className="font-display text-sm font-medium text-white">
-              Local Paths
-            </h2>
+            <FolderOpen className="h-4 w-4 text-white" />
+            <h2 className="text-sm font-medium tracking-tight text-white">Local Paths</h2>
           </div>
-          <p className="mt-1 text-xs text-muted">
+          <p className="mt-1 text-xs text-[#888]">
             Configure CLI installation and data directories
           </p>
 
-          <label className="mt-4 block text-[10px] uppercase tracking-wider text-muted">
-            CLI Project Path
-          </label>
+          <label className="label-caps mt-4 block">CLI Project Path</label>
           <input
             type="text"
             value={cliPath}
             onChange={(e) => setCliPath(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-white/8 bg-white/4 px-4 py-3 font-mono text-sm text-foreground outline-none transition-all focus:border-cyan-400/30 focus:ring-1 focus:ring-cyan-400/20"
+            className="input-vercel mt-1.5 font-mono"
           />
 
-          <label className="mt-4 block text-[10px] uppercase tracking-wider text-muted">
-            History File
-          </label>
+          <label className="label-caps mt-4 block">History File</label>
           <input
             type="text"
             value={historyPath}
             onChange={(e) => setHistoryPath(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-white/8 bg-white/4 px-4 py-3 font-mono text-sm text-foreground outline-none transition-all focus:border-cyan-400/30 focus:ring-1 focus:ring-cyan-400/20"
+            className="input-vercel mt-1.5 font-mono"
           />
         </GlassCard>
 
@@ -108,10 +98,9 @@ export default function ConfigPage() {
         <motion.button
           type="button"
           disabled={isSaving}
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
+          whileTap={{ scale: 0.97 }}
           onClick={() => void handleSave()}
-          className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500/80 to-indigo-500/80 py-3 text-sm font-medium text-white shadow-lg shadow-cyan-500/10 transition-all hover:shadow-cyan-500/20 disabled:opacity-70"
+          className="btn-vercel-primary w-full rounded-lg disabled:opacity-70"
         >
           <Save className="h-4 w-4" />
           {isSaving ? "Connecting…" : saved ? "Saved!" : "Save Configuration"}

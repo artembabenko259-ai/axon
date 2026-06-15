@@ -2,158 +2,302 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Shield, Sparkles, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Terminal,
+} from "lucide-react";
 import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher";
+import { BridgeStatus } from "@/components/ui/BridgeStatus";
 import { ConfigWidget } from "@/components/config/ConfigWidget";
-import { AgentOrb } from "@/components/ui/AgentOrb";
-import { GlassCard } from "@/components/ui/GlassCard";
+import { Sparkline } from "@/components/ui/Sparkline";
+import { formatBridgeStats, useChat } from "@/context/ChatContext";
+import { useModel } from "@/context/ModelContext";
+import { EASE_OUT } from "@/lib/motion";
+import { normalizeSparkline } from "@/lib/metrics";
 
-const features = [
+const pillars = [
   {
-    icon: Sparkles,
-    title: "Multi-Model",
-    desc: "Switch between Claude, GPT, Qwen, and Llama in one panel.",
+    n: "01",
+    label: "Monitor",
+    title: "Live telemetry",
+    desc: "Uptime, tokens, and cost streamed from your running CLI agent.",
+    href: "/dashboard",
   },
   {
-    icon: Zap,
-    title: "Live Streaming",
-    desc: "Watch agent responses and tool calls in real time.",
+    n: "02",
+    label: "Orchestrate",
+    title: "Model marketplace",
+    desc: "OpenRouter pricing, enable models, hot-swap without restart.",
+    href: "/marketplace",
   },
   {
-    icon: Shield,
-    title: "Local Skills",
-    desc: "Function-calling plugins for system info and file access.",
+    n: "03",
+    label: "Configure",
+    title: "Provider setup",
+    desc: "OpenRouter, Ollama, custom endpoints — synced with the bridge.",
+    href: "/config",
   },
 ];
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 14 },
+  show: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.06, duration: 0.45, ease: EASE_OUT },
+  }),
+};
+
 export function LandingHero() {
+  const {
+    connected,
+    stats,
+    uptimeLabel,
+    tokenSeries,
+    uptimeSeries,
+    activeModel,
+  } = useChat();
+  const { activeModelId } = useModel();
+  const { tokensLabel, costLabel } = formatBridgeStats(stats);
+
+  const modelName =
+    (activeModel || activeModelId).split("/").pop() ?? "—";
+  const statusLabel = connected ? "Ready" : "Offline";
+
   return (
-    <div className="relative flex min-h-screen flex-col">
-      {/* Top nav */}
-      <motion.nav
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="glass-strong mx-4 mt-4 flex items-center justify-between rounded-2xl px-5 py-3 lg:mx-8 lg:mt-6"
-      >
-        <div className="flex items-center gap-2.5">
-          <Sparkles className="h-4 w-4 text-cyan-400" />
-          <span className="font-display text-sm font-semibold tracking-[0.25em] text-white">
-            AXON
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
+    <div className="axon-canvas relative min-h-screen bg-black text-[#fafafa]">
+      <div aria-hidden className="axon-grid-decor landing-grid-fade" />
+
+      <header className="glass relative z-10 sticky top-0 flex h-16 items-center justify-between px-6 lg:px-12">
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className="flex h-6 w-6 items-center justify-center rounded bg-white">
+            <span className="text-[10px] font-bold text-black">A</span>
+          </div>
+          <span className="text-sm font-semibold tracking-tight">AXON</span>
+        </Link>
+
+        <nav className="hidden items-center gap-8 text-sm text-[#a1a1aa] md:flex">
+          <Link href="/docs" className="transition-colors hover:text-white">
+            Docs
+          </Link>
+          <Link href="/marketplace" className="transition-colors hover:text-white">
+            Models
+          </Link>
+          <Link href="/chat" className="transition-colors hover:text-white">
+            Chat
+          </Link>
+        </nav>
+
+        <div className="flex items-center gap-2">
           <ThemeSwitcher />
           <ConfigWidget />
           <Link
             href="/dashboard"
-            className="hidden text-xs text-muted transition-colors hover:text-foreground sm:block"
+            className="btn-vercel-primary ml-1 hidden sm:inline-flex"
           >
             Dashboard
-          </Link>
-          <Link href="/dashboard">
-            <motion.span
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500/20 to-purple-500/20 px-4 py-2 text-xs font-medium text-white ring-1 ring-white/10 transition-all hover:ring-cyan-400/30"
-            >
-              Launch Panel
-              <ArrowRight className="h-3.5 w-3.5" />
-            </motion.span>
+            <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
-      </motion.nav>
+      </header>
 
-      {/* Hero */}
-      <main className="flex flex-1 flex-col items-center justify-center px-4 pb-20 pt-12 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <AgentOrb size="lg" status="ready" />
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="mt-10 max-w-2xl text-center"
-        >
-          <p className="text-[10px] uppercase tracking-[0.4em] text-cyan-400/80">
-            AI Command Interface
-          </p>
-          <h1 className="mt-4 font-display text-4xl font-light tracking-tight sm:text-5xl lg:text-6xl">
-            <span className="text-gradient">Intelligence</span>
-            <br />
-            <span className="text-white/90">at your command.</span>
-          </h1>
-          <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-muted">
-            A premium control panel for your terminal AI agent. Monitor status,
-            orchestrate models, and configure skills — all from one glass-dark
-            interface.
-          </p>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.5 }}
-          className="mt-8 flex flex-wrap items-center justify-center gap-3"
-        >
-          <Link href="/dashboard">
-            <motion.span
-              whileHover={{ scale: 1.03, boxShadow: "0 0 30px rgba(34,211,238,0.2)" }}
-              whileTap={{ scale: 0.97 }}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-indigo-500 px-6 py-3 text-sm font-medium text-white shadow-lg shadow-cyan-500/20"
+      <main className="relative z-10 mx-auto max-w-6xl px-6 pb-28 pt-14 lg:px-12 lg:pt-20">
+        <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
+          <div>
+            <motion.div
+              custom={0}
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
             >
-              Open Dashboard
-              <ArrowRight className="h-4 w-4" />
-            </motion.span>
-          </Link>
-          <Link href="/config">
-            <motion.span
-              whileHover={{ scale: 1.02 }}
-              className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm text-muted ring-1 ring-white/10 transition-all hover:text-foreground hover:ring-white/20"
-            >
-              Configure
-            </motion.span>
-          </Link>
-        </motion.div>
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 font-mono text-[11px] text-[#a1a1aa]">
+                <Terminal className="h-3 w-3" />
+                terminal ai · v1.0
+                <BridgeStatus variant="inline" className="ml-1 border-l border-white/10 pl-2" />
+              </span>
+            </motion.div>
 
-        {/* Feature cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 32 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7, duration: 0.6 }}
-          className="mt-20 grid w-full max-w-4xl gap-4 sm:grid-cols-3"
-        >
-          {features.map((feature, index) => {
-            const Icon = feature.icon;
-            return (
-              <GlassCard key={feature.title} delay={0.8 + index * 0.1}>
-                <Icon className="h-5 w-5 text-cyan-400" />
-                <h3 className="mt-3 font-display text-sm font-medium text-white">
-                  {feature.title}
-                </h3>
-                <p className="mt-1.5 text-xs leading-relaxed text-muted">
-                  {feature.desc}
-                </p>
-              </GlassCard>
-            );
-          })}
-        </motion.div>
+            <motion.h1
+              custom={1}
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
+              className="mt-7 text-[2.75rem] font-semibold leading-[1.02] tracking-[-0.045em] sm:text-6xl lg:text-[4.25rem]"
+            >
+              <span className="text-gradient-hero">Ship intelligence</span>
+              <br />
+              <span className="text-white/90">from your terminal.</span>
+            </motion.h1>
+
+            <motion.p
+              custom={2}
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
+              className="mt-6 max-w-lg text-base leading-relaxed text-[#a1a1aa]"
+            >
+              AXON is the control plane for your CLI agent — monitor sessions,
+              switch models, and sync chat without leaving the browser.
+            </motion.p>
+
+            <motion.div
+              custom={3}
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
+              className="mt-9 flex flex-wrap items-center gap-3"
+            >
+              <Link href="/dashboard" className="btn-vercel-primary">
+                Open Dashboard
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link href="/chat" className="btn-vercel-secondary">
+                Open Chat
+              </Link>
+            </motion.div>
+
+            <motion.div
+              custom={4}
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
+              className="mt-12 flex flex-wrap gap-8 border-t border-white/[0.06] pt-8"
+            >
+              {[
+                { k: "Bridge", v: connected ? "<50ms" : "—" },
+                { k: "Models", v: "500+" },
+                { k: "Agent", v: connected ? "live" : "waiting" },
+              ].map((item) => (
+                <div key={item.k}>
+                  <p className="font-mono text-xl font-medium tabular-nums text-white">
+                    {item.v}
+                  </p>
+                  <p className="mt-1 text-xs text-[#71717a]">{item.k}</p>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+
+          <motion.div
+            custom={5}
+            variants={fadeUp}
+            initial="hidden"
+            animate="show"
+            className="relative"
+          >
+            <div className="landing-preview-ring overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0a0a]">
+              <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]/90" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-[#febc2e]/90" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-[#28c840]/90" />
+                  <span className="ml-1 font-mono text-[11px] text-[#71717a]">
+                    axon — dashboard
+                  </span>
+                </div>
+                <BridgeStatus variant="inline" />
+              </div>
+
+              <div className="grid gap-px bg-white/[0.04] p-px sm:grid-cols-2">
+                {[
+                  {
+                    l: "Status",
+                    v: statusLabel,
+                    spark: false,
+                    series: [] as number[],
+                    id: "",
+                  },
+                  {
+                    l: "Model",
+                    v: modelName,
+                    spark: false,
+                    series: [] as number[],
+                    id: "",
+                  },
+                  {
+                    l: "Uptime",
+                    v: connected ? uptimeLabel : "—",
+                    spark: true,
+                    series: normalizeSparkline(uptimeSeries),
+                    id: "landing-uptime",
+                  },
+                  {
+                    l: "Tokens",
+                    v: connected ? `${tokensLabel} · ${costLabel}` : "—",
+                    spark: true,
+                    series: normalizeSparkline(tokenSeries),
+                    id: "landing-tokens",
+                  },
+                ].map((m) => (
+                  <div
+                    key={m.l}
+                    className="bg-[#080808] px-4 py-4"
+                  >
+                    <p className="label-caps">{m.l}</p>
+                    <p className="mt-2 truncate font-mono text-sm tabular-nums text-white">
+                      {m.v}
+                    </p>
+                    {m.spark ? (
+                      <div className="mt-3 opacity-80">
+                        <Sparkline
+                          data={m.series}
+                          fillId={m.id}
+                          stroke="rgba(255,255,255,0.45)"
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-white/[0.06] px-4 py-2.5 font-mono text-[10px] text-[#52525b]">
+                bridge · ws://localhost:8765 · {connected ? "synced" : "no agent"}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        <div className="relative z-10 mt-24 space-y-px overflow-hidden rounded-2xl border border-white/[0.06]">
+          {pillars.map((item, i) => (
+            <motion.div
+              key={item.label}
+              custom={6 + i}
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
+            >
+              <Link
+                href={item.href}
+                className="group pillar-row flex flex-col gap-4 bg-[#0a0a0a] p-6 transition-colors hover:bg-[#111] sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="flex items-start gap-5">
+                  <span className="pillar-num font-mono text-xs text-[#52525b] transition-colors">
+                    {item.n}
+                  </span>
+                  <div>
+                    <p className="label-caps">{item.label}</p>
+                    <h3 className="mt-1 text-base font-medium text-white">
+                      {item.title}
+                    </h3>
+                    <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#a1a1aa]">
+                      {item.desc}
+                    </p>
+                  </div>
+                </div>
+                <span className="inline-flex shrink-0 items-center gap-1 text-xs text-[#71717a] transition-colors group-hover:text-white">
+                  Explore
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </span>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
       </main>
 
-      {/* Footer strip */}
-      <motion.footer
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
-        className="border-t border-white/5 py-4 text-center text-[10px] tracking-wider text-muted"
-      >
-        AXON v1.0.0 — Terminal AI Control Panel
-      </motion.footer>
+      <footer className="relative z-10 border-t border-white/[0.06] py-8 text-center text-xs text-[#71717a]">
+        AXON — AI control plane for developers
+      </footer>
     </div>
   );
 }

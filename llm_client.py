@@ -22,6 +22,8 @@ from skills_manager import SkillManager, load_project_memory
 from agent_manager import load_agent_prompt
 from task_manager import task_manager
 
+import time
+
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_MODEL = "meta-llama/llama-3.1-8b-instruct"
 COST_PER_TOKEN = 0.000002
@@ -49,6 +51,7 @@ ToolNotifyCallback = Callable[[str, str], Awaitable[None]]
 
 TOTAL_TOKENS: int = 0
 TOTAL_COST: float = 0.0
+SESSION_STARTED_AT: float = time.time()
 
 
 def record_token_usage(total_tokens: int) -> None:

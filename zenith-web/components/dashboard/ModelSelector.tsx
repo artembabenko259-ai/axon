@@ -2,6 +2,7 @@
 
 import { motion, LayoutGroup } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { EASE_OUT, TAP_PRESS } from "@/lib/motion";
 import { useModel } from "@/context/ModelContext";
 
 export interface ModelOption {
@@ -59,44 +60,49 @@ export function ModelSelector({ selected, onSelect }: ModelSelectorProps) {
               key={model.id}
               type="button"
               layout
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05, layout: { duration: 0.3 } }}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
+              transition={{ delay: index * 0.05, duration: 0.4, ease: EASE_OUT, layout: { duration: 0.3 } }}
+              whileHover={{ y: -2, transition: { duration: 0.2, ease: EASE_OUT } }}
+              whileTap={TAP_PRESS}
               onClick={() => handleSelect(model.id)}
               className={cn(
-                "glass rounded-xl p-4 text-left transition-all duration-200",
-                "hover:backdrop-blur-[24px]",
+                "group relative overflow-hidden rounded-lg border border-white/[0.06] bg-[#0a0a0a] p-4 text-left transition-colors duration-200",
                 active
-                  ? "border-cyan-400/30 bg-cyan-400/5 ring-1 ring-cyan-400/20"
-                  : "hover:border-white/12 hover:bg-white/5",
+                  ? "border-white/15 bg-[#111]"
+                  : "hover:border-white/10 hover:bg-[#111]",
               )}
             >
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-display text-sm font-medium text-white">
-                  {model.name}
-                </span>
-                <div className="flex items-center gap-1.5">
-                  {model.isCustom && (
-                    <span className="rounded-md bg-purple-500/15 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-purple-300">
-                      Custom
-                    </span>
-                  )}
-                  {active && (
-                    <motion.span
-                      layoutId="model-active-dot"
-                      className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]"
-                    />
-                  )}
-                </div>
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              >
+                <div className="absolute -top-[40%] left-1/2 h-[120%] w-[140%] -translate-x-1/2 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.06),transparent_65%)]" />
               </div>
-              <p className="mt-0.5 text-[10px] uppercase tracking-wider text-muted">
-                {model.provider}
-              </p>
-              <p className="mt-2 line-clamp-2 text-xs text-muted">
-                {model.description}
-              </p>
+              <div className="relative">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium tracking-tight text-white">
+                    {model.name}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {model.isCustom && (
+                      <span className="label-caps !text-[9px] rounded-md border border-white/5 bg-zinc-950 px-1.5 py-0.5">
+                        Custom
+                      </span>
+                    )}
+                    {active && (
+                      <motion.span
+                        layoutId="model-active-dot"
+                        className="h-1.5 w-1.5 rounded-full bg-white"
+                      />
+                    )}
+                  </div>
+                </div>
+                <p className="label-caps mt-2 !text-[9px]">{model.provider}</p>
+                <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-[#71717a]">
+                  {model.description}
+                </p>
+              </div>
             </motion.button>
           );
         })}

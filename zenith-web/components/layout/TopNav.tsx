@@ -5,8 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BookOpen, LayoutDashboard, Menu, MessageSquare, Settings, Sparkles, X } from "lucide-react";
 import { useState } from "react";
+import { BridgeStatus } from "@/components/ui/BridgeStatus";
 import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher";
 import { ConfigWidget } from "@/components/config/ConfigWidget";
+import { TAP_PRESS } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -27,91 +29,58 @@ export function TopNav({ title = "Control Panel" }: TopNavProps) {
 
   return (
     <>
-      <motion.header
-        initial={{ y: -12, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.35 }}
-        className="glass-strong sticky top-0 z-40 flex items-center justify-between rounded-2xl px-4 py-3 lg:px-6"
-      >
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2 lg:hidden">
-            <Sparkles className="h-4 w-4 text-cyan-400" />
-            <span className="font-display text-xs font-semibold tracking-widest">
-              AXON
-            </span>
-          </Link>
-          <div className="hidden h-4 w-px bg-white/10 lg:block" />
-          <h1 className="font-display text-sm font-medium text-white/90">
-            {title}
-          </h1>
-        </div>
-
+      <header className="glass flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8">
+        <h1 className="text-sm font-semibold tracking-tight text-white">{title}</h1>
         <div className="flex items-center gap-2">
+          <BridgeStatus variant="compact" className="hidden sm:flex" />
           <nav className="hidden items-center gap-1 md:flex">
             {navItems.map((item) => {
               const active =
                 pathname === item.href ||
                 (item.href !== "/" && pathname.startsWith(`${item.href}/`));
-              const Icon = item.icon;
               return (
                 <Link key={item.href} href={item.href}>
-                  <motion.span
-                    whileHover={{ y: -1 }}
+                  <span
                     className={cn(
-                      "flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs transition-colors",
+                      "rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
                       active
-                        ? "bg-white/8 text-cyan-400"
-                        : "text-muted hover:text-foreground",
+                        ? "nav-link-active text-[#fafafa]"
+                        : "text-[#71717a] hover:text-[#a1a1aa]",
                     )}
                   >
-                    <Icon className="h-3.5 w-3.5" />
                     {item.label}
-                  </motion.span>
+                  </span>
                 </Link>
               );
             })}
           </nav>
-
           <ThemeSwitcher />
           <ConfigWidget />
-
-          <button
+          <motion.button
             type="button"
+            whileTap={TAP_PRESS}
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="rounded-lg p-2 text-muted hover:bg-white/5 md:hidden"
+            className="rounded-lg p-2 text-[#a1a1aa] hover:bg-white/[0.05] md:hidden"
             aria-label="Toggle menu"
           >
-            {mobileOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </button>
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </motion.button>
         </div>
-      </motion.header>
+      </header>
 
       {mobileOpen && (
-        <motion.nav
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
-          className="glass-strong mt-2 overflow-hidden rounded-2xl p-2 md:hidden"
-        >
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-foreground hover:bg-white/5"
-              >
-                <Icon className="h-4 w-4 text-cyan-400" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </motion.nav>
+        <nav className="border-b border-white/[0.06] bg-black p-2 md:hidden">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMobileOpen(false)}
+              className="block rounded-lg px-3 py-2.5 text-sm text-[#a1a1aa] hover:bg-white/[0.05] hover:text-white"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
       )}
     </>
   );

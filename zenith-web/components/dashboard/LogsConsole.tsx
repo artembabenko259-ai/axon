@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { Terminal } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { EASE_OUT } from "@/lib/motion";
 import { useConfig } from "@/context/ConfigContext";
 
 interface LogEntry {
@@ -47,10 +48,10 @@ const initialLogs: LogEntry[] = [
 ];
 
 const levelColors = {
-  info: "text-cyan-400",
-  success: "text-success",
-  warn: "text-warning",
-  system: "text-purple-400",
+  info: "text-zinc-400",
+  success: "text-emerald-400",
+  warn: "text-amber-400",
+  system: "text-zinc-500",
 };
 
 const liveMessages = [
@@ -108,18 +109,16 @@ export function LogsConsole() {
   }, [logs]);
 
   return (
-    <GlassCard hover={false} className="flex flex-col !p-0 overflow-hidden">
-      <div className="flex items-center gap-2 border-b border-white/6 px-4 py-3">
-        <Terminal className="h-4 w-4 text-cyan-400" />
-        <span className="font-display text-xs font-medium tracking-wide text-white/80">
-          Live Logs
-        </span>
+    <GlassCard hover={false} className="flex flex-col overflow-hidden !p-0">
+      <div className="flex items-center gap-2 border-b border-white/5 px-4 py-3">
+        <Terminal className="h-4 w-4 text-zinc-500" strokeWidth={1.75} />
+        <span className="label-caps">Live Logs</span>
         <motion.span
           animate={{ opacity: [1, 0.4, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
-          className="ml-auto flex items-center gap-1.5 text-[10px] text-success"
+          className="ml-auto flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-emerald-400"
         >
-          <span className="h-1.5 w-1.5 rounded-full bg-success" />
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
           LIVE
         </motion.span>
       </div>
@@ -132,17 +131,18 @@ export function LogsConsole() {
           {logs.map((log) => (
             <motion.div
               key={log.id}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex gap-3 py-1 leading-relaxed"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: EASE_OUT }}
+              className="flex gap-3 border-b border-white/[0.03] py-1.5 leading-relaxed last:border-0"
             >
-              <span className="shrink-0 text-muted/60">{log.timestamp}</span>
+              <span className="shrink-0 text-zinc-600">{log.timestamp}</span>
               <span
                 className={`shrink-0 uppercase ${levelColors[log.level]}`}
               >
                 [{log.level}]
               </span>
-              <span className="text-foreground/80">{log.message}</span>
+              <span className="text-zinc-400">{log.message}</span>
             </motion.div>
           ))}
         </AnimatePresence>

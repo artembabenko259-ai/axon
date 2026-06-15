@@ -6,14 +6,15 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useChat } from "@/context/ChatContext";
+import { EASE_OUT, TAP_PRESS } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 const bubbleVariants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 15 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const },
+    transition: { duration: 0.35, ease: EASE_OUT },
   },
 };
 
@@ -35,31 +36,25 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="flex h-[calc(100dvh-10rem)] min-h-[400px] flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0a0a0a] sm:h-[calc(100dvh-8rem)]">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#111111] px-4 py-3 sm:px-5">
+    <div className="flex h-[calc(100dvh-10rem)] min-h-[400px] flex-col overflow-hidden rounded-xl border border-white/[0.06] bg-[#0a0a0a] sm:h-[calc(100dvh-8rem)]">
+      <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#111] px-4 py-3 sm:px-5">
         <div>
-          <h2 className="font-display text-sm font-medium text-white">Chat</h2>
-          <p className="text-[10px] text-muted">Synced with terminal via WebSocket</p>
+          <p className="label-caps">Bridge</p>
+          <h2 className="text-sm font-medium tracking-tight text-white">Chat</h2>
         </div>
         <div
           className={cn(
-            "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px]",
+            "flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] tabular-nums",
             connected
-              ? "bg-emerald-500/10 text-emerald-400"
-              : "bg-red-500/10 text-red-400",
+              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+              : "border-red-500/20 bg-red-500/10 text-red-400",
           )}
         >
-          {connected ? (
-            <Wifi className="h-3 w-3" />
-          ) : (
-            <WifiOff className="h-3 w-3" />
-          )}
-          {connected ? "Connected" : "Reconnecting…"}
+          {connected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+          {connected ? "connected" : "reconnecting"}
         </div>
       </div>
 
-      {/* Messages */}
       <div
         ref={scrollRef}
         className="flex-1 space-y-3 overflow-y-auto px-3 py-4 logs-scroll sm:px-5"
@@ -83,32 +78,28 @@ export function ChatInterface() {
               >
                 <div
                   className={cn(
-                    "max-w-[92%] rounded-2xl px-4 py-3 sm:max-w-[75%]",
-                    isUser &&
-                      "bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 ring-1 ring-cyan-400/20",
-                    msg.role === "assistant" &&
-                      "glass backdrop-blur-md ring-1 ring-white/8",
-                    isSystem &&
-                      "bg-white/3 px-3 py-1.5 text-[10px] text-muted",
+                    "max-w-[92%] rounded-xl px-4 py-3 sm:max-w-[75%]",
+                    isUser && "border border-white/20 bg-white text-black",
+                    msg.role === "assistant" && "border border-white/[0.06] bg-[#111]",
+                    isSystem && "border border-white/[0.06] bg-transparent px-3 py-1.5 text-[10px] text-[#71717a]",
                   )}
                 >
                   {!isSystem && (
-                    <p className="mb-1 text-[9px] uppercase tracking-wider text-muted">
-                      {msg.source === "terminal" ? "Terminal" : "Web"} ·{" "}
-                      {msg.role}
+                    <p className="mb-1 font-mono text-[9px] uppercase tracking-wider text-[#666]">
+                      {msg.source === "terminal" ? "terminal" : "web"} · {msg.role}
                     </p>
                   )}
                   {isUser || isSystem ? (
                     <p
                       className={cn(
                         "text-sm leading-relaxed",
-                        isUser ? "text-white" : "text-muted",
+                        isUser ? "text-black" : "text-[#888]",
                       )}
                     >
                       {msg.content}
                     </p>
                   ) : (
-                    <div className="prose prose-invert prose-sm max-w-none text-sm leading-relaxed [&_code]:rounded [&_code]:bg-white/10 [&_code]:px-1 [&_p]:my-1">
+                    <div className="prose-vercel prose prose-invert prose-sm max-w-none text-sm leading-relaxed [&_code]:rounded [&_code]:bg-white/10 [&_code]:px-1 [&_p]:my-1">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {msg.content}
                       </ReactMarkdown>
@@ -122,28 +113,26 @@ export function ChatInterface() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input bar */}
       <form
         onSubmit={handleSubmit}
-        className="border-t border-white/[0.06] bg-[#111111] p-3 sm:p-4"
+        className="border-t border-white/[0.08] bg-[#141418] p-3 sm:p-4"
       >
-        <div className="flex items-center gap-2 rounded-xl border border-white/8 bg-[#0a0a0a] px-3 py-2 ring-1 ring-transparent transition-all focus-within:border-cyan-400/25 focus-within:ring-cyan-400/15">
-          <span className="text-cyan-400">❯</span>
+        <div className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-black px-3 py-2 focus-within:border-white/20">
+          <span className="font-mono text-[#71717a]">›</span>
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Message AXON…"
-            className="min-w-0 flex-1 bg-transparent py-1.5 text-sm text-foreground outline-none placeholder:text-muted/50"
+            className="min-w-0 flex-1 bg-transparent py-1.5 text-sm text-white outline-none placeholder:text-[#555]"
           />
           <motion.button
             type="submit"
             disabled={!input.trim() || !connected}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-500/20 text-cyan-400 transition-all hover:bg-cyan-500/30 disabled:opacity-40"
+            whileTap={TAP_PRESS}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white text-black hover:bg-white/90 disabled:opacity-30"
             aria-label="Send message"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-3.5 w-3.5" />
           </motion.button>
         </div>
       </form>

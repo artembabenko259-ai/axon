@@ -37,47 +37,41 @@ export function CustomModelRegistry() {
   return (
     <GlassCard delay={0.15}>
       <div className="flex items-center gap-2">
-        <Plus className="h-4 w-4 text-purple-400" />
-        <h2 className="font-display text-sm font-medium text-white">
+        <Plus className="h-4 w-4 text-white" />
+        <h2 className="text-sm font-medium tracking-tight text-white">
           Custom Model Registry
         </h2>
       </div>
-      <p className="mt-1 text-xs text-muted">
+      <p className="mt-1 text-xs text-[#888]">
         Add custom models — they appear in the dashboard Model Selection grid.
       </p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <label className="text-[10px] uppercase tracking-wider text-muted">
-            Model ID
-          </label>
+          <label className="label-caps">Model ID</label>
           <input
             value={modelId}
             onChange={(e) => setModelId(e.target.value)}
             placeholder="anthropic/claude-3-opus"
-            className="mt-1 w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 font-mono text-sm outline-none focus:border-cyan-400/30 focus:ring-1 focus:ring-cyan-400/20"
+            className="input-vercel mt-1 font-mono"
           />
         </div>
         <div>
-          <label className="text-[10px] uppercase tracking-wider text-muted">
-            Friendly Name
-          </label>
+          <label className="label-caps">Friendly Name</label>
           <input
             value={friendlyName}
             onChange={(e) => setFriendlyName(e.target.value)}
             placeholder="Claude Opus"
-            className="mt-1 w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm outline-none focus:border-cyan-400/30 focus:ring-1 focus:ring-cyan-400/20"
+            className="input-vercel mt-1"
           />
         </div>
         <div>
-          <label className="text-[10px] uppercase tracking-wider text-muted">
-            Description
-          </label>
+          <label className="label-caps">Description</label>
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Most capable reasoning model"
-            className="mt-1 w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 text-sm outline-none focus:border-cyan-400/30 focus:ring-1 focus:ring-cyan-400/20"
+            className="input-vercel mt-1"
           />
         </div>
       </div>
@@ -86,34 +80,33 @@ export function CustomModelRegistry() {
 
       <motion.button
         type="button"
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
+        whileTap={{ scale: 0.97 }}
         onClick={handleAdd}
-        className="mt-4 flex items-center gap-2 rounded-xl bg-white/6 px-4 py-2.5 text-xs font-medium text-white ring-1 ring-white/10 transition-all hover:ring-cyan-400/25"
+        className="btn-vercel-secondary mt-4 rounded-lg text-xs"
       >
         <Plus className="h-3.5 w-3.5" />
         Add Model
       </motion.button>
 
       {customModels.length > 0 && (
-        <ul className="mt-4 space-y-2 border-t border-white/6 pt-4">
+        <ul className="mt-4 space-y-2 border-t border-white/[0.06] pt-4">
           {customModels.map((model) => (
             <li
               key={model.id}
-              className="flex items-center justify-between gap-3 rounded-xl bg-white/3 px-3 py-2.5"
+              className="flex items-center justify-between gap-3 rounded-lg border border-white/[0.06] bg-[#111] px-3 py-2.5"
             >
               <div className="min-w-0">
                 <p className="truncate text-xs font-medium text-white">
                   {model.friendlyName}
                 </p>
-                <p className="truncate font-mono text-[10px] text-muted">
+                <p className="truncate font-mono text-[10px] text-[#666]">
                   {model.id}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => removeCustomModel(model.id)}
-                className="shrink-0 rounded-lg p-1.5 text-muted hover:bg-red-500/10 hover:text-red-400"
+                className="shrink-0 rounded-md p-1.5 text-[#666] hover:bg-red-500/10 hover:text-red-400"
                 aria-label={`Remove ${model.friendlyName}`}
               >
                 <Trash2 className="h-3.5 w-3.5" />

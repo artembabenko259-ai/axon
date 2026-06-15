@@ -100,15 +100,17 @@ export function ModelMarketplace() {
   );
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-[#0a0a0a]">
-      {/* Header */}
-      <div className="border-b border-white/[0.06] bg-[#111111] px-4 py-4 sm:px-5">
+    <div className="flex flex-col overflow-hidden rounded-xl border border-white/[0.06] bg-[#0a0a0a]">
+      <div className="border-b border-white/[0.06] bg-[#111] px-4 py-4 sm:px-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="font-display text-sm font-medium text-white">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#71717a]">
+              Marketplace
+            </p>
+            <h2 className="mt-1 text-sm font-semibold tracking-tight text-white">
               Model Marketplace
             </h2>
-            <p className="mt-0.5 text-xs text-muted">
+            <p className="mt-0.5 text-xs text-[#a1a1aa]">
               {loading
                 ? "Loading pricing from OpenRouter…"
                 : `${filtered.length} models available`}
@@ -116,13 +118,13 @@ export function ModelMarketplace() {
           </div>
 
           <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search models…"
-              className="w-full rounded-xl border border-white/[0.06] bg-[#0a0a0a] py-2 pl-9 pr-3 text-xs text-foreground outline-none transition-all placeholder:text-muted/50 focus:border-cyan-400/25 focus:ring-1 focus:ring-cyan-400/15"
+              className="input-vercel pl-9"
             />
           </div>
         </div>
@@ -134,10 +136,10 @@ export function ModelMarketplace() {
               type="button"
               onClick={() => setCategory(cat.id)}
               className={cn(
-                "rounded-lg px-3 py-1 text-[10px] uppercase tracking-wider transition-all",
+                "rounded-md px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest transition-colors",
                 category === cat.id
-                  ? "bg-cyan-400/10 text-cyan-400 ring-1 ring-cyan-400/25"
-                  : "text-muted hover:bg-white/5 hover:text-foreground",
+                  ? "bg-zinc-800 text-zinc-100"
+                  : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300",
               )}
             >
               {cat.label}
@@ -152,7 +154,7 @@ export function ModelMarketplace() {
           <div
             className={cn(
               GRID_COLS,
-              "border-b border-white/[0.06] bg-[#111111]/80 px-4 py-2.5 text-[10px] uppercase tracking-wider text-muted sm:px-5",
+              "border-b border-zinc-800/50 px-4 py-3 text-xs font-semibold uppercase tracking-widest text-zinc-500 sm:px-5",
             )}
           >
             <span>Model Name</span>
@@ -169,8 +171,8 @@ export function ModelMarketplace() {
             className="relative h-[min(420px,50vh)] overflow-y-auto logs-scroll"
           >
         {loading && (
-          <div className="flex h-full items-center justify-center gap-2 text-sm text-muted">
-            <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />
+          <div className="flex h-full items-center justify-center gap-2 text-sm text-zinc-500">
+            <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />
             Fetching OpenRouter pricing…
           </div>
         )}
@@ -182,7 +184,7 @@ export function ModelMarketplace() {
         )}
 
         {!loading && !error && filtered.length === 0 && (
-          <div className="flex h-full items-center justify-center text-sm text-muted">
+          <div className="flex h-full items-center justify-center text-sm text-zinc-500">
             No models match your filters.
           </div>
         )}
@@ -213,16 +215,11 @@ export function ModelMarketplace() {
                     }
                   }}
                   initial={false}
-                  whileHover={{
-                    backgroundColor: "rgba(34, 211, 238, 0.04)",
-                  }}
                   className={cn(
                     GRID_COLS,
-                    "absolute left-0 top-0 w-full cursor-pointer items-center border-b border-white/[0.04] px-4 transition-all duration-200 sm:px-5",
-                    "bg-white/[0.02] backdrop-blur-sm",
-                    "hover:shadow-[inset_0_0_24px_rgba(34,211,238,0.06)] hover:ring-1 hover:ring-cyan-400/10",
-                    isActive &&
-                      "bg-cyan-400/[0.06] ring-1 ring-cyan-400/20 shadow-[inset_0_0_32px_rgba(34,211,238,0.08)]",
+                    "group absolute left-0 top-0 w-full cursor-pointer items-center border-b border-zinc-800/50 px-4 transition-colors duration-150 sm:px-5",
+                    "hover:bg-zinc-900/50",
+                    isActive && "bg-zinc-900/80",
                   )}
                   style={{
                     height: `${virtualRow.size}px`,
@@ -234,40 +231,40 @@ export function ModelMarketplace() {
                     <ModelAvatar provider={model.provider} name={model.name} />
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <p className="truncate text-xs font-medium text-white">
+                        <p className="truncate text-xs font-medium text-zinc-100">
                           {model.name}
                         </p>
                         {model.isTrending && (
-                          <span className="inline-flex items-center gap-0.5 rounded-md bg-purple-500/15 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-purple-300 ring-1 ring-purple-400/20">
+                          <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-zinc-400">
                             <TrendingUp className="h-2.5 w-2.5" />
                             Trending
                           </span>
                         )}
                         {model.isRecommended && (
-                          <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-emerald-300 ring-1 ring-emerald-400/20">
+                          <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-500/90">
                             <Star className="h-2.5 w-2.5" />
                             Value
                           </span>
                         )}
                       </div>
-                      <p className="truncate text-[10px] text-muted">
+                      <p className="truncate font-mono text-[10px] text-zinc-600">
                         {model.id}
                       </p>
                     </div>
                   </div>
 
                   {/* Context */}
-                  <span className="text-xs text-foreground/80">
+                  <span className="font-mono text-xs tabular-nums tracking-tight text-zinc-400">
                     {formatContext(model.contextWindow)}
                   </span>
 
                   {/* Input price */}
-                  <span className="text-right font-mono text-xs text-foreground/90">
+                  <span className="text-right font-mono text-xs tabular-nums tracking-tight text-zinc-300">
                     {formatPrice(model.inputPricePerMillion)}
                   </span>
 
                   {/* Output price */}
-                  <span className="text-right font-mono text-xs text-foreground/90">
+                  <span className="text-right font-mono text-xs tabular-nums tracking-tight text-zinc-300">
                     {formatPrice(model.outputPricePerMillion)}
                   </span>
 
@@ -280,16 +277,16 @@ export function ModelMarketplace() {
                         toggleModelEnabled(model.id);
                       }}
                       className={cn(
-                        "relative h-5 w-9 rounded-full transition-colors duration-200",
-                        enabled ? "bg-cyan-500/30" : "bg-white/10",
+                        "relative h-4 w-7 rounded-full transition-colors duration-150",
+                        enabled ? "bg-zinc-600" : "bg-zinc-800",
                       )}
                       aria-label={`Toggle ${model.name}`}
                     >
                       <motion.span
                         layout
                         className={cn(
-                          "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-all",
-                          enabled ? "left-[18px]" : "left-0.5",
+                          "absolute top-0.5 h-3 w-3 rounded-full bg-zinc-200 shadow-sm transition-all",
+                          enabled ? "left-[14px]" : "left-0.5",
                         )}
                       />
                     </button>
@@ -301,7 +298,7 @@ export function ModelMarketplace() {
                       <motion.span
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="flex items-center gap-1 text-[10px] text-cyan-400"
+                        className="flex items-center gap-1 text-[10px] text-blue-400"
                       >
                         <Sparkles className="h-3 w-3" />
                       </motion.span>

@@ -15,7 +15,7 @@ export function ThemeSwitcher() {
     return (
       <button
         type="button"
-        className="h-8 w-8 rounded-lg border border-white/8 bg-white/4"
+        className="h-8 w-8 rounded-md border border-white/[0.08] bg-[#0a0a0a]"
         aria-label="Toggle theme"
       />
     );
@@ -28,19 +28,13 @@ export function ThemeSwitcher() {
       type="button"
       onClick={() => setTheme(isBlack ? "base" : "black")}
       className={cn(
-        "flex h-8 w-8 items-center justify-center rounded-lg border transition-all duration-300",
-        "border-white/8 bg-white/4 backdrop-blur-md",
-        "hover:border-white/14 hover:bg-white/8",
-        isBlack && "border-white/12 bg-white/6",
+        "flex h-8 w-8 items-center justify-center rounded-md border border-white/[0.08] bg-[#0a0a0a] transition-colors",
+        "text-[#a1a1aa] hover:border-white/[0.15] hover:text-white",
       )}
       aria-label={isBlack ? "Switch to Base theme" : "Switch to Black theme"}
       title={isBlack ? "Base theme" : "Black theme"}
     >
-      {isBlack ? (
-        <Sun className="h-3.5 w-3.5 text-amber-300/90" />
-      ) : (
-        <Moon className="h-3.5 w-3.5 text-muted" />
-      )}
+      {isBlack ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
     </button>
   );
 }

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import io
 import os
 import re
@@ -946,6 +947,13 @@ async def start_axon() -> None:
 
     ws_server = await bridge.start()
 
+    async def stats_heartbeat() -> None:
+        while not shutdown.is_set():
+            await asyncio.sleep(10)
+            await sync_stats()
+
+    heartbeat_task = asyncio.create_task(stats_heartbeat())
+
     clear_terminal()
     print_banner(llm_manager.model)
 
@@ -1008,6 +1016,9 @@ async def start_axon() -> None:
     try:
         await chat_loop()
     finally:
+        heartbeat_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await heartbeat_task
         if ws_server is not None:
             ws_server.close()
             await ws_server.wait_closed()

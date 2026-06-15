@@ -66,12 +66,11 @@ export function ConfigWidget() {
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         className={cn(
-          "flex items-center gap-2 rounded-xl px-3 py-2 text-xs transition-all duration-300",
-          "glass border",
+          "flex items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-all duration-200",
           isOpen
-            ? "border-cyan-400/40 shadow-[0_0_20px_rgba(34,211,238,0.15)] ring-1 ring-cyan-400/25"
-            : "border-white/8 hover:border-white/14 hover:bg-white/5",
-          config.isConnected && !isOpen && "border-emerald-400/20",
+            ? "border-white/20 bg-white/[0.05] text-white"
+            : "border-white/[0.08] text-[#888] hover:border-white/15 hover:text-white",
+          config.isConnected && !isOpen && "border-emerald-500/20",
         )}
         aria-expanded={isOpen}
         aria-haspopup="dialog"
@@ -84,8 +83,8 @@ export function ConfigWidget() {
               : "bg-muted",
           )}
         />
-        <Plug className="h-3.5 w-3.5 text-cyan-400" />
-        <span className="hidden font-medium text-foreground/90 sm:inline">
+        <Plug className="h-3.5 w-3.5" />
+        <span className="hidden font-medium sm:inline">
           {providerLabel}
         </span>
         <motion.span
@@ -106,35 +105,30 @@ export function ConfigWidget() {
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             className={cn(
-              "absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl p-4",
-              "glass-strong border border-cyan-400/20",
-              "shadow-[0_16px_48px_rgba(0,0,0,0.5),0_0_24px_rgba(34,211,238,0.08)]",
+              "absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-white/[0.08] bg-black/90 p-4 backdrop-blur-md",
+              "shadow-[0_16px_48px_rgba(0,0,0,0.8)]",
             )}
           >
             <div className="mb-4 flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-400/10 ring-1 ring-cyan-400/20">
-                <KeyRound className="h-3.5 w-3.5 text-cyan-400" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-md border border-white/[0.08] bg-[#111]">
+                <KeyRound className="h-3.5 w-3.5 text-white" />
               </div>
               <div>
-                <p className="font-display text-xs font-medium text-white">
-                  Global Config
-                </p>
-                <p className="text-[10px] text-muted">
+                <p className="text-xs font-medium text-white">Global Config</p>
+                <p className="text-[10px] text-[#666]">
                   Provider credentials &amp; endpoint
                 </p>
               </div>
             </div>
 
-            <label className="block text-[10px] uppercase tracking-wider text-muted">
-              Provider
-            </label>
+            <label className="label-caps">Provider</label>
             <div className="relative mt-1.5">
               <select
                 value={draft.provider}
                 onChange={(e) =>
                   setDraftProvider(e.target.value as ProviderType)
                 }
-                className="w-full appearance-none rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 pr-8 text-sm text-foreground outline-none transition-all focus:border-cyan-400/30 focus:ring-1 focus:ring-cyan-400/20"
+                className="input-vercel mt-1.5 appearance-none pr-8"
               >
                 {PROVIDERS.map((p) => (
                   <option
@@ -159,15 +153,13 @@ export function ConfigWidget() {
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <label className="mt-4 block text-[10px] uppercase tracking-wider text-muted">
-                    API Key
-                  </label>
+                  <label className="label-caps mt-4 block">API Key</label>
                   <input
                     type="password"
                     value={draft.apiKey}
                     onChange={(e) => setDraftApiKey(e.target.value)}
                     placeholder="sk-or-v1-..."
-                    className="mt-1.5 w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 font-mono text-sm text-foreground outline-none transition-all placeholder:text-muted/40 focus:border-cyan-400/30 focus:ring-1 focus:ring-cyan-400/20"
+                    className="input-vercel mt-1.5 font-mono"
                   />
                 </motion.div>
               )}
@@ -181,7 +173,7 @@ export function ConfigWidget() {
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <label className="mt-4 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted">
+                  <label className="label-caps mt-4 flex items-center gap-1.5">
                     <Server className="h-3 w-3" />
                     Endpoint URL
                   </label>
@@ -190,7 +182,7 @@ export function ConfigWidget() {
                     value={draft.endpointUrl}
                     onChange={(e) => setDraftEndpointUrl(e.target.value)}
                     placeholder="http://localhost:11434"
-                    className="mt-1.5 w-full rounded-xl border border-white/8 bg-white/4 px-3 py-2.5 font-mono text-sm text-foreground outline-none transition-all placeholder:text-muted/40 focus:border-cyan-400/30 focus:ring-1 focus:ring-cyan-400/20"
+                    className="input-vercel mt-1.5 font-mono"
                   />
                 </motion.div>
               )}
@@ -203,9 +195,7 @@ export function ConfigWidget() {
               whileTap={!isSaving ? { scale: 0.99 } : undefined}
               onClick={() => void saveAndConnect()}
               className={cn(
-                "mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all",
-                "bg-gradient-to-r from-cyan-500/80 to-indigo-500/80 text-white",
-                "shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/25",
+                "btn-vercel-primary mt-5 w-full rounded-lg",
                 "disabled:cursor-not-allowed disabled:opacity-70",
               )}
             >

@@ -9,6 +9,8 @@ from typing import Any
 import websockets
 from websockets.server import WebSocketServerProtocol
 
+from llm_client import SESSION_STARTED_AT, TOTAL_COST, TOTAL_TOKENS
+
 WS_HOST = "127.0.0.1"
 WS_PORT = 8765
 _ADDR_IN_USE = frozenset({48, 98, 10048})
@@ -76,13 +78,14 @@ class AxonBridge:
     async def ws_handler(self, websocket: WebSocketServerProtocol) -> None:
         connected_clients.add(websocket)
         try:
-            from llm_client import TOTAL_COST, TOTAL_TOKENS
-
             await websocket.send(
                 json.dumps(
                     {
                         "type": "connected",
                         "content": "AXON bridge connected",
+                        "session_started_at": SESSION_STARTED_AT,
+                        "tokens": TOTAL_TOKENS,
+                        "cost": TOTAL_COST,
                     }
                 )
             )
@@ -133,6 +136,7 @@ class AxonBridge:
                 "type": "stats",
                 "tokens": tokens,
                 "cost": cost,
+                "session_started_at": SESSION_STARTED_AT,
             }
         )
         if self._refresh_ui is not None:
