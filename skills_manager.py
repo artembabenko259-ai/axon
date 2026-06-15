@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from axon_runtime import seed_axon_tree
+from skills.tools import SHELL_DENY_PATTERNS
 INLINE_SHELL_PATTERN = re.compile(r"!`([^`]+)`")
 SHELL_TIMEOUT_SECONDS = 30
 MAX_INLINE_OUTPUT = 16_384
@@ -386,10 +387,14 @@ def _parse_allowed_tools(value: Any) -> tuple[str, ...]:
 
 
 def run_inline_shell(command: str) -> str:
-    """Execute a shell command for `!`cmd`` injection (no user approval)."""
+    """Execute a shell command for `!`cmd`` injection (read-only safe commands)."""
     cmd = command.strip()
     if not cmd:
         return "(empty command)"
+
+    for pattern, label in SHELL_DENY_PATTERNS:
+        if re.search(pattern, cmd, re.IGNORECASE):
+            return f"(blocked inline shell: {label})"
 
     try:
         if sys.platform == "win32":

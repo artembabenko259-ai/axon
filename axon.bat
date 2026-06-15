@@ -1,16 +1,17 @@
 @echo off
 setlocal EnableExtensions
-cd /d "%~dp0"
+set "AXON_HOME=%~dp0"
+set "AXON_CLI=%AXON_HOME%cli.py"
 
 where py >nul 2>&1
 if %ERRORLEVEL%==0 (
-    py -3 "%~dp0cli.py" %*
+    py -3 "%AXON_CLI%" %*
     exit /b %ERRORLEVEL%
 )
 
 where python >nul 2>&1
 if %ERRORLEVEL%==0 (
-    python "%~dp0cli.py" %*
+    python "%AXON_CLI%" %*
     exit /b %ERRORLEVEL%
 )
 

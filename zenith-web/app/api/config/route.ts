@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
-
-const CONFIG_PATH = path.join(process.cwd(), "..", "config.json");
+import {
+  axonConfigPath,
+  axonDataDir,
+  axonHistoryPath,
+  axonSessionsDir,
+  readAxonConfig,
+  writeAxonConfig,
+} from "@/lib/axon-paths";
 
 const DEFAULT_CONFIG = {
   openrouter_api_key: "",
@@ -12,27 +16,19 @@ const DEFAULT_CONFIG = {
 
 type SharedConfig = typeof DEFAULT_CONFIG;
 
-async function readConfig(): Promise<SharedConfig> {
-  try {
-    const raw = await fs.readFile(CONFIG_PATH, "utf-8");
-    const parsed = JSON.parse(raw) as Partial<SharedConfig>;
-    return { ...DEFAULT_CONFIG, ...parsed };
-  } catch {
-    return { ...DEFAULT_CONFIG };
-  }
-}
-
-async function writeConfig(config: SharedConfig): Promise<void> {
-  await fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, 2), "utf-8");
-}
-
 export async function GET() {
-  const config = await readConfig();
+  const config = await readAxonConfig();
 
   return NextResponse.json({
     model: config.model,
     provider: config.provider,
     hasApiKey: Boolean(config.openrouter_api_key?.trim()),
+    paths: {
+      config: axonConfigPath(),
+      data_dir: axonDataDir(),
+      sessions: axonSessionsDir(),
+      history: axonHistoryPath(),
+    },
   });
 }
 
@@ -45,7 +41,7 @@ export async function POST(request: NextRequest) {
       provider?: string;
     };
 
-    const current = await readConfig();
+    const current = (await readAxonConfig()) as SharedConfig;
     const next: SharedConfig = {
       ...current,
       openrouter_api_key:
@@ -56,7 +52,7 @@ export async function POST(request: NextRequest) {
       provider: body.provider || current.provider,
     };
 
-    await writeConfig(next);
+    await writeAxonConfig(next);
 
     return NextResponse.json({
       ok: true,

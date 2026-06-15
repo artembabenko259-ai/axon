@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import json
-import os
+import shutil
 from pathlib import Path
 
-from axon_runtime import install_root, is_frozen, user_data_dir
+from axon_runtime import install_root, user_data_dir
 
 ROOT_DIR = install_root()
-CONFIG_PATH = (user_data_dir() if is_frozen() else ROOT_DIR) / "config.json"
+CONFIG_PATH = user_data_dir() / "config.json"
+LEGACY_CONFIG_PATHS = (ROOT_DIR / "config.json",)
 
 DEFAULT_MODEL = "meta-llama/llama-3.1-8b-instruct"
 
@@ -18,13 +18,29 @@ DEFAULT_CONFIG: dict[str, str] = {
 }
 
 
+def _migrate_legacy_config() -> None:
+    if CONFIG_PATH.exists():
+        return
+    for legacy in LEGACY_CONFIG_PATHS:
+        try:
+            resolved = legacy.resolve()
+        except OSError:
+            continue
+        if not resolved.is_file():
+            continue
+        CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(resolved, CONFIG_PATH)
+        return
+
+
 def _ensure_config_file() -> None:
+    _migrate_legacy_config()
     if not CONFIG_PATH.exists():
         save_config(DEFAULT_CONFIG)
 
 
 def load_config() -> dict[str, str]:
-    """Load shared AXON config from config.json (created on first access)."""
+    """Load shared AXON config from %APPDATA%\\AXON\\config.json."""
     _ensure_config_file()
     try:
         with CONFIG_PATH.open(encoding="utf-8") as handle:
@@ -37,7 +53,8 @@ def load_config() -> dict[str, str]:
 
 
 def save_config(data: dict[str, str]) -> None:
-    """Persist shared AXON config to config.json."""
+    """Persist shared AXON config."""
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
     current = load_config() if CONFIG_PATH.exists() else dict(DEFAULT_CONFIG)
     current.update(data)
     with CONFIG_PATH.open("w", encoding="utf-8") as handle:

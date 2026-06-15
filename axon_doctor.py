@@ -9,7 +9,7 @@ import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from config_store import get_openrouter_api_key, get_model
+from config_store import CONFIG_PATH, get_model, get_openrouter_api_key
 from axon_runtime import user_data_dir
 
 WS_PORT = 8765
@@ -78,11 +78,16 @@ def _check_data_dir() -> CheckResult:
     return CheckResult("data_dir", ok, str(d))
 
 
+def _check_config_path() -> CheckResult:
+    return CheckResult("config", CONFIG_PATH.is_file(), str(CONFIG_PATH))
+
+
 def run_doctor(*, json_output: bool = False) -> int:
     checks = [
         _check_python(),
         _check_api_key(),
         _check_model(),
+        _check_config_path(),
         _check_rg(),
         _check_bridge_port(),
         _check_data_dir(),

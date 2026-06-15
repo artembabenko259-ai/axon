@@ -31,7 +31,7 @@ const initialLogs: LogEntry[] = [
     id: "3",
     timestamp: "02:31:05",
     level: "success",
-    message: "Skills registry: system_info, file_read",
+    message: "Markdown skills loaded from .axon/skills/",
   },
   {
     id: "4",

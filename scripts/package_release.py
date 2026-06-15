@@ -33,6 +33,7 @@ INCLUDE_DIRS = (
 
 # Single files at repository root.
 INCLUDE_FILES = (
+    "cli.py",
     "main.py",
     "bridge.py",
     "llm_client.py",
@@ -42,12 +43,14 @@ INCLUDE_FILES = (
     "backup_manager.py",
     "config_store.py",
     "task_manager.py",
-    "controller.py",
-    "commands.py",
+    "session_store.py",
+    "runtime_policy.py",
     "requirements.txt",
     "README.md",
+    "INSTALL.md",
     ".env.example",
     "axon.bat",
+    "axon.cmd",
 )
 
 LOCALE_SOURCES = (

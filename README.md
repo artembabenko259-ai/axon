@@ -97,6 +97,8 @@ CLI/
 build.bat
 ```
 
+See [INSTALL.md](INSTALL.md) for end-user setup.
+
 Produces standalone `axon.exe` via PyInstaller + Inno Setup.
 
 ## Legacy

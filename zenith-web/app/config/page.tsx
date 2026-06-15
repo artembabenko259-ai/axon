@@ -12,9 +12,22 @@ import { useConfig } from "@/context/ConfigContext";
 export default function ConfigPage() {
   const { config, draft, setDraftApiKey, saveAndConnect, isSaving } = useConfig();
   const [showKey, setShowKey] = useState(false);
-  const [cliPath, setCliPath] = useState("C:\\Users\\User\\Desktop\\CLI");
-  const [historyPath, setHistoryPath] = useState("~/.cli_history");
+  const [paths, setPaths] = useState({
+    config: "",
+    data_dir: "",
+    sessions: "",
+    history: "",
+  });
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    void fetch("/api/config")
+      .then((res) => res.json())
+      .then((data: { paths?: typeof paths }) => {
+        if (data.paths) setPaths(data.paths);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     setSaved(config.isConnected);
@@ -74,24 +87,28 @@ export default function ConfigPage() {
             <h2 className="text-sm font-medium tracking-tight text-white">Local Paths</h2>
           </div>
           <p className="mt-1 text-xs text-[#888]">
-            Configure CLI installation and data directories
+            AXON stores config and sessions in your user profile (read-only)
           </p>
 
-          <label className="label-caps mt-4 block">CLI Project Path</label>
-          <input
-            type="text"
-            value={cliPath}
-            onChange={(e) => setCliPath(e.target.value)}
-            className="input-vercel mt-1.5 font-mono"
-          />
+          <label className="label-caps mt-4 block">Config</label>
+          <p className="input-vercel mt-1.5 font-mono text-xs text-[#a1a1aa]">
+            {paths.config || "—"}
+          </p>
 
-          <label className="label-caps mt-4 block">History File</label>
-          <input
-            type="text"
-            value={historyPath}
-            onChange={(e) => setHistoryPath(e.target.value)}
-            className="input-vercel mt-1.5 font-mono"
-          />
+          <label className="label-caps mt-4 block">Data directory</label>
+          <p className="input-vercel mt-1.5 font-mono text-xs text-[#a1a1aa]">
+            {paths.data_dir || "—"}
+          </p>
+
+          <label className="label-caps mt-4 block">Sessions</label>
+          <p className="input-vercel mt-1.5 font-mono text-xs text-[#a1a1aa]">
+            {paths.sessions || "—"}
+          </p>
+
+          <label className="label-caps mt-4 block">Input history</label>
+          <p className="input-vercel mt-1.5 font-mono text-xs text-[#a1a1aa]">
+            {paths.history || "—"}
+          </p>
         </GlassCard>
 
         <RuntimePolicyPanel />

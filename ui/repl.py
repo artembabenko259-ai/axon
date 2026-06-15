@@ -381,6 +381,7 @@ async def start_axon() -> None:
             title = f"{label}: {display_detail}"
 
         # More compact, elegant tool results
+        await bridge.broadcast_tool_event(tool_name, "done", display_detail)
         await emit(f"[dim]  [green]✓[/] {title}[/dim]")
         if output and tool_name in {"execute_shell", "read_file", "web_search"}:
             body = output.strip()

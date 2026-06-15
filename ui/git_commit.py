@@ -3,6 +3,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+from audit_log import scan_secrets
+
 
 def _run_git(args: list[str], cwd: Path) -> str:
     try:
@@ -42,6 +44,10 @@ def collect_git_changes(workspace: Path | None = None) -> tuple[str, str, str | 
 
 def run_git_commit(message: str, workspace: Path | None = None) -> tuple[bool, str]:
     """Execute git commit -am with the given message."""
+    secrets = scan_secrets(message)
+    if secrets:
+        return False, f"Blocked commit — possible secrets in message: {', '.join(secrets)}"
+
     cwd = workspace or Path.cwd()
     try:
         proc = subprocess.run(
