@@ -281,12 +281,9 @@ def web_search(query: str) -> str:
         return "Error: search query is required."
 
     try:
-        from duckduckgo_search import DDGS
+        from ddgs import DDGS
     except ImportError:
-        return (
-            "Error: duckduckgo-search is not installed. "
-            "Run: pip install duckduckgo-search"
-        )
+        return "Error: ddgs is not installed. Run: pip install ddgs"
 
     try:
         lines: list[str] = []

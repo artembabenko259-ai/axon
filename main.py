@@ -54,6 +54,8 @@ from skills.tools import (
 from ui.axon_completer import build_axon_completer
 from ui.branding import INSTRUCTIONS, VERSION, build_gradient_logo
 from ui.completer import AXON_COMMANDS
+from ui.system_prompt_cmd import handle_system_command
+from ui.welcome import build_welcome_screen, should_show_welcome
 from ui.file_context import build_file_context
 from ui.git_commit import collect_git_changes, run_git_commit
 from ui.git_review import build_review_prompt
@@ -171,7 +173,19 @@ def ask_permission(command_detail: str) -> str:
     return input("Select (1/2/3): ").strip()
 
 
-def print_banner(model: str) -> None:
+def print_banner(model: str, workspace: Path | None = None) -> None:
+    if should_show_welcome():
+        console.print()
+        console.print(
+            build_welcome_screen(
+                DEFAULT_THEME,
+                model=model,
+                workspace=workspace or Path.cwd(),
+            )
+        )
+        console.print()
+        return
+
     short_model = model.rsplit("/", 1)[-1]
     console.print()
     console.print(Align.center(build_gradient_logo(DEFAULT_THEME)))
@@ -736,6 +750,14 @@ async def start_axon() -> None:
             await emit("[bold]AXON Commands[/bold]\n" + "\n".join(lines) + "\n")
             return True
 
+        if await handle_system_command(
+            stripped,
+            llm_manager=llm_manager,
+            emit=emit,
+            theme=DEFAULT_THEME,
+        ):
+            return True
+
         if cmd == "/clear":
             reset_session_counters()
             clear_session_approvals()
@@ -955,7 +977,7 @@ async def start_axon() -> None:
     heartbeat_task = asyncio.create_task(stats_heartbeat())
 
     clear_terminal()
-    print_banner(llm_manager.model)
+    print_banner(llm_manager.model, workspace)
 
     async def chat_loop() -> None:
         while not shutdown.is_set():

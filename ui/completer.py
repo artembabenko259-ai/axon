@@ -21,6 +21,7 @@ SLASH_COMMANDS = [
     "/docs",
     "/create-agent",
     "/delegate",
+    "/system",
 ]
 
 AXON_COMMANDS: dict[str, str] = {
@@ -41,6 +42,7 @@ AXON_COMMANDS: dict[str, str] = {
     "/docs": "Generate and serve interactive project docs at localhost:8000",
     "/create-agent": "Scaffold a sub-agent in .axon/agents/",
     "/delegate": "Delegate task to sub-agent — /delegate <name> <task>",
+    "/system": "Session/global system prompt — /system session|global|edit|clear",
 }
 
 

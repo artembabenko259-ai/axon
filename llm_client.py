@@ -11,6 +11,7 @@ from typing import Any
 from openai import APIConnectionError, APIError, APITimeoutError, OpenAI
 
 from config_store import get_model, get_openrouter_api_key, save_model
+from system_prompt_store import get_global_system_prompt
 from skills.tasks import execute_task_tool, get_task_tool_schemas, is_task_tool
 from skills.tools import (
     ApprovalCallback,
@@ -114,9 +115,26 @@ class LLMManager:
         self._client = self._build_client(self._api_key)
         self._approve = approve
         self._on_tool: ToolNotifyCallback | None = None
+        self.session_system_prompt: str = ""
+
+    def set_session_system_prompt(self, text: str) -> None:
+        self.session_system_prompt = text.strip()
+        self.refresh_system_prompt()
+
+    def clear_session_system_prompt(self) -> None:
+        self.session_system_prompt = ""
+        self.refresh_system_prompt()
 
     def _build_system_prompt(self) -> str:
         parts = [AXON_SYSTEM_PROMPT_BASE]
+
+        global_prompt = get_global_system_prompt()
+        if global_prompt:
+            parts.append(f"User Instructions (always apply):\n{global_prompt}")
+
+        if self.session_system_prompt:
+            parts.append(f"Session Instructions:\n{self.session_system_prompt}")
+
         memory = load_project_memory(self._workspace)
         if memory:
             parts.append(f"Project Context:\n{memory}")

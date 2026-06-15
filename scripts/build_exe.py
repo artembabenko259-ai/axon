@@ -111,7 +111,7 @@ def collect_hidden_imports() -> list[str]:
         "colorama",
         "openai",
         "websockets",
-        "duckduckgo_search",
+        "ddgs",
         "pyfiglet",
         "dotenv",
     ]
