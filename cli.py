@@ -393,11 +393,19 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cwd:
         try:
-            import os
+            from axon_runtime import ensure_startup_workspace
 
-            os.chdir(args.cwd)
+            ensure_startup_workspace(explicit_cwd=Path(args.cwd))
         except OSError as exc:
             print(f"AXON: invalid --cwd — {exc}", file=sys.stderr)
+            return 1
+    else:
+        try:
+            from axon_runtime import ensure_startup_workspace
+
+            ensure_startup_workspace()
+        except OSError as exc:
+            print(f"AXON: could not set workspace — {exc}", file=sys.stderr)
             return 1
 
     command = args.command or "tui"

@@ -21,6 +21,7 @@ DEFAULT_CONFIG: dict[str, str] = {
     "ollama_base_url": "http://127.0.0.1:11434/v1",
     "custom_base_url": "",
     "custom_api_key": "",
+    "last_workspace": "",
 }
 
 

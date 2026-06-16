@@ -73,3 +73,80 @@ def seed_axon_tree(target_workspace: Path) -> None:
         if dst.exists():
             continue
         shutil.copytree(src, dst)
+
+
+def default_user_workspace() -> Path:
+    """Sensible folder when AXON must not use the install directory."""
+    desktop = Path.home() / "Desktop"
+    if desktop.is_dir():
+        return desktop.resolve()
+    return Path.home().resolve()
+
+
+def is_axon_install_cwd(cwd: Path) -> bool:
+    """True when the process cwd is the shipped axon.exe directory (not user project)."""
+    if not is_frozen():
+        return False
+    try:
+        return cwd.resolve() == install_root().resolve()
+    except OSError:
+        return False
+
+
+def get_last_workspace() -> Path | None:
+    from config_store import load_config
+
+    raw = (load_config().get("last_workspace") or "").strip()
+    if not raw:
+        return None
+    path = Path(raw)
+    try:
+        if path.is_dir():
+            return path.resolve()
+    except OSError:
+        return None
+    return None
+
+
+def save_last_workspace(path: Path) -> None:
+    from config_store import save_config
+
+    try:
+        resolved = path.resolve()
+    except OSError:
+        return
+    save_config({"last_workspace": str(resolved)})
+
+
+def resolve_startup_cwd(*, explicit_cwd: Path | None = None) -> Path:
+    """Pick a user project directory instead of the AXON install folder."""
+    if explicit_cwd is not None:
+        workspace = explicit_cwd.expanduser().resolve()
+        save_last_workspace(workspace)
+        return workspace
+
+    cwd = Path.cwd()
+    try:
+        resolved = cwd.resolve()
+    except OSError:
+        resolved = cwd
+
+    if not is_axon_install_cwd(resolved):
+        save_last_workspace(resolved)
+        return resolved
+
+    last = get_last_workspace()
+    if last is not None:
+        return last
+
+    workspace = default_user_workspace()
+    save_last_workspace(workspace)
+    return workspace
+
+
+def ensure_startup_workspace(*, explicit_cwd: Path | None = None) -> Path:
+    """chdir to the resolved workspace and seed bundled .axon templates."""
+    workspace = resolve_startup_cwd(explicit_cwd=explicit_cwd)
+    os.chdir(workspace)
+    seed_axon_tree(workspace)
+    return workspace
