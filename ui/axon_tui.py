@@ -16,12 +16,11 @@ from prompt_toolkit.filters import Condition, has_completions, has_focus
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import Dimension as D
-from prompt_toolkit.layout import HSplit, Layout, VSplit, Window
+from prompt_toolkit.layout import HSplit, Layout, ScrollablePane, VSplit, Window
 from prompt_toolkit.layout.controls import BufferControl, FormattedTextControl
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.layout.processors import BeforeInput
 from prompt_toolkit.styles import Style
-from prompt_toolkit.widgets import TextArea
 
 from llm_client import LLMManager, TOTAL_COST, TOTAL_TOKENS
 from orchestrator import Orchestrator, SubTask
@@ -55,6 +54,14 @@ AppStatus = Literal["ready", "thinking", "streaming", "error", "approval"]
 SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 PROMPT_SYMBOL = "> "
 BOARD_SIDE_WIDTH = 40
+
+
+def _format_session_cost(cost: float) -> str:
+    if cost <= 0:
+        return "$0.00"
+    if cost < 0.01:
+        return f"${cost:.6f}"
+    return f"${cost:.4f}"
 
 
 @dataclass
@@ -111,6 +118,7 @@ class AxonTUI:
         self._live_active = False
         self._transcript_prefix = ""
         self._board_open = False
+        self._timeline_open = False
         self._show_thinking = True
         self._approval_waiter: asyncio.Future[ApprovalDecision] | None = None
         self._approval_summary = ""
@@ -118,13 +126,13 @@ class AxonTUI:
         self._approval_preview_expanded = False
         self._approval_transcript_prefix = ""
 
-        self._transcript_area = TextArea(
-            text="",
-            read_only=True,
-            focusable=False,
-            wrap_lines=True,
-            scrollbar=True,
-            style="class:chat",
+        self._transcript_buffer = Buffer(read_only=True)
+        self._transcript_pane = ScrollablePane(
+            Window(
+                BufferControl(self._transcript_buffer, focusable=False),
+                wrap_lines=True,
+                style="class:chat",
+            ),
             width=D(weight=1),
         )
 
@@ -137,7 +145,7 @@ class AxonTUI:
 
         self._main_row = VSplit(
             [
-                self._transcript_area,
+                self._transcript_pane,
                 self._board_window,
             ]
         )
@@ -200,13 +208,33 @@ class AxonTUI:
         except Exception:
             return 100
 
+    def _side_panel_open(self) -> bool:
+        if self._timeline_open:
+            return True
+        return self._board_open and self._board.visible
+
     def _board_fragments(self):
-        if not self._board_open or not self._board.visible:
+        if not self._side_panel_open():
             return [("class:board", " ")]
 
         w = min(BOARD_SIDE_WIDTH - 2, self._width() - 4)
+        if self._timeline_open:
+            from ui.session_timeline import session_timeline
+
+            text = tui_render.render_session_timeline(
+                files=sorted(session_timeline.files_touched),
+                skills=sorted(session_timeline.skills_used),
+                events=[
+                    (e.kind, e.label, e.agent)
+                    for e in session_timeline.events[-12:]
+                ],
+                cost_delta=session_timeline.session_cost_delta(TOTAL_COST),
+                width=max(w, 24),
+            )
+            return [("class:board", text or " ")]
+
         rows = [
-            (item.key, item.label, item.status)
+            (item.key, item.label, item.status, item.detail)
             for item in self._board.items
         ]
         text = tui_render.render_task_board(
@@ -217,16 +245,14 @@ class AxonTUI:
         return [("class:board", text or " ")]
 
     def _sync_board_layout(self) -> None:
-        if self._board_open and self._board.visible:
-            if len(self._main_row.children) < 2:
-                self._main_row.children = [self._transcript_area, self._board_window]
+        if self._side_panel_open():
             self._board_window.width = D.exact(BOARD_SIDE_WIDTH)
         else:
-            if len(self._main_row.children) > 1:
-                self._main_row.children = [self._transcript_area]
             self._board_window.width = D.exact(0)
 
     def _task_panel_hint(self) -> str:
+        if self._timeline_open:
+            return "F4 hide session"
         if task_manager.tasks:
             done = sum(1 for t in task_manager.tasks if t.status == "done")
             total = len(task_manager.tasks)
@@ -242,10 +268,19 @@ class AxonTUI:
             return "F2 tasks"
         return ""
 
+    def _toggle_timeline_panel(self) -> None:
+        self._timeline_open = not self._timeline_open
+        if self._timeline_open:
+            self._board_open = False
+        self._sync_board_layout()
+        get_app().invalidate()
+
     def _toggle_task_board(self) -> None:
         if not self._board.visible and not task_manager.tasks:
             return
         self._board_open = not self._board_open
+        if self._board_open:
+            self._timeline_open = False
         self._sync_board_layout()
         get_app().invalidate()
 
@@ -330,28 +365,39 @@ class AxonTUI:
 
     async def _on_plan_board_update(self) -> None:
         self._board_from_plan()
+        if self._bridge_host and task_manager.tasks:
+            self._bridge_host.broadcast_plan_now(
+                [
+                    {"id": t.id, "name": t.name, "status": t.status}
+                    for t in task_manager.tasks
+                ],
+                goal=task_manager.goal,
+            )
         get_app().invalidate()
 
-    def _scroll_transcript_to_end(self) -> None:
-        text = self._transcript_area.text
-        self._transcript_area.buffer.set_document(
+    def _set_transcript_text(self, text: str) -> None:
+        self._transcript_buffer.set_document(
             Document(text, len(text)),
             bypass_readonly=True,
         )
+
+    def _scroll_transcript_to_end(self) -> None:
+        text = self._transcript_buffer.text
+        self._set_transcript_text(text)
 
     def _append_block(self, block: str) -> None:
         block = block.strip()
         if not block:
             return
-        current = self._transcript_area.text
-        self._transcript_area.text = f"{current}\n\n{block}" if current else block
+        current = self._transcript_buffer.text
+        self._set_transcript_text(f"{current}\n\n{block}" if current else block)
         self._scroll_transcript_to_end()
 
     def _begin_live_response(self) -> None:
         self._live_active = True
         self._stream_buffer.clear()
         self._thinking_buffer.clear()
-        self._transcript_prefix = self._transcript_area.text
+        self._transcript_prefix = self._transcript_buffer.text
         if self._transcript_prefix:
             self._transcript_prefix += "\n\n"
 
@@ -364,7 +410,7 @@ class AxonTUI:
         if not self._show_thinking:
             thinking = ""
         block = tui_render.render_assistant_live(body, w, thinking=thinking)
-        self._transcript_area.text = self._transcript_prefix + block
+        self._set_transcript_text(self._transcript_prefix + block)
         self._scroll_transcript_to_end()
 
     def _end_live_response(self) -> None:
@@ -447,6 +493,10 @@ class AxonTUI:
         def _(event) -> None:
             self._toggle_thinking_panel()
 
+        @kb.add("f4")
+        def _(event) -> None:
+            self._toggle_timeline_panel()
+
         return kb
 
     async def _cancel_agent(self) -> None:
@@ -473,7 +523,7 @@ class AxonTUI:
             cwd = "..." + cwd[-33:]
         line = (
             f" AXON | {cwd} | {short} | "
-            f"${self.state.cost:.4f} | {self.state.tokens} tok"
+            f"{_format_session_cost(TOTAL_COST)} | {TOTAL_TOKENS} tok"
         )
         return [("class:header", line)]
 
@@ -505,6 +555,8 @@ class AxonTUI:
             line += f" | {hint}"
         think_hint = "F3 hide thinking" if self._show_thinking else "F3 show thinking"
         line += f" | {think_hint}"
+        if not self._timeline_open:
+            line += " | F4 session"
         return [("class:composer", line)]
 
     def _approval_pending(self) -> bool:
@@ -550,7 +602,7 @@ class AxonTUI:
             preview=self._approval_preview,
             preview_expanded=self._approval_preview_expanded,
         )
-        self._transcript_area.text = self._approval_transcript_prefix + block
+        self._set_transcript_text(self._approval_transcript_prefix + block)
         self._scroll_transcript_to_end()
 
     async def _request_approval(self, tool_name: str, detail: str) -> ApprovalDecision:
@@ -572,7 +624,7 @@ class AxonTUI:
         self._approval_summary = summary
         self._approval_preview = preview
         self._approval_preview_expanded = False
-        prefix = self._transcript_area.text
+        prefix = self._transcript_buffer.text
         self._approval_transcript_prefix = f"{prefix}\n\n" if prefix else ""
         self._refresh_approval_block()
 
@@ -602,12 +654,17 @@ class AxonTUI:
 
     async def _on_tool_done(self, tool_name: str, detail: str, output: str) -> None:
         w = self._width()
-        label = tool_display_label(tool_name)
-        self._append_block(
-            tui_render.render_tool_event(label, detail, w, phase="done")
-        )
+        if tool_name == "take_screenshot":
+            self._append_block(tui_render.render_system(output, w))
+        else:
+            label = tool_display_label(tool_name)
+            self._append_block(
+                tui_render.render_tool_event(label, detail, w, phase="done")
+            )
         if self._bridge_host:
             self._bridge_host.broadcast_tool_now(tool_name, "done", detail)
+        if self._timeline_open:
+            get_app().invalidate()
         get_app().invalidate()
 
     async def _spinner_loop(self) -> None:
@@ -712,7 +769,7 @@ class AxonTUI:
             return
 
         if cmd == "/image":
-            from ui.image_cmd import parse_image_command
+            from ui.image_cmd import load_image_with_vision_check, parse_image_command
 
             image_path, prompt = parse_image_command(text)
             if not image_path:
@@ -722,9 +779,14 @@ class AxonTUI:
                     )
                 )
                 return
-            error = self.llm.load_image_into_context(image_path, prompt)
+            error = load_image_with_vision_check(self.llm, image_path, prompt)
             if error:
-                self._append_block(tui_render.render_error(error, w))
+                from ui.vision_models import vision_switch_hint
+
+                hint = vision_switch_hint(self.llm.model)
+                self._append_block(
+                    tui_render.render_error(f"{error}\nTry: {hint}", w)
+                )
             else:
                 self._append_block(
                     tui_render.render_system(
@@ -732,6 +794,32 @@ class AxonTUI:
                         w,
                     )
                 )
+            return
+
+        if cmd == "/export-skill":
+            from ui.skill_export import export_skill
+
+            name = args.strip()
+            if not name:
+                self._append_block(
+                    tui_render.render_error("Usage: /export-skill <name>", w)
+                )
+                return
+            try:
+                dest = export_skill(name, workspace=Path.cwd())
+                self._append_block(
+                    tui_render.render_system(f"Skill exported: {dest}", w)
+                )
+            except (OSError, ValueError) as exc:
+                self._append_block(tui_render.render_error(str(exc), w))
+            return
+
+        if cmd == "/session":
+            self._toggle_timeline_panel()
+            state = "shown" if self._timeline_open else "hidden"
+            self._append_block(
+                tui_render.render_system(f"Session timeline {state} (F4).", w)
+            )
             return
 
         if cmd.startswith("/"):
@@ -768,11 +856,15 @@ class AxonTUI:
 
         if cmd == "/clear":
             from skills.tools import clear_session_approvals
+            from ui.session_timeline import session_timeline
 
-            self._transcript_area.text = ""
+            self._set_transcript_text("")
             self._board.clear()
             self._board_open = False
+            self._timeline_open = False
             task_manager.clear()
+            session_timeline.clear()
+            session_timeline.set_cost_anchor(TOTAL_COST)
             clear_session_approvals()
             self._sync_board_layout()
             self.llm.messages = [
@@ -865,6 +957,24 @@ class AxonTUI:
                     if "Synthesize" in item.label:
                         item.status = "done"
                 self._update_board(event_goal[:50], items)
+            if self._bridge_host:
+                payload = [
+                    {
+                        "id": s.id,
+                        "title": s.title,
+                        "agent": s.agent,
+                        "status": s.status,
+                    }
+                    for s in (subtasks or subtasks_holder)
+                ]
+                self._bridge_host.broadcast_multitask_now(
+                    phase, event_goal, payload, synthesis=synthesis
+                )
+            from ui.session_timeline import session_timeline
+
+            for s in subtasks or subtasks_holder:
+                if s.status == "running":
+                    session_timeline.record_agent(s.agent, s.title)
 
         async def on_progress(message: str) -> None:
             clean = (
@@ -895,7 +1005,17 @@ class AxonTUI:
                 items.append(TaskBoardItem("z", "Synthesize results", "running"))
                 self._update_board(goal[:50], items)
             elif clean.strip().startswith("▶") or clean.strip().startswith(">"):
-                self._append_block(tui_render.render_system(clean.strip(), w))
+                line = clean.strip()
+                self._append_block(tui_render.render_system(line, w))
+                if "[" in line and "]" in line:
+                    from ui.session_timeline import session_timeline
+
+                    try:
+                        agent = line.split("[", 1)[1].split("]", 1)[0]
+                        title = line.split("]", 1)[-1].strip()
+                        session_timeline.record_agent(agent, title)
+                    except IndexError:
+                        pass
             app.invalidate()
 
         self._agent_busy = True
@@ -935,6 +1055,9 @@ class AxonTUI:
     async def _run_plan(self, goal: str) -> None:
         app = get_app()
         w = self._width()
+        from ui.session_timeline import session_timeline
+
+        session_timeline.record_plan(goal)
         self._update_board(
             "Plan",
             [TaskBoardItem("1", "Building plan...", "running")],
@@ -955,6 +1078,34 @@ class AxonTUI:
         if result.ok:
             self._append_block(
                 tui_render.render_assistant_message(result.content or "Plan created.", w)
+            )
+            self.state.status = "ready"
+        else:
+            self._append_block(tui_render.render_error(result.display_text, w))
+            self.state.status = "error"
+        app.invalidate()
+
+    async def _run_execute(self) -> None:
+        app = get_app()
+        w = self._width()
+        if not task_manager.has_plan():
+            self._append_block(
+                tui_render.render_error("No active plan. Use /plan first.", w)
+            )
+            return
+        self._agent_busy = True
+        self._start_spinner("thinking")
+        try:
+            result = await self.llm.send_execute_async()
+        finally:
+            self._stop_spinner()
+            self._agent_busy = False
+        self._board_from_plan()
+        self.state.cost = TOTAL_COST
+        self.state.tokens = TOTAL_TOKENS
+        if result.ok:
+            self._append_block(
+                tui_render.render_assistant_message(result.content or "Done.", w)
             )
             self.state.status = "ready"
         else:
@@ -1094,12 +1245,15 @@ class AxonTUI:
                 app.invalidate()
                 return
 
-            intent = detect_intent(text)
+            intent = detect_intent(text, has_active_plan=task_manager.has_plan())
             if intent == "multitask":
                 await self._run_multitask(text)
                 return
             if intent == "plan":
                 await self._run_plan(text)
+                return
+            if intent == "execute":
+                await self._run_execute()
                 return
 
             self.llm.clear_cancel()
@@ -1149,7 +1303,7 @@ class AxonTUI:
                     block = tui_render.render_assistant_live(body, w, thinking=thinking)
                 else:
                     block = tui_render.render_assistant_message(body, w)
-                self._transcript_area.text = self._transcript_prefix + block
+                self._set_transcript_text(self._transcript_prefix + block)
                 if self._bridge_host:
                     self._bridge_host.broadcast_chat_now(
                         role="assistant",
@@ -1242,9 +1396,14 @@ class AxonTUI:
         return False
 
     def run(self) -> None:
+        from ui.session_timeline import session_timeline
+
+        session_timeline.set_cost_anchor(TOTAL_COST)
         w = 100
-        self._transcript_area.text = tui_render.render_welcome(
-            w, model=self.state.model, cwd=self.state.cwd
+        self._set_transcript_text(
+            tui_render.render_welcome(
+                w, model=self.state.model, cwd=self.state.cwd
+            )
         )
         self._scroll_transcript_to_end()
 

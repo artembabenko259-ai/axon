@@ -43,23 +43,69 @@ def _status_icon(status: TaskStatus) -> str:
 
 def render_task_board(
     title: str,
-    items: list[tuple[str, str, TaskStatus]],
+    items: list[tuple[str, str, TaskStatus, str]],
     width: int,
     *,
     header: str = "To-dos",
 ) -> str:
-    """Cursor-style checklist (plain ASCII). items: (key, label, status)."""
+    """Cursor-style checklist. items: (key, label, status, agent)."""
     if not items:
         return ""
     count = len(items)
     lines = [f"{header}  {count}", ""]
-    for _key, label, status in items:
+    if title.strip():
+        lines.insert(0, title.strip()[: width - 2])
+        lines.insert(1, "")
+    for _key, label, status, agent in items:
         icon = _status_icon(status)
         text = label.strip()
+        if agent.strip():
+            text = f"[{agent}] {text}"
         if len(text) > width - 6:
             text = text[: width - 9] + "..."
         prefix = "  " if status != "running" else "> "
         lines.append(f"{prefix}{icon} {text}")
+    return "\n".join(lines)
+
+
+def render_session_timeline(
+    *,
+    files: list[str],
+    skills: list[str],
+    events: list[tuple[str, str, str]],
+    cost_delta: float,
+    width: int,
+) -> str:
+    """Mini session memory panel (Cursor timeline style)."""
+    lines = ["Session", ""]
+    if cost_delta < 0.01:
+        lines.append(f"Cost  ${cost_delta:.6f}")
+    else:
+        lines.append(f"Cost  ${cost_delta:.4f}")
+    if skills:
+        lines.append("")
+        lines.append("Skills")
+        for name in skills[-6:]:
+            lines.append(f"  * {name[: width - 6]}")
+    if files:
+        lines.append("")
+        lines.append("Files")
+        for path in files[-6:]:
+            short = path if len(path) <= width - 4 else "..." + path[-(width - 7) :]
+            lines.append(f"  * {short}")
+    if events:
+        lines.append("")
+        lines.append("Recent")
+        for kind, label, agent in events[-8:]:
+            tag = kind[:1].upper()
+            who = f"@{agent} " if agent and agent != "AXON" else ""
+            text = f"{who}{label}"
+            if len(text) > width - 6:
+                text = text[: width - 9] + "..."
+            lines.append(f"  {tag} {text}")
+    if len(lines) <= 3:
+        lines.append("")
+        lines.append("  (empty session)")
     return "\n".join(lines)
 
 
@@ -101,7 +147,7 @@ def render_welcome(width: int, *, model: str, cwd: str) -> str:
         f"| {short}\n"
         f"| {cwd}\n"
         f"| Enter send . Enter+Up steer . /help\n"
-        f"| F2 tasks . F3 thinking . V diff . 1/2/3 approve\n"
+        f"| F2 tasks . F3 thinking . F4 session . V diff . 1/2/3 approve\n"
         f"+{bar}+"
     )
 

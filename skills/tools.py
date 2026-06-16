@@ -115,6 +115,33 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
+            "name": "take_screenshot",
+            "description": (
+                "Capture the full screen when YOU need visual confirmation — GUI state, "
+                "dialogs, browser windows, app results. Call only when seeing the screen "
+                "is necessary to continue; do not use after every shell command. "
+                "With a vision model, the image is attached to your context automatically."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "purpose": {
+                        "type": "string",
+                        "description": (
+                            "What you want to verify on screen (e.g. 'login dialog closed')."
+                        ),
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "Optional filename (default: screenshot-TIMESTAMP.png)",
+                    },
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "web_search",
             "description": (
                 "Search the web for current events, fresh documentation, or facts "
@@ -213,7 +240,15 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
 
 
 def get_tools_schema() -> list[dict[str, Any]]:
-    return TOOL_SCHEMAS
+    from ui.observe_mode import observe_enabled
+
+    if observe_enabled():
+        return TOOL_SCHEMAS
+    return [
+        schema
+        for schema in TOOL_SCHEMAS
+        if schema.get("function", {}).get("name") != "take_screenshot"
+    ]
 
 
 def clear_session_approvals() -> None:
@@ -257,6 +292,7 @@ def tool_display_label(tool_name: str) -> str:
         "search_code": "Grep",
         "apply_patch": "Edit",
         "web_search": "Search",
+        "take_screenshot": "Screen",
         "create_plan": "Plan",
         "complete_task": "Task",
         "update_task_status": "Task",
@@ -329,6 +365,12 @@ def tool_activity_detail(tool_name: str, args: dict[str, Any]) -> str:
         return f"{pattern} in {root}"
     if tool_name == "web_search":
         return _quote_activity(str(args.get("query", "")))
+    if tool_name == "take_screenshot":
+        purpose = str(args.get("purpose", "")).strip()
+        if purpose:
+            return _truncate_activity(_quote_activity(purpose))
+        path = str(args.get("path", "")).strip()
+        return _display_path(path) if path else "desktop"
     if tool_name == "create_plan":
         goal = str(args.get("goal", "")).strip()
         tasks = args.get("tasks") or []
@@ -754,6 +796,10 @@ def _run_tool_sync(tool_name: str, args: dict[str, Any]) -> str:
         )
     if tool_name == "execute_shell":
         return execute_shell(str(args.get("command", "")))
+    if tool_name == "take_screenshot":
+        from ui.observe_mode import take_screenshot_tool
+
+        return take_screenshot_tool(str(args.get("path", "")))
     if tool_name == "web_search":
         return web_search(str(args.get("query", "")))
     if tool_name == "list_dir":
@@ -794,6 +840,15 @@ async def execute_tool(
     if policy.tool_mode(tool_name) == "deny":
         return f"Error: tool '{tool_name}' is denied by runtime policy."
 
+    if tool_name == "take_screenshot":
+        from ui.observe_mode import observe_enabled
+
+        if not observe_enabled():
+            return (
+                "Error: take_screenshot is disabled "
+                "(observe_mode_enabled=false in runtime policy)."
+            )
+
     detail = _approval_detail(tool_name, arguments)
     from ui.code_diff import build_approval_preview, combine_approval_message
 
@@ -820,6 +875,10 @@ async def execute_tool(
     result = _run_tool_sync(tool_name, arguments)
     record_explore_tool(tool_name, detail)
 
+    from ui.session_timeline import session_timeline
+
+    session_timeline.record_tool(tool_name, detail)
+
     log_tool_event(
         tool=tool_name,
         detail=detail,
@@ -827,8 +886,18 @@ async def execute_tool(
         outcome="ok" if not result.startswith("Error") else "error",
     )
 
-    if tool_name in REQUIRES_APPROVAL and _on_tool_result is not None:
-        await _on_tool_result(tool_name, detail, result)
+    observe_note: str | None = None
+    if tool_name == "take_screenshot" and not result.startswith("Error"):
+        from ui.observe_mode import enrich_screenshot_result
+
+        purpose = str(arguments.get("purpose", "")).strip()
+        result = await enrich_screenshot_result(result, purpose=purpose)
+
+    if _on_tool_result is not None:
+        if tool_name in REQUIRES_APPROVAL:
+            await _on_tool_result(tool_name, detail, result)
+        elif tool_name == "take_screenshot" and not result.startswith("Error"):
+            await _on_tool_result(tool_name, detail, result)
 
     return result
 

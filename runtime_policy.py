@@ -51,6 +51,8 @@ class RuntimePolicy:
     sound_on_complete: bool = True
     notification_volume: float = 1.0
     auto_save_session: bool = False
+    # Model-initiated take_screenshot tool (no auto-capture after shell)
+    observe_mode_enabled: bool = True
 
     def resolved_tool_policy(self) -> dict[str, str]:
         merged = dict(DEFAULT_TOOL_POLICY)
@@ -109,6 +111,7 @@ def load_runtime_policy() -> RuntimePolicy:
         sound_on_complete=bool(raw.get("sound_on_complete", True)),
         notification_volume=float(raw.get("notification_volume", 1.0)),
         auto_save_session=bool(raw.get("auto_save_session", False)),
+        observe_mode_enabled=bool(raw.get("observe_mode_enabled", True)),
     )
     if policy.bridge_auth_enabled:
         policy.ensure_secrets()

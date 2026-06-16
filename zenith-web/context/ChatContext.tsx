@@ -49,6 +49,36 @@ export interface MultitaskState {
   updatedAt: number;
 }
 
+export type PlanTaskStatus = "pending" | "in-progress" | "done";
+
+export interface PlanTask {
+  id: number;
+  name: string;
+  status: PlanTaskStatus;
+}
+
+export interface PlanState {
+  goal: string;
+  tasks: PlanTask[];
+  updatedAt: number;
+}
+
+const APPROVAL_DIFF_MARKER = "\n---AXON_DIFF---\n";
+
+function splitApprovalDetail(detail: string): {
+  summary: string;
+  preview: string;
+} {
+  const idx = detail.indexOf(APPROVAL_DIFF_MARKER);
+  if (idx === -1) {
+    return { summary: detail, preview: "" };
+  }
+  return {
+    summary: detail.slice(0, idx).trim(),
+    preview: detail.slice(idx + APPROVAL_DIFF_MARKER.length).trim(),
+  };
+}
+
 interface BridgeContextValue {
   messages: ChatMessage[];
   connected: boolean;
@@ -59,6 +89,7 @@ interface BridgeContextValue {
   tokenSeries: number[];
   uptimeSeries: number[];
   multitask: MultitaskState | null;
+  plan: PlanState | null;
   sendMessage: (text: string) => void;
   sendSetModel: (model: string) => void;
   clearMessages: () => void;
@@ -141,10 +172,12 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   const [tokenSeries, setTokenSeries] = useState<number[]>([]);
   const [uptimeSeries, setUptimeSeries] = useState<number[]>([]);
   const [multitask, setMultitask] = useState<MultitaskState | null>(null);
+  const [plan, setPlan] = useState<PlanState | null>(null);
   const [pendingApproval, setPendingApproval] = useState<{
     id: string;
     tool: string;
     detail: string;
+    preview: string;
   } | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -240,6 +273,11 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
           policy?: { bridge_token?: string };
           phase?: string;
           goal?: string;
+          tasks?: Array<{
+            id?: number;
+            name?: string;
+            status?: string;
+          }>;
           subtasks?: Array<{
             id?: number;
             title?: string;
@@ -291,17 +329,20 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
 
         if (data.type === "approval_request") {
           const approvalId = data.id;
+          const rawDetail = String(data.detail ?? "");
+          const { summary, preview } = splitApprovalDetail(rawDetail);
           if (approvalId) {
             setPendingApproval({
               id: approvalId,
               tool: data.tool ?? "tool",
-              detail: data.detail ?? "",
+              detail: summary,
+              preview,
             });
           } else {
             appendMessage({
               id: `approval-${Date.now()}`,
               role: "system",
-              content: `⚠ Confirm in AXON terminal: ${data.tool ?? "tool"} — ${data.detail ?? ""}`,
+              content: `⚠ Confirm in AXON terminal: ${data.tool ?? "tool"} — ${summary}`,
               source: "terminal",
               timestamp: Date.now(),
             });
@@ -382,6 +423,24 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
             content: String(data.summary),
             source: "terminal",
             timestamp: Date.now(),
+          });
+          return;
+        }
+
+        if (data.type === "plan_update") {
+          const tasks = (data.tasks ?? []).map((task, index) => ({
+            id: Number(task.id ?? index + 1),
+            name: String(task.name ?? `Task ${index + 1}`),
+            status: (["pending", "in-progress", "done"].includes(
+              String(task.status ?? ""),
+            )
+              ? task.status
+              : "pending") as PlanTaskStatus,
+          }));
+          setPlan({
+            goal: String(data.goal ?? ""),
+            tasks,
+            updatedAt: Date.now(),
           });
           return;
         }
@@ -553,6 +612,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
       tokenSeries,
       uptimeSeries,
       multitask,
+      plan,
       sendMessage,
       sendSetModel,
       clearMessages,
@@ -567,6 +627,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
       tokenSeries,
       uptimeSeries,
       multitask,
+      plan,
       sendMessage,
       sendSetModel,
       clearMessages,
@@ -584,6 +645,11 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
             <p className="mt-2 text-xs text-[#a1a1aa]">
               {pendingApproval.tool} — {pendingApproval.detail}
             </p>
+            {pendingApproval.preview ? (
+              <pre className="mt-3 max-h-48 overflow-y-auto rounded border border-white/10 bg-black/50 p-2 font-mono text-[10px] leading-relaxed text-[#d4d4d8] logs-scroll whitespace-pre-wrap">
+                {pendingApproval.preview}
+              </pre>
+            ) : null}
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="button"

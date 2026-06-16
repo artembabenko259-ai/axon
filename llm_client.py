@@ -49,6 +49,9 @@ AXON_SYSTEM_PROMPT_BASE = (
     "Use execute_shell for builds/tests when needed, and web_search for current docs. "
     "Users can load images with /image for multimodal vision models — analyze "
     "images carefully when they appear in the conversation. "
+    "Call take_screenshot only when you genuinely need to see the desktop or "
+    "verify a GUI outcome; do not screenshot after every command. "
+    "With a vision-capable model, the screenshot is added to your context automatically. "
     "Markdown skills (SKILL.md) can be invoked as tools — when a skill returns "
     "instructions, follow them strictly and use allowed built-in tools to "
     "complete the user's request. "
@@ -168,6 +171,9 @@ class LLMManager:
         self.prompt_cache_enabled = True
         self.trim_tool_history = True
         self.auto_compact_enabled = True
+        from ui.observe_mode import set_observe_llm
+
+        set_observe_llm(self)
 
     def set_session_system_prompt(self, text: str) -> None:
         self.session_system_prompt = text.strip()
@@ -260,6 +266,9 @@ class LLMManager:
         if is_task_tool(tool_name):
             return await execute_task_tool(tool_name, arguments)
         if self._skill_manager.is_skill_tool(tool_name):
+            from ui.session_timeline import session_timeline
+
+            session_timeline.record_skill(tool_name)
             return self._skill_manager.invoke_skill(tool_name, arguments)
         return await execute_tool(tool_name, arguments, self._approve)
 
@@ -451,6 +460,73 @@ class LLMManager:
             }
         )
         return None
+
+    async def analyze_image_once_async(
+        self,
+        image_path: str,
+        prompt: str,
+        *,
+        model: str | None = None,
+    ) -> str:
+        """One-shot vision call; returns description text (for non-vision chat models)."""
+        from ui.vision_models import SUGGESTED_VISION_MODELS, is_vision_model
+
+        vision_model = (model or self.model).strip()
+        if not is_vision_model(vision_model):
+            vision_model = SUGGESTED_VISION_MODELS[1]
+
+        raw = image_path.strip().strip("\"'")
+        path = Path(raw).expanduser()
+        try:
+            path = path.resolve()
+        except OSError as exc:
+            raise ValueError(f"Invalid image path — {exc}") from exc
+
+        if not path.is_file():
+            raise ValueError(f"Image not found — {path}")
+
+        if path.suffix.lower() not in SUPPORTED_IMAGE_SUFFIXES:
+            raise ValueError(f"Unsupported image type: {path.suffix}")
+
+        data = path.read_bytes()
+        if len(data) > MAX_IMAGE_BYTES:
+            raise ValueError(f"Image too large ({len(data)} bytes)")
+
+        encoded = base64.b64encode(data).decode("ascii")
+        media_type = self._image_media_type(path)
+        text = prompt.strip() or "Describe what is visible on this screen."
+
+        response = await asyncio.to_thread(
+            self._client.chat.completions.create,
+            model=vision_model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": text},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{media_type};base64,{encoded}",
+                            },
+                        },
+                    ],
+                }
+            ],
+            max_tokens=600,
+        )
+
+        usage = getattr(response, "usage", None)
+        if usage is not None:
+            record_token_usage(
+                int(getattr(usage, "total_tokens", 0) or 0),
+                model=vision_model,
+                prompt_tokens=int(getattr(usage, "prompt_tokens", 0) or 0),
+                completion_tokens=int(getattr(usage, "completion_tokens", 0) or 0),
+            )
+
+        message = response.choices[0].message
+        return (message.content or "").strip()
 
     async def compact_context(self, keep_last: int = 6) -> tuple[bool, str]:
         if len(self.messages) <= keep_last + 1:
@@ -908,6 +984,7 @@ class LLMManager:
                 trim_tool_history=self.trim_tool_history,
             ),
             "stream": True,
+            "stream_options": {"include_usage": True},
         }
         if tools:
             kwargs["tools"] = tools

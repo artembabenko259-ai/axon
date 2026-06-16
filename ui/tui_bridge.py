@@ -80,6 +80,22 @@ class TuiBridgeHost:
     def broadcast_tool_now(self, tool: str, status: str, detail: str) -> None:
         self._schedule(self.broadcast_tool(tool, status, detail))
 
+    def broadcast_plan_now(self, tasks: list[dict[str, object]], goal: str = "") -> None:
+        self._schedule(self._bridge.broadcast_plan_update(tasks, goal=goal))
+
+    def broadcast_multitask_now(
+        self,
+        phase: str,
+        goal: str,
+        subtasks: list[dict[str, object]],
+        synthesis: str = "",
+    ) -> None:
+        self._schedule(
+            self._bridge.broadcast_multitask_update(
+                phase, goal, subtasks, synthesis=synthesis
+            )
+        )
+
     async def _process_web_chat(self, text: str, source: str) -> None:
         if source != "web":
             return

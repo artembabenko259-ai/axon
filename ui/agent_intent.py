@@ -5,17 +5,21 @@ from __future__ import annotations
 import re
 from typing import Literal
 
-Intent = Literal["chat", "plan", "multitask"]
+Intent = Literal["chat", "plan", "multitask", "execute"]
 
 _PLAN_PATTERNS = (
     r"\bplan\b",
     r"\bплан\b",
     r"разбей на (шаги|задачи|этапы)",
     r"составь план",
+    r"склади план",
     r"break (this )?into steps",
     r"step[- ]by[- ]step",
     r"розбий на (кроки|задачі)",
-    r"склади план",
+    r"roadmap",
+    r"outline (the )?work",
+    r"запусти план",
+    r"start (a )?plan",
 )
 
 _MULTITASK_PATTERNS = (
@@ -29,35 +33,66 @@ _MULTITASK_PATTERNS = (
     r"split.*agents",
     r"orchestrat",
     r"одновременно",
+    r"паралельн",
+    r"sub-?agents?",
+    r"разбей на части",
+)
+
+_EXECUTE_PATTERNS = (
+    r"^execute\b",
+    r"^go\b",
+    r"^run\b",
+    r"выполни план",
+    r"запусти выполнение",
+    r"execute (the )?plan",
 )
 
 
-def detect_intent(text: str) -> Intent:
+def _has_parallel_intent(lower: str) -> bool:
+    return any(re.search(p, lower) for p in _MULTITASK_PATTERNS)
+
+
+def _has_plan_intent(lower: str) -> bool:
+    return any(re.search(p, lower) for p in _PLAN_PATTERNS)
+
+
+def detect_intent(text: str, *, has_active_plan: bool = False) -> Intent:
     stripped = text.strip()
-    if not stripped or stripped.startswith("/"):
-        if stripped.lower().startswith("/plan"):
+    if not stripped:
+        return "chat"
+
+    if stripped.startswith("/"):
+        low = stripped.lower()
+        if low.startswith("/plan"):
             return "plan"
-        if stripped.lower().startswith("/multitask"):
+        if low.startswith("/multitask"):
             return "multitask"
         return "chat"
 
     lower = stripped.lower()
-    if len(lower) < 12:
-        return "chat"
 
-    for pattern in _MULTITASK_PATTERNS:
-        if re.search(pattern, lower):
-            return "multitask"
+    if has_active_plan and any(re.search(p, lower) for p in _EXECUTE_PATTERNS):
+        return "execute"
 
-    for pattern in _PLAN_PATTERNS:
-        if re.search(pattern, lower):
-            return "plan"
+    parallel = _has_parallel_intent(lower)
+    plan = _has_plan_intent(lower)
 
-    # Complex multi-part goals without explicit command
-    if lower.count(",") >= 2 and any(
+    if parallel and not plan:
+        return "multitask"
+    if plan and not parallel:
+        return "plan"
+    if parallel and plan:
+        return "multitask" if _parallel_wins(lower) else "plan"
+
+    if lower.count(",") >= 1 and any(
         word in lower
-        for word in ("and", "та", "и", "also", "потім", "затем", "then")
+        for word in ("and", "та", "и", "also", "потім", "затем", "then", "а также")
     ):
         return "multitask"
 
     return "chat"
+
+
+def _parallel_wins(lower: str) -> bool:
+    parallel_words = ("parallel", "параллель", "паралель", "одновременно", "agents", "агент")
+    return any(word in lower for word in parallel_words)

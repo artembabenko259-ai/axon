@@ -7,6 +7,7 @@ import { ModelSelector } from "@/components/dashboard/ModelSelector";
 import { StatusCards } from "@/components/dashboard/StatusCards";
 import { ToolTracePanel } from "@/components/dashboard/ToolTracePanel";
 import { MultitaskPanel } from "@/components/dashboard/MultitaskPanel";
+import { PlanPanel } from "@/components/dashboard/PlanPanel";
 import { ModelMarketplace } from "@/components/marketplace/ModelMarketplace";
 import { AgentOrb, type OrbStatus } from "@/components/ui/AgentOrb";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -124,7 +125,10 @@ export default function DashboardPage() {
               </motion.div>
             </StaggerItem>
 
-            <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
+            <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr]">
+              <StaggerItem>
+                <PlanPanel />
+              </StaggerItem>
               <StaggerItem>
                 <MultitaskPanel />
               </StaggerItem>

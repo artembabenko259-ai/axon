@@ -30,3 +30,20 @@ def parse_image_command(text: str) -> tuple[str, str]:
     path = normalize_image_path(parts[0])
     prompt = parts[1].strip() if len(parts) > 1 else "Analyze this image."
     return path, prompt
+
+
+def load_image_with_vision_check(
+    llm: object,
+    image_path: str,
+    prompt: str,
+) -> str | None:
+    """Load image; return error string or None. Checks vision model."""
+    from ui.vision_models import is_vision_model, vision_required_message
+
+    model = getattr(llm, "model", "")
+    if model and not is_vision_model(model):
+        return vision_required_message(model)
+    loader = getattr(llm, "load_image_into_context", None)
+    if not callable(loader):
+        return "AXON: image loader unavailable."
+    return loader(image_path, prompt)

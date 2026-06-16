@@ -39,7 +39,7 @@ from skills_manager import (
     parse_gen_skill_description,
     save_generated_skill_file,
 )
-from skills.tasks import set_plan_render_callback
+from skills.tasks import set_multitask_runner, set_plan_render_callback
 from task_manager import task_manager
 from llm_client import (
     LLMManager,
@@ -57,6 +57,7 @@ from skills.tools import (
     tool_activity_detail,
 )
 from ui.axon_completer import build_axon_completer
+from ui.agent_intent import detect_intent
 from ui.branding import INSTRUCTIONS, VERSION, build_gradient_logo
 from ui.explore_stats import get_turn_explore_summary
 from ui.config_cmd import handle_config_command
@@ -432,6 +433,9 @@ async def start_axon() -> None:
             tool_history.pop(0)
 
         await bridge.broadcast_tool_event(tool_name, "done", activity)
+        if tool_name == "take_screenshot":
+            await emit(f"[dim]  [cyan]👁[/] {output.strip()}[/dim]")
+            return
         await emit(f"[dim]  [green]✓[/] {activity}[/dim]")
         if output and tool_name in {"execute_shell", "read_file", "web_search"}:
             body = output.strip()
@@ -453,6 +457,48 @@ async def start_axon() -> None:
         )
 
     set_plan_render_callback(render_plan_board)
+
+    async def multitask_for_tool(goal: str) -> str:
+        policy = load_runtime_policy()
+        orch = Orchestrator(
+            llm=llm_manager,
+            workspace=workspace,
+            allow_parallel=policy.allow_parallel_agents,
+        )
+
+        def _subtask_payload(subtasks: list) -> list[dict[str, object]]:
+            return [
+                {
+                    "id": task.id,
+                    "title": task.title,
+                    "agent": task.agent,
+                    "status": task.status,
+                }
+                for task in subtasks
+            ]
+
+        async def on_multitask_event(
+            phase: str,
+            event_goal: str,
+            subtasks: list,
+            synthesis: str = "",
+        ) -> None:
+            await bridge.broadcast_multitask_update(
+                phase,
+                event_goal,
+                _subtask_payload(subtasks),
+                synthesis=synthesis,
+            )
+
+        result = await orch.run(
+            goal,
+            on_multitask_event=on_multitask_event,
+        )
+        if result.error and not result.synthesis:
+            return result.error
+        return result.synthesis or "(empty)"
+
+    set_multitask_runner(multitask_for_tool)
 
     async def persist_session(title: str | None = None) -> None:
         meta = save_session(
@@ -1191,15 +1237,34 @@ async def start_axon() -> None:
             return True
 
         if cmd == "/image":
+            from ui.image_cmd import load_image_with_vision_check
+
             image_path, prompt = parse_image_command(stripped)
             if not image_path:
                 await emit("[yellow]Usage: /image <path> [prompt][/]\n")
                 return True
-            error = llm_manager.load_image_into_context(image_path, prompt)
+            error = load_image_with_vision_check(llm_manager, image_path, prompt)
             if error:
-                await emit(f"[red]{error}[/]\n")
+                from ui.vision_models import vision_switch_hint
+
+                hint = vision_switch_hint(llm_manager.model)
+                await emit(f"[red]{error}[/]\n[dim]Try: {hint}[/]\n")
             else:
                 await emit("[green][✓] Image loaded into context.[/]\n")
+            return True
+
+        if cmd == "/export-skill":
+            from ui.skill_export import export_skill
+
+            name = args.strip()
+            if not name:
+                await emit("[yellow]Usage: /export-skill <name>[/]\n")
+                return True
+            try:
+                dest = export_skill(name, workspace=workspace)
+                await emit(f"[green][✓] Skill exported: {dest}[/]\n")
+            except (OSError, ValueError) as exc:
+                await emit(f"[red]{exc}[/]\n")
             return True
 
         if cmd == "/create-skill":
@@ -1302,6 +1367,20 @@ async def start_axon() -> None:
             await run_multitask(stripped, background=background)
             return
 
+        if not stripped.startswith("/"):
+            intent = detect_intent(
+                stripped, has_active_plan=task_manager.has_plan()
+            )
+            if intent == "multitask":
+                await run_multitask(stripped, background=background)
+                return
+            if intent == "plan":
+                await run_plan_mode(stripped, background=background)
+                return
+            if intent == "execute":
+                await run_execute_mode(background=background)
+                return
+
         if stripped.startswith("/"):
             if stripped.lower().startswith("/delegate"):
                 parts = stripped.split(maxsplit=2)
@@ -1310,11 +1389,6 @@ async def start_axon() -> None:
                 await run_delegate(agent, task, background=background)
                 return
             await execute_slash_command(stripped, background=background)
-            return
-
-        lowered = stripped.lower()
-        if lowered in {"execute", "go", "run"} and task_manager.has_plan():
-            await run_execute_mode(background=background)
             return
 
         display_text, file_context = build_file_context(stripped, workspace)

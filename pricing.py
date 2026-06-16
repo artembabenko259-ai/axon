@@ -63,7 +63,11 @@ def _fetch_models() -> dict[str, dict[str, float]]:
 
 def estimate_cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:
     models = _fetch_models()
-    rates = models.get(model) or models.get(model.split("/")[-1])
+    rates = models.get(model)
+    if not rates and "/" in model:
+        rates = models.get(model.split("/", 1)[1])
+    if not rates:
+        rates = models.get(model.split("/")[-1])
     if not rates:
         return (prompt_tokens + completion_tokens) * 0.000002
     return (prompt_tokens * rates.get("prompt", 0)) + (
