@@ -12,6 +12,7 @@ from typing import Any
 from openai import APIConnectionError, APIError, APITimeoutError, OpenAI
 
 from config_store import get_model, get_openrouter_api_key, save_model
+from provider_config import resolve_llm_endpoint
 from system_prompt_store import get_global_system_prompt
 from skills.tasks import execute_task_tool, get_task_tool_schemas, is_task_tool
 from skills.tools import (
@@ -136,12 +137,19 @@ class LLMManager:
             {"role": "system", "content": self._build_system_prompt()},
         ]
         self._api_key = api_key or get_openrouter_api_key()
-        self._client = self._build_client(self._api_key)
+        base_url, resolved_key = resolve_llm_endpoint()
+        if api_key is None:
+            self._api_key = resolved_key
+            self._base_url = base_url
+        else:
+            self._base_url = OPENROUTER_BASE_URL
+        self._client = self._build_client(self._api_key, self._base_url)
         self._approve = approve
         self._on_tool: ToolNotifyCallback | None = None
         self._on_stream_token: StreamTokenCallback | None = None
         self._on_stream_start: StreamLifecycleCallback | None = None
         self._on_stream_end: StreamLifecycleCallback | None = None
+        self._stream_loop: asyncio.AbstractEventLoop | None = None
         self._cancel_requested = False
 
     def set_session_system_prompt(self, text: str) -> None:
@@ -223,9 +231,10 @@ class LLMManager:
             return self._skill_manager.invoke_skill(tool_name, arguments)
         return await execute_tool(tool_name, arguments, self._approve)
 
-    def _build_client(self, api_key: str) -> OpenAI:
+    def _build_client(self, api_key: str, base_url: str | None = None) -> OpenAI:
+        url = base_url or OPENROUTER_BASE_URL
         return OpenAI(
-            base_url=OPENROUTER_BASE_URL,
+            base_url=url,
             api_key=api_key or "missing-key",
         )
 
@@ -256,11 +265,12 @@ class LLMManager:
         return self._cancel_requested
 
     def reload_credentials(self) -> None:
-        """Reload API key only — never overwrite an explicitly selected model."""
-        key = get_openrouter_api_key()
-        if key != self._api_key:
+        """Reload API endpoint when provider or API key changes."""
+        base_url, key = resolve_llm_endpoint()
+        if key != self._api_key or getattr(self, "_base_url", "") != base_url:
             self._api_key = key
-            self._client = self._build_client(key)
+            self._base_url = base_url
+            self._client = self._build_client(key, base_url)
 
     def set_model(self, model: str) -> None:
         """Set active model and persist to shared config."""
@@ -643,6 +653,7 @@ class LLMManager:
         self.messages.append({"role": "user", "content": user_text})
         last_usage: TokenUsage | None = None
         tool_steps = 0
+        self._stream_loop = asyncio.get_running_loop()
 
         try:
             for round_index in range(MAX_TOOL_ROUNDS):
@@ -769,6 +780,13 @@ class LLMManager:
                 error=f"AXON: Unexpected error — {exc}",
                 tool_steps=tool_steps,
             )
+        finally:
+            self._stream_loop = None
+
+    def _schedule_stream(self, coro: Any) -> None:
+        loop = self._stream_loop
+        if loop and loop.is_running():
+            asyncio.run_coroutine_threadsafe(coro, loop)
 
     def _call_api_stream(
         self,
@@ -788,11 +806,6 @@ class LLMManager:
         content_parts: list[str] = []
         tool_acc: dict[int, dict[str, str]] = {}
         usage_obj: object | None = None
-        loop = None
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            pass
 
         async def _emit_start() -> None:
             if self._on_stream_start:
@@ -806,11 +819,8 @@ class LLMManager:
             if self._on_stream_end:
                 await self._on_stream_end()
 
-        def _schedule(coro: Any) -> None:
-            if loop and loop.is_running():
-                asyncio.run_coroutine_threadsafe(coro, loop)
-
-        _schedule(_emit_start())
+        if self._on_stream_start:
+            self._schedule_stream(_emit_start())
 
         for chunk in stream:
             if self._is_cancelled():
@@ -825,7 +835,8 @@ class LLMManager:
             delta = chunk.choices[0].delta
             if delta.content:
                 content_parts.append(delta.content)
-                _schedule(_emit_token(delta.content))
+                if self._on_stream_token:
+                    self._schedule_stream(_emit_token(delta.content))
 
             for tc in delta.tool_calls or []:
                 idx = tc.index
@@ -839,7 +850,8 @@ class LLMManager:
                     if tc.function.arguments:
                         tool_acc[idx]["arguments"] += tc.function.arguments
 
-        _schedule(_emit_end())
+        if self._on_stream_end:
+            self._schedule_stream(_emit_end())
 
         content = "".join(content_parts)
         tool_calls: list[dict[str, Any]] = []

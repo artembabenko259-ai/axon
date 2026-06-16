@@ -20,6 +20,45 @@ def _build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command")
 
     sub.add_parser("repl", help="Interactive REPL (default)")
+    sub.add_parser("tui", help="Fullscreen terminal UI (lighter than REPL)")
+
+    export_p = sub.add_parser("export", help="Export a saved session to Markdown")
+    export_p.add_argument("session_id", nargs="?", help="Session id (latest if omitted)")
+    export_p.add_argument("-o", "--output", metavar="PATH", help="Output .md path")
+
+    serve_p = sub.add_parser("serve", help="Process background task queue")
+    serve_p.add_argument(
+        "--once",
+        action="store_true",
+        help="Process pending tasks once and exit",
+    )
+
+    queue_p = sub.add_parser("queue", help="Background task queue")
+    queue_sub = queue_p.add_subparsers(dest="queue_cmd", required=True)
+    queue_add = queue_sub.add_parser("add", help="Enqueue a headless prompt")
+    queue_add.add_argument("task", help="Task for axon -p")
+    queue_add.add_argument("--cwd", metavar="DIR", help="Working directory")
+    queue_sub.add_parser("list", help="List queued tasks")
+
+    watch_p = sub.add_parser("watch", help="Watch folder and run AXON on changes")
+    watch_p.add_argument("path", nargs="?", default=".", help="Directory to watch")
+    watch_p.add_argument(
+        "--interval",
+        type=float,
+        default=5.0,
+        help="Poll interval in seconds",
+    )
+    watch_p.add_argument("-p", "--prompt", metavar="TEXT", help="Custom prompt")
+
+    sched_p = sub.add_parser("schedule", help="Scheduled headless tasks")
+    sched_sub = sched_p.add_subparsers(dest="schedule_cmd", required=True)
+    sched_add = sched_sub.add_parser("add", help="Add daily task")
+    sched_add.add_argument("task", help="Prompt to run")
+    sched_add.add_argument("--hour", type=int, default=9)
+    sched_add.add_argument("--minute", type=int, default=0)
+    sched_add.add_argument("--cwd", metavar="DIR")
+    sched_sub.add_parser("list", help="List scheduled tasks")
+    sched_sub.add_parser("run", help="Run tasks due now (for Task Scheduler)")
 
     doctor = sub.add_parser("doctor", help="Check local AXON environment")
     doctor.add_argument("--json", action="store_true", help="JSON output")
@@ -153,6 +192,107 @@ def _run_logout() -> int:
     return 0
 
 
+def _run_tui() -> int:
+    from ui.axon_tui import run_tui
+
+    try:
+        run_tui()
+    except KeyboardInterrupt:
+        pass
+    return 0
+
+
+def _run_export(session_id: str | None, output: str | None) -> int:
+    from session_export import export_messages_markdown, export_session_markdown
+    from session_store import list_sessions, load_session
+
+    if session_id:
+        try:
+            path = export_session_markdown(
+                session_id,
+                output=Path(output) if output else None,
+            )
+        except FileNotFoundError as exc:
+            print(f"AXON: {exc}", file=sys.stderr)
+            return 1
+        print(path)
+        return 0
+
+    sessions = list_sessions()
+    if not sessions:
+        print("AXON: no saved sessions — run /save in the REPL first.", file=sys.stderr)
+        return 1
+    path = export_session_markdown(
+        sessions[0].id,
+        output=Path(output) if output else None,
+    )
+    print(path)
+    return 0
+
+
+def _run_serve(*, once: bool) -> int:
+    from axon_serve import run_serve
+
+    return run_serve(once=once)
+
+
+def _run_queue(command: str, *, prompt: str = "", cwd: str | None = None) -> int:
+    from axon_serve import enqueue, list_tasks
+
+    if command == "add":
+        if not prompt.strip():
+            print("AXON: queue add requires a prompt.", file=sys.stderr)
+            return 1
+        task = enqueue(prompt, cwd=cwd)
+        print(f"Queued {task.id}: {task.prompt[:60]}")
+        return 0
+    if command == "list":
+        tasks = list_tasks()
+        if not tasks:
+            print("(empty)")
+            return 0
+        for t in tasks:
+            print(f"{t.id}  [{t.status}]  {t.prompt[:70]}")
+        return 0
+    return 1
+
+
+def _run_watch(path: str, *, interval: float, prompt: str | None) -> int:
+    from axon_watch import run_watch
+
+    return run_watch(
+        Path(path),
+        interval=interval,
+        prompt=prompt or "",
+    )
+
+
+def _run_schedule(command: str, **kwargs) -> int:
+    from axon_schedule import add_task, list_tasks, run_due
+
+    if command == "add":
+        task = add_task(
+            kwargs.get("prompt", ""),
+            hour=int(kwargs.get("hour", 9)),
+            minute=int(kwargs.get("minute", 0)),
+            cwd=kwargs.get("cwd"),
+        )
+        print(f"Scheduled {task.id} daily at {task.hour:02d}:{task.minute:02d}")
+        return 0
+    if command == "list":
+        tasks = list_tasks()
+        if not tasks:
+            print("(empty)")
+            return 0
+        for t in tasks:
+            flag = "on" if t.enabled else "off"
+            print(f"{t.id}  [{flag}]  {t.hour:02d}:{t.minute:02d}  {t.prompt[:50]}")
+        return 0
+    if command == "run":
+        return run_due()
+    return 1
+
+
 def _run_login(*, force: bool, open_browser: bool) -> int:
     from axon_auth import load_session, logout, run_login_flow, session_summary
 
@@ -178,8 +318,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
 
-    if args.prompt is None and not sys.stdin.isatty():
-        args.prompt = sys.stdin.read()
+    # Pipe-to-axon only when no explicit subcommand (avoid blocking on closed stdin).
+    if args.prompt is None and args.command is None and not sys.stdin.isatty():
+        piped = sys.stdin.read().strip()
+        if piped:
+            args.prompt = piped
 
     if args.cwd:
         try:
@@ -190,7 +333,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"AXON: invalid --cwd — {exc}", file=sys.stderr)
             return 1
 
-    if args.prompt:
+    command = args.command or "repl"
+
+    if args.prompt and args.command is None:
         from ui.headless import run_headless
 
         return run_headless(
@@ -199,8 +344,6 @@ def main(argv: list[str] | None = None) -> int:
             json_output=args.json,
             auto_approve=args.yes,
         )
-
-    command = args.command or "repl"
 
     if command == "doctor":
         return _run_doctor(
@@ -225,6 +368,41 @@ def main(argv: list[str] | None = None) -> int:
 
     if command == "logout":
         return _run_logout()
+
+    if command == "tui":
+        return _run_tui()
+
+    if command == "export":
+        return _run_export(
+            getattr(args, "session_id", None),
+            getattr(args, "output", None),
+        )
+
+    if command == "serve":
+        return _run_serve(once=getattr(args, "once", False))
+
+    if command == "queue":
+        return _run_queue(
+            args.queue_cmd,
+            prompt=getattr(args, "task", ""),
+            cwd=getattr(args, "cwd", None),
+        )
+
+    if command == "watch":
+        return _run_watch(
+            getattr(args, "path", "."),
+            interval=getattr(args, "interval", 5.0),
+            prompt=getattr(args, "prompt", None),
+        )
+
+    if command == "schedule":
+        return _run_schedule(
+            args.schedule_cmd,
+            prompt=getattr(args, "task", ""),
+            hour=getattr(args, "hour", 9),
+            minute=getattr(args, "minute", 0),
+            cwd=getattr(args, "cwd", None),
+        )
 
     from ui.repl import start_axon
 

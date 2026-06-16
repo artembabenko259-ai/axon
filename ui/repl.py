@@ -312,6 +312,10 @@ async def start_axon() -> None:
         if policy.autonomy_enabled:
             return "once"
 
+        from axon_notifications import notify_approval_needed
+
+        notify_approval_needed()
+
         def _ask() -> ApprovalDecision:
             choice = ask_permission(command_detail)
             while choice not in {"1", "2", "3"}:
@@ -510,6 +514,10 @@ async def start_axon() -> None:
 
         if result.usage:
             await sync_stats()
+        if result.ok:
+            from axon_notifications import notify_agent_complete
+
+            notify_agent_complete()
         return result
 
     async def run_plan_mode(description: str, *, background: bool = False) -> None:
@@ -922,6 +930,28 @@ async def start_axon() -> None:
         if cmd == "/save":
             await persist_session(title=args.strip() or None)
             await emit(f"[green][✓] Session saved ({current_session_id['id']}).[/]\n")
+            return True
+
+        if cmd == "/export":
+            from session_export import export_messages_markdown
+
+            out_arg = args.strip()
+            if out_arg:
+                path = Path(out_arg).expanduser()
+            else:
+                path = None
+            try:
+                await persist_session()
+                target = export_messages_markdown(
+                    llm_manager.messages,
+                    title=current_session_id["id"] or "AXON Session",
+                    model=llm_manager.model,
+                    tokens=TOTAL_TOKENS,
+                    output=path,
+                )
+                await emit(f"[green][✓] Exported to {target}[/]\n")
+            except OSError as exc:
+                await emit(f"[red]Export failed — {exc}[/]\n")
             return True
 
         if cmd == "/login":

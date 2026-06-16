@@ -209,6 +209,29 @@ class AxonBridge:
                             updates.get("bridge_token", current.bridge_token)
                         ),
                         bridge_pin=str(updates.get("bridge_pin", current.bridge_pin)),
+                        tool_policy=current.tool_policy,
+                        notifications_enabled=bool(
+                            updates.get(
+                                "notifications_enabled",
+                                current.notifications_enabled,
+                            )
+                        ),
+                        sound_on_approval=bool(
+                            updates.get(
+                                "sound_on_approval", current.sound_on_approval
+                            )
+                        ),
+                        sound_on_complete=bool(
+                            updates.get(
+                                "sound_on_complete", current.sound_on_complete
+                            )
+                        ),
+                        notification_volume=float(
+                            updates.get(
+                                "notification_volume",
+                                current.notification_volume,
+                            )
+                        ),
                     )
                     save_runtime_policy(merged)
                     await self.broadcast(

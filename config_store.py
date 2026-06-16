@@ -17,6 +17,7 @@ DEFAULT_CONFIG: dict[str, str] = {
     "openrouter_api_key": "",
     "model": DEFAULT_MODEL,
     "provider": "openrouter",
+    "ollama_base_url": "http://127.0.0.1:11434/v1",
 }
 
 
@@ -75,6 +76,17 @@ def get_openrouter_api_key() -> str:
 def get_model() -> str:
     config = load_config()
     return (config.get("model") or DEFAULT_MODEL).strip() or DEFAULT_MODEL
+
+
+def get_provider() -> str:
+    config = load_config()
+    value = (config.get("provider") or "openrouter").strip().lower()
+    return value if value in {"openrouter", "ollama"} else "openrouter"
+
+
+def get_ollama_base_url() -> str:
+    config = load_config()
+    return (config.get("ollama_base_url") or "http://127.0.0.1:11434/v1").strip()
 
 
 def save_model(model: str) -> None:

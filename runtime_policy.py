@@ -42,6 +42,11 @@ class RuntimePolicy:
     # Short PIN for pairing display (optional extra check)
     bridge_pin: str = ""
     tool_policy: dict[str, str] = field(default_factory=dict)
+    # Desktop sounds (approval / agent done)
+    notifications_enabled: bool = True
+    sound_on_approval: bool = True
+    sound_on_complete: bool = True
+    notification_volume: float = 1.0
 
     def resolved_tool_policy(self) -> dict[str, str]:
         merged = dict(DEFAULT_TOOL_POLICY)
@@ -93,6 +98,10 @@ def load_runtime_policy() -> RuntimePolicy:
             for k, v in (raw.get("tool_policy") or {}).items()
             if str(v) in {"auto", "ask", "deny"}
         },
+        notifications_enabled=bool(raw.get("notifications_enabled", True)),
+        sound_on_approval=bool(raw.get("sound_on_approval", True)),
+        sound_on_complete=bool(raw.get("sound_on_complete", True)),
+        notification_volume=float(raw.get("notification_volume", 1.0)),
     )
     if policy.bridge_auth_enabled:
         policy.ensure_secrets()
@@ -122,6 +131,10 @@ def policy_for_client() -> dict[str, object]:
         "bridge_token": policy.bridge_token,
         "bridge_pin": policy.bridge_pin,
         "tool_policy": policy.resolved_tool_policy(),
+        "notifications_enabled": policy.notifications_enabled,
+        "sound_on_approval": policy.sound_on_approval,
+        "sound_on_complete": policy.sound_on_complete,
+        "notification_volume": policy.notification_volume,
         "policy_path": str(POLICY_PATH),
     }
 

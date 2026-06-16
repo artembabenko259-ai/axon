@@ -27,6 +27,12 @@ python main.py # backward-compatible
 | `axon update` | Check runaxon.xyz for updates |
 | `axon doctor --check-updates` | Doctor + update check |
 | `axon web --open` | Dashboard and open browser |
+| `axon tui` | Fullscreen terminal UI |
+| `axon export [id]` | Export session to Markdown |
+| `axon queue add "…"` | Queue background task |
+| `axon serve` | Run background queue |
+| `axon watch [dir]` | Run AXON when files change |
+| `axon schedule` | Daily scheduled headless tasks |
 
 ### Headless
 
@@ -54,6 +60,7 @@ echo "task" | axon -p --json
 | `/docs` | Generate live docs |
 | `/system` | Session/global system prompts |
 | `/sessions` `/resume` `/save` | Session persistence |
+| `/export` | Export chat to Markdown |
 
 Chain commands with `&`: `/clear & /plan refactor auth`
 
