@@ -29,6 +29,9 @@ export async function readAxonConfig(): Promise<Record<string, string>> {
     openrouter_api_key: "",
     model: "meta-llama/llama-3.1-8b-instruct",
     provider: "openrouter",
+    ollama_base_url: "http://127.0.0.1:11434/v1",
+    custom_base_url: "",
+    custom_api_key: "",
   };
   try {
     const raw = await fs.readFile(axonConfigPath(), "utf-8");

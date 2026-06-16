@@ -41,9 +41,26 @@ const STORAGE_KEY = "axon-ai-config";
 
 const DEFAULT_ENDPOINTS: Record<ProviderType, string> = {
   openrouter: "https://openrouter.ai/api/v1",
-  ollama: "http://localhost:11434",
+  ollama: "http://127.0.0.1:11434/v1",
   custom: "",
 };
+
+function endpointForProvider(
+  provider: ProviderType,
+  data: {
+    ollamaBaseUrl?: string;
+    customBaseUrl?: string;
+    storedEndpoint?: string;
+  },
+): string {
+  if (provider === "openrouter") {
+    return DEFAULT_ENDPOINTS.openrouter;
+  }
+  if (provider === "ollama") {
+    return data.ollamaBaseUrl || data.storedEndpoint || DEFAULT_ENDPOINTS.ollama;
+  }
+  return data.customBaseUrl || data.storedEndpoint || "";
+}
 
 const defaultConfig: AIConfig = {
   provider: "openrouter",
@@ -84,6 +101,8 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
           model?: string;
           provider?: ProviderType;
           hasApiKey?: boolean;
+          ollamaBaseUrl?: string;
+          customBaseUrl?: string;
         }) => {
           const provider = data.provider ?? stored.provider;
           const hasKey = Boolean(data.hasApiKey);
@@ -92,10 +111,11 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
             ...stored,
             provider,
             isConnected: hasKey || stored.isConnected,
-            endpointUrl:
-              provider === "openrouter"
-                ? DEFAULT_ENDPOINTS.openrouter
-                : stored.endpointUrl,
+            endpointUrl: endpointForProvider(provider, {
+              ollamaBaseUrl: data.ollamaBaseUrl,
+              customBaseUrl: data.customBaseUrl,
+              storedEndpoint: stored.endpointUrl,
+            }),
           };
           setHasServerApiKey(hasKey);
           setConfig(merged);
@@ -115,11 +135,11 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
       ...prev,
       provider,
       endpointUrl:
-        provider === "ollama"
-          ? prev.endpointUrl || DEFAULT_ENDPOINTS.ollama
-          : provider === "openrouter"
-            ? DEFAULT_ENDPOINTS.openrouter
-            : "",
+        provider === "openrouter"
+          ? DEFAULT_ENDPOINTS.openrouter
+          : provider === "ollama"
+            ? prev.endpointUrl || DEFAULT_ENDPOINTS.ollama
+            : prev.endpointUrl || "",
     }));
   }, []);
 
@@ -166,12 +186,20 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({
           ...(draft.apiKey.trim() ? { apiKey: draft.apiKey.trim() } : {}),
           provider: draft.provider,
+          endpointUrl: draft.endpointUrl.trim(),
+          ollamaBaseUrl:
+            draft.provider === "ollama" ? draft.endpointUrl.trim() : undefined,
+          customBaseUrl:
+            draft.provider === "custom" ? draft.endpointUrl.trim() : undefined,
         }),
       });
 
       const payload = (await response.json()) as {
         ok?: boolean;
         hasApiKey?: boolean;
+        provider?: ProviderType;
+        ollamaBaseUrl?: string;
+        customBaseUrl?: string;
         error?: string;
       };
 
@@ -183,11 +211,13 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
       const next: AIConfig = {
         ...draft,
         apiKey: "",
+        provider: payload.provider ?? draft.provider,
         isConnected: hasKey,
-        endpointUrl:
-          draft.provider === "openrouter"
-            ? DEFAULT_ENDPOINTS.openrouter
-            : draft.endpointUrl,
+        endpointUrl: endpointForProvider(payload.provider ?? draft.provider, {
+          ollamaBaseUrl: payload.ollamaBaseUrl,
+          customBaseUrl: payload.customBaseUrl,
+          storedEndpoint: draft.endpointUrl,
+        }),
       };
 
       setHasServerApiKey(hasKey);

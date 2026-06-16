@@ -59,7 +59,8 @@ export function ConfigWidget() {
 
   const showApiKey =
     draft.provider === "openrouter" || draft.provider === "custom";
-  const showEndpoint = draft.provider === "ollama";
+  const showEndpoint =
+    draft.provider === "ollama" || draft.provider === "custom";
 
   const providerLabel =
     PROVIDERS.find((p) => p.value === config.provider)?.label ?? "—";
@@ -164,7 +165,9 @@ export function ConfigWidget() {
                     type="password"
                     value={draft.apiKey}
                     onChange={(e) => setDraftApiKey(e.target.value)}
-                    placeholder="sk-or-v1-..."
+                    placeholder={
+                      draft.provider === "custom" ? "sk-..." : "sk-or-v1-..."
+                    }
                     className="input-vercel mt-1.5 font-mono"
                   />
                 </motion.div>
@@ -187,7 +190,11 @@ export function ConfigWidget() {
                     type="url"
                     value={draft.endpointUrl}
                     onChange={(e) => setDraftEndpointUrl(e.target.value)}
-                    placeholder="http://localhost:11434"
+                    placeholder={
+                      draft.provider === "custom"
+                        ? "https://api.example.com/v1"
+                        : "http://127.0.0.1:11434/v1"
+                    }
                     className="input-vercel mt-1.5 font-mono"
                   />
                 </motion.div>

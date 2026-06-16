@@ -12,12 +12,15 @@ CONFIG_PATH = user_data_dir() / "config.json"
 LEGACY_CONFIG_PATHS = (ROOT_DIR / "config.json",)
 
 DEFAULT_MODEL = "meta-llama/llama-3.1-8b-instruct"
+PROVIDERS = ("openrouter", "ollama", "custom")
 
 DEFAULT_CONFIG: dict[str, str] = {
     "openrouter_api_key": "",
     "model": DEFAULT_MODEL,
     "provider": "openrouter",
     "ollama_base_url": "http://127.0.0.1:11434/v1",
+    "custom_base_url": "",
+    "custom_api_key": "",
 }
 
 
@@ -81,12 +84,55 @@ def get_model() -> str:
 def get_provider() -> str:
     config = load_config()
     value = (config.get("provider") or "openrouter").strip().lower()
-    return value if value in {"openrouter", "ollama"} else "openrouter"
+    return value if value in PROVIDERS else "openrouter"
 
 
 def get_ollama_base_url() -> str:
     config = load_config()
-    return (config.get("ollama_base_url") or "http://127.0.0.1:11434/v1").strip()
+    url = (config.get("ollama_base_url") or "http://127.0.0.1:11434/v1").strip()
+    env = (os.environ.get("OLLAMA_BASE_URL") or "").strip()
+    return env or url
+
+
+def get_custom_base_url() -> str:
+    config = load_config()
+    url = (config.get("custom_base_url") or "").strip()
+    if url:
+        return url
+    return (os.environ.get("CUSTOM_BASE_URL") or os.environ.get("AXON_BASE_URL") or "").strip()
+
+
+def get_custom_api_key() -> str:
+    config = load_config()
+    key = (config.get("custom_api_key") or "").strip()
+    if key:
+        return key
+    return (os.environ.get("CUSTOM_API_KEY") or os.environ.get("AXON_API_KEY") or "").strip()
+
+
+def save_provider_settings(
+    *,
+    provider: str | None = None,
+    openrouter_api_key: str | None = None,
+    ollama_base_url: str | None = None,
+    custom_base_url: str | None = None,
+    custom_api_key: str | None = None,
+) -> None:
+    payload: dict[str, str] = {}
+    if provider is not None:
+        cleaned = provider.strip().lower()
+        if cleaned in PROVIDERS:
+            payload["provider"] = cleaned
+    if openrouter_api_key is not None:
+        payload["openrouter_api_key"] = openrouter_api_key.strip()
+    if ollama_base_url is not None:
+        payload["ollama_base_url"] = ollama_base_url.strip()
+    if custom_base_url is not None:
+        payload["custom_base_url"] = custom_base_url.strip()
+    if custom_api_key is not None:
+        payload["custom_api_key"] = custom_api_key.strip()
+    if payload:
+        save_config(payload)
 
 
 def save_model(model: str) -> None:

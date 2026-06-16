@@ -12,7 +12,7 @@ from typing import Any
 from openai import APIConnectionError, APIError, APITimeoutError, OpenAI
 
 from config_store import get_model, get_openrouter_api_key, save_model
-from provider_config import resolve_llm_endpoint
+from provider_config import is_llm_configured, provider_config_hint, resolve_llm_endpoint
 from system_prompt_store import get_global_system_prompt
 from skills.tasks import execute_task_tool, get_task_tool_schemas, is_task_tool
 from skills.tools import (
@@ -742,17 +742,11 @@ class LLMManager:
             )
 
     async def _agent_loop(self, user_text: str) -> LLMResult:
-        if not self._api_key:
-            try:
-                from zenith_server import config_url
-
-                hint = f"Add your key at {config_url()}"
-            except Exception:
-                hint = "Save your key in the web dashboard or config.json"
+        if not is_llm_configured():
             return LLMResult(
                 content="",
                 model=self.model,
-                error=f"AXON: OPENROUTER_API_KEY is not set. {hint}",
+                error=f"AXON: LLM provider is not configured. {provider_config_hint()}",
             )
 
         self.clear_cancel()

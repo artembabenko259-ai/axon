@@ -43,6 +43,16 @@ export default function ConfigPage() {
       setError("Paste your OpenRouter API key first.");
       return;
     }
+    if (draft.provider === "custom") {
+      if (!draft.endpointUrl.trim()) {
+        setError("Custom provider needs a base URL (e.g. https://api.example.com/v1).");
+        return;
+      }
+      if (!hasServerApiKey && !draft.apiKey.trim()) {
+        setError("Custom provider needs an API key.");
+        return;
+      }
+    }
 
     const ok = await saveAndConnect();
     if (!ok) {

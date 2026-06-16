@@ -455,6 +455,10 @@ class AxonTUI:
             self._append_block(tui_render.render_system(body, w))
             return
 
+        if cmd == "/provider" or text.lower().startswith("/provider"):
+            get_app().create_background_task(self._run_provider_command(text))
+            return
+
         if cmd in {"/claw", "/openclaw"}:
             from openclaw_mode import (
                 disable_openclaw,
@@ -698,6 +702,28 @@ class AxonTUI:
         else:
             self._append_block(tui_render.render_error(result.display_text, w))
             self.state.status = "error"
+        app.invalidate()
+
+    async def _run_provider_command(self, text: str) -> None:
+        import re
+
+        from ui.provider_cmd import handle_provider_command
+
+        app = get_app()
+        w = self._width()
+
+        async def emit(message: object) -> None:
+            plain = re.sub(r"\[/?[^\]]+\]", "", str(message)).strip()
+            if not plain:
+                return
+            if plain.startswith("!"):
+                self._append_block(tui_render.render_error(plain.lstrip("! "), w))
+            elif "[✓]" in plain or plain.startswith("✓"):
+                self._append_block(tui_render.render_system(plain, w))
+            else:
+                self._append_block(tui_render.render_system(plain, w))
+
+        await handle_provider_command(text, emit=emit)
         app.invalidate()
 
     async def _run_gen_skill(self, description: str) -> None:

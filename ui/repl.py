@@ -60,6 +60,7 @@ from ui.axon_completer import build_axon_completer
 from ui.branding import INSTRUCTIONS, VERSION, build_gradient_logo
 from ui.explore_stats import get_turn_explore_summary
 from ui.config_cmd import handle_config_command
+from ui.provider_cmd import handle_provider_command
 from ui.openclaw_cmd import handle_claw_command
 from message_router import try_chitchat_reply
 from orchestrator import Orchestrator
@@ -68,7 +69,8 @@ from request_context import get_request_source, reset_request_source, set_reques
 from runtime_policy import load_runtime_policy
 from mcp_client import load_mcp_servers, save_mcp_servers, McpServer
 from session_store import list_sessions, load_session, save_session
-from config_store import get_openrouter_api_key
+from config_store import get_model
+from provider_config import is_llm_configured, provider_config_hint
 from zenith_server import config_url, has_bundled_zenith, panel_url
 from ui.system_prompt_cmd import handle_system_command
 from ui.welcome import build_welcome_screen, should_show_welcome
@@ -1018,6 +1020,9 @@ async def start_axon() -> None:
         if await handle_config_command(stripped, emit=emit):
             return True
 
+        if await handle_provider_command(stripped, emit=emit):
+            return True
+
         if await handle_claw_command(stripped, emit=emit):
             return True
 
@@ -1460,10 +1465,9 @@ async def start_axon() -> None:
             f"[dim]Control panel: [cyan]{panel_url()}[/cyan] · "
             f"settings: [cyan]{config_url()}[/cyan][/dim]"
         )
-        if not get_openrouter_api_key():
+        if not is_llm_configured():
             console.print(
-                f"[yellow]API key not set — open [cyan]{config_url()}[/cyan] "
-                f"and paste your OpenRouter key.[/yellow]"
+                f"[yellow]LLM not configured — {provider_config_hint()}[/yellow]"
             )
         console.print(
             "[dim]If the panel is not open yet, run [cyan]axon web --open[/cyan] in another terminal.[/dim]\n"

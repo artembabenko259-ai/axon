@@ -9,7 +9,8 @@ import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from config_store import CONFIG_PATH, get_model, get_openrouter_api_key
+from config_store import CONFIG_PATH, get_model
+from provider_config import is_llm_configured, provider_config_hint, provider_label
 from axon_runtime import has_zenith_web, user_data_dir
 
 WS_PORT = 8765
@@ -45,21 +46,20 @@ def _check_account() -> CheckResult:
 
 
 def _check_api_key() -> CheckResult:
-    key = get_openrouter_api_key()
-    if key:
-        return CheckResult("api_key", True, "configured")
+    if is_llm_configured():
+        return CheckResult("llm_provider", True, f"{provider_label()} configured")
     if has_zenith_web():
         from zenith_server import config_url
 
         return CheckResult(
-            "api_key",
+            "llm_provider",
             False,
-            f"missing — open {config_url()} and paste your OpenRouter key",
+            f"missing — {provider_config_hint()}",
         )
     return CheckResult(
-        "api_key",
+        "llm_provider",
         False,
-        "missing — set OPENROUTER_API_KEY or edit config.json",
+        f"missing — {provider_config_hint()}",
     )
 
 
@@ -148,19 +148,20 @@ def run_doctor(*, json_output: bool = False, check_updates: bool = False) -> int
         if has_zenith_web():
             from zenith_server import config_url, panel_url
 
-            if not get_openrouter_api_key():
+            if not is_llm_configured():
                 print(f"  axon web --open              Open panel → {panel_url()}")
-                print(f"  {config_url()}               Add OpenRouter API key (recommended)")
+                print(f"  {config_url()}               Provider & API key")
             else:
                 print(f"  axon web --open              Control panel → {panel_url()}")
                 print(f"  {config_url()}               Runtime policy & models")
         else:
-            print(f"  {CONFIG_PATH}   API key & model")
+            print(f"  {CONFIG_PATH}   Provider, API key & model")
             print("  axon web --open              Zenith panel (not bundled in this build)")
         print("  axon                         Start the assistant (CLI)")
         print("  axon login                   Sign in at runaxon.xyz (or /login in REPL)")
-        if get_openrouter_api_key():
+        if is_llm_configured():
             print(f"  {CONFIG_PATH}   Advanced config")
+        print("  axon /provider               LLM provider & API key")
         print("  axon /help                   All slash commands")
 
     return 0 if all_ok else 1
