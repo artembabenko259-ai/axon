@@ -45,6 +45,8 @@ AXON_COMMANDS: dict[str, str] = {
     "/compact": "Summarize older messages to free context window (also runs automatically)",
     "/model": "Switch model — e.g. /model anthropic/claude-3.5-sonnet",
     "/plan": "Plan Mode — /plan <description> to break work into steps",
+    "/tasks": "Toggle plan task side panel — F2",
+    "/thinking": "Toggle AI reasoning trace in chat — F3",
     "/image": "Load image for vision — /image <path> [prompt]",
     "/create-skill": "Interactive wizard to create a new SKILL.md",
     "/gen-skill": "AI-generate a skill from a description — /gen-skill \"...\"",

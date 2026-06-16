@@ -101,6 +101,7 @@ def render_welcome(width: int, *, model: str, cwd: str) -> str:
         f"| {short}\n"
         f"| {cwd}\n"
         f"| Enter send . Enter+Up steer . /help\n"
+        f"| F2 tasks . F3 thinking . 1/2/3 approve shell/write\n"
         f"+{bar}+"
     )
 
@@ -167,7 +168,16 @@ def render_approval_request(detail: str, width: int, *, preview: str = "") -> st
     if preview.strip():
         parts.append(render_change_preview(preview, width))
     body = _wrap(detail.strip(), max(width - 4, 40))
-    parts.append(f"! Allow change?\n{body}\n  1 once  2 session  3 deny")
+    menu = (
+        "! Нужно разрешение\n"
+        f"{body}\n\n"
+        "  [1] Разрешить один раз\n"
+        "  [2] Разрешить на всю сессию\n"
+        "  [3] Отклонить\n"
+        "\n"
+        "  Нажми 1, 2 или 3 (или Y / N). Подсказка — в строке статуса внизу."
+    )
+    parts.append(menu)
     return "\n\n".join(part for part in parts if part)
 
 

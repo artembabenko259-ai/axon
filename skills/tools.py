@@ -795,10 +795,10 @@ async def execute_tool(
         return f"Error: tool '{tool_name}' is denied by runtime policy."
 
     detail = _approval_detail(tool_name, arguments)
+    from ui.code_diff import build_approval_preview, combine_approval_message
+
     preview = ""
     if tool_name in {"write_file", "apply_patch"}:
-        from ui.code_diff import build_approval_preview, combine_approval_message
-
         preview = build_approval_preview(tool_name, arguments)
     approval_message = combine_approval_message(detail, preview)
 

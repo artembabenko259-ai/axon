@@ -7,7 +7,7 @@ import os
 import traceback
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from prompt_toolkit.application import Application, get_app, run_in_terminal
 from prompt_toolkit.buffer import Buffer
@@ -16,7 +16,7 @@ from prompt_toolkit.filters import Condition, has_completions, has_focus
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import Dimension as D
-from prompt_toolkit.layout import HSplit, Layout, Window
+from prompt_toolkit.layout import HSplit, Layout, VSplit, Window
 from prompt_toolkit.layout.controls import BufferControl, FormattedTextControl
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.layout.processors import BeforeInput
@@ -27,6 +27,7 @@ from llm_client import LLMManager, TOTAL_COST, TOTAL_TOKENS
 from orchestrator import Orchestrator, SubTask
 from plugins.loader import discover_plugins, list_plugin_commands
 from runtime_policy import POLICY_PATH, load_runtime_policy
+from skills.tasks import set_multitask_runner, set_plan_render_callback
 from skills_manager import (
     create_skill_file,
     parse_gen_skill_description,
@@ -46,10 +47,14 @@ from ui.explore_stats import get_turn_explore_summary
 from ui import tui_render
 from ui.tui_taskboard import TaskBoardItem, TaskBoardState
 
-AppStatus = Literal["ready", "thinking", "streaming", "error"]
+if TYPE_CHECKING:
+    from ui.tui_bridge import TuiBridgeHost
+
+AppStatus = Literal["ready", "thinking", "streaming", "error", "approval"]
 
 SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 PROMPT_SYMBOL = "> "
+BOARD_SIDE_WIDTH = 40
 
 
 @dataclass
@@ -72,6 +77,7 @@ AXON_STYLE = Style.from_dict(
         "chat": "bg:#09090b #e4e4e7",
         "board": "bg:#0c0c0e #a1a1aa",
         "composer": "bg:#111111 #71717a",
+        "composer-approval": "bg:#3b2f00 bold #fde68a",
         "input-area": "bg:#111111 #e4e4e7",
         "prompt": "bold #67e8f9",
         "completion-menu": "bg:#18181b #a1a1aa",
@@ -87,8 +93,9 @@ AXON_STYLE = Style.from_dict(
 class AxonTUI:
     """Claude/Cursor-style TUI: live stream, task board, steer while busy."""
 
-    def __init__(self, llm: LLMManager) -> None:
+    def __init__(self, llm: LLMManager, *, bridge_host: TuiBridgeHost | None = None) -> None:
         self.llm = llm
+        self._bridge_host = bridge_host
         self.state = AxonTUIState(
             model=llm.model,
             cwd=str(Path.cwd()),
@@ -103,7 +110,9 @@ class AxonTUI:
         self._agent_task: asyncio.Task | None = None
         self._live_active = False
         self._transcript_prefix = ""
-        self._board_height = 1
+        self._board_open = False
+        self._show_thinking = True
+        self._approval_waiter: asyncio.Future[ApprovalDecision] | None = None
 
         self._transcript_area = TextArea(
             text="",
@@ -112,12 +121,21 @@ class AxonTUI:
             wrap_lines=True,
             scrollbar=True,
             style="class:chat",
+            width=D(weight=1),
         )
 
         self._board_window = Window(
             FormattedTextControl(self._board_fragments, focusable=False),
-            height=D.exact(1),
+            width=D.exact(0),
             style="class:board",
+            wrap_lines=True,
+        )
+
+        self._main_row = VSplit(
+            [
+                self._transcript_area,
+                self._board_window,
+            ]
         )
 
         self.input_buffer = Buffer(
@@ -145,8 +163,7 @@ class AxonTUI:
                     height=D.exact(1),
                     style="class:header",
                 ),
-                self._transcript_area,
-                self._board_window,
+                self._main_row,
                 Window(
                     FormattedTextControl(self._composer_fragments, focusable=False),
                     height=D.exact(1),
@@ -180,8 +197,10 @@ class AxonTUI:
             return 100
 
     def _board_fragments(self):
-        if not self._board.visible:
+        if not self._board_open or not self._board.visible:
             return [("class:board", " ")]
+
+        w = min(BOARD_SIDE_WIDTH - 2, self._width() - 4)
         rows = [
             (item.key, item.label, item.status)
             for item in self._board.items
@@ -189,52 +208,121 @@ class AxonTUI:
         text = tui_render.render_task_board(
             self._board.title or "Tasks",
             rows,
-            self._width(),
+            max(w, 24),
         )
         return [("class:board", text or " ")]
 
-    def _sync_board_height(self) -> None:
-        if not self._board.visible:
-            self._board_height = 1
+    def _sync_board_layout(self) -> None:
+        if self._board_open and self._board.visible:
+            if len(self._main_row.children) < 2:
+                self._main_row.children = [self._transcript_area, self._board_window]
+            self._board_window.width = D.exact(BOARD_SIDE_WIDTH)
         else:
-            self._board_height = min(10, max(3, len(self._board.items) + 2))
-        self._board_window.height = D.exact(self._board_height)
+            if len(self._main_row.children) > 1:
+                self._main_row.children = [self._transcript_area]
+            self._board_window.width = D.exact(0)
+
+    def _task_panel_hint(self) -> str:
+        if task_manager.tasks:
+            done = sum(1 for t in task_manager.tasks if t.status == "done")
+            total = len(task_manager.tasks)
+            remaining = total - done
+            if self._board_open:
+                return "F2 hide tasks"
+            if remaining:
+                return f"F2 tasks ({remaining}/{total})"
+            return "F2 tasks"
+        if self._board.visible:
+            if self._board_open:
+                return "F2 hide tasks"
+            return "F2 tasks"
+        return ""
+
+    def _toggle_task_board(self) -> None:
+        if not self._board.visible and not task_manager.tasks:
+            return
+        self._board_open = not self._board_open
+        self._sync_board_layout()
+        get_app().invalidate()
+
+    def _finish_plan_if_done(self) -> bool:
+        if not task_manager.tasks:
+            return False
+        if not task_manager.all_done():
+            return False
+        self._board.clear()
+        self._board_open = False
+        task_manager.clear()
+        self._sync_board_layout()
+        return True
 
     def _update_board(
         self,
         title: str,
         items: list[TaskBoardItem],
+        *,
+        auto_open: bool = False,
     ) -> None:
-        self._board.set_items(title, items)
-        self._sync_board_height()
+        active = [item for item in items if item.status != "done"]
+        if not active:
+            self._board.clear()
+            self._board_open = False
+            self._sync_board_layout()
+            get_app().invalidate()
+            return
+        self._board.set_items(title, active)
+        if auto_open:
+            self._board_open = True
+        self._sync_board_layout()
         get_app().invalidate()
 
     def _board_from_plan(self) -> None:
+        if self._finish_plan_if_done():
+            return
         if not task_manager.tasks:
             self._board.clear()
-            self._sync_board_height()
+            self._sync_board_layout()
             return
         status_map = {
             "pending": "pending",
             "in-progress": "running",
             "done": "done",
         }
+        active_tasks = [t for t in task_manager.tasks if t.status != "done"]
+        if not active_tasks:
+            self._finish_plan_if_done()
+            return
+        done = sum(1 for t in task_manager.tasks if t.status == "done")
+        total = len(task_manager.tasks)
         items = [
             TaskBoardItem(
                 str(t.id),
                 t.name,
                 status_map.get(t.status, "pending"),  # type: ignore[arg-type]
             )
-            for t in task_manager.tasks
+            for t in active_tasks
         ]
-        self._update_board(task_manager.goal or "Plan", items)
+        title = task_manager.goal or "Plan"
+        if done:
+            title = f"{title} ({done}/{total})"
+        self._update_board(title, items)
 
     def _board_from_subtasks(self, goal: str, subtasks: list[SubTask]) -> None:
+        active = [s for s in subtasks if s.status != "done"]
+        if not active:
+            self._board.clear()
+            self._board_open = False
+            self._sync_board_layout()
+            return
         items = [
             TaskBoardItem(str(s.id), s.title, s.status, detail=s.agent)
-            for s in subtasks
+            for s in active
         ]
-        self._update_board(goal[:60] or "Multitask", items)
+        done = sum(1 for s in subtasks if s.status == "done")
+        title = goal[:60] or "Multitask"
+        if done:
+            title = f"{title} ({done}/{len(subtasks)})"
+        self._update_board(title, items)
 
     async def _on_plan_board_update(self) -> None:
         self._board_from_plan()
@@ -269,6 +357,8 @@ class AxonTUI:
         w = self._width()
         body = "".join(self._stream_buffer)
         thinking = "".join(self._thinking_buffer)
+        if not self._show_thinking:
+            thinking = ""
         block = tui_render.render_assistant_live(body, w, thinking=thinking)
         self._transcript_area.text = self._transcript_prefix + block
         self._scroll_transcript_to_end()
@@ -281,6 +371,7 @@ class AxonTUI:
         input_focused = has_focus(self._input_window)
         send_enter = input_focused & ~has_completions
         agent_busy = Condition(lambda: self._agent_busy)
+        approval_pending = Condition(lambda: self._approval_pending())
 
         def _send(event) -> None:
             event.current_buffer.validate_and_handle()
@@ -290,6 +381,9 @@ class AxonTUI:
 
         @kb.add("c-c")
         def _(event) -> None:
+            if self._approval_pending():
+                self._resolve_approval("deny")
+                return
             if self._agent_busy:
                 event.app.create_background_task(self._cancel_agent())
             else:
@@ -299,10 +393,32 @@ class AxonTUI:
         def _(event) -> None:
             event.app.exit()
 
-        @kb.add("enter", filter=send_enter & ~agent_busy)
-        @kb.add("escape", "enter", filter=input_focused & ~agent_busy)
+        @kb.add("enter", filter=send_enter & ~agent_busy & ~approval_pending)
+        @kb.add("escape", "enter", filter=input_focused & ~agent_busy & ~approval_pending)
         def _(event) -> None:
             _send(event)
+
+        @kb.add("1", filter=approval_pending)
+        def _(event) -> None:
+            self._resolve_approval("once")
+
+        @kb.add("2", filter=approval_pending)
+        def _(event) -> None:
+            self._resolve_approval("session")
+
+        @kb.add("3", filter=approval_pending)
+        def _(event) -> None:
+            self._resolve_approval("deny")
+
+        @kb.add("y", filter=approval_pending)
+        @kb.add("Y", filter=approval_pending)
+        def _(event) -> None:
+            self._resolve_approval("once")
+
+        @kb.add("n", filter=approval_pending)
+        @kb.add("N", filter=approval_pending)
+        def _(event) -> None:
+            self._resolve_approval("deny")
 
         @kb.add("enter", "up", filter=input_focused & agent_busy)
         def _(event) -> None:
@@ -313,6 +429,14 @@ class AxonTUI:
         @kb.add("c-j", filter=input_focused)
         def _(event) -> None:
             _newline(event)
+
+        @kb.add("f2")
+        def _(event) -> None:
+            self._toggle_task_board()
+
+        @kb.add("f3")
+        def _(event) -> None:
+            self._toggle_thinking_panel()
 
         return kb
 
@@ -345,10 +469,19 @@ class AxonTUI:
         return [("class:header", line)]
 
     def _composer_fragments(self):
+        if self._approval_pending():
+            line = (
+                " ! РАЗРЕШЕНИЕ | [1] один раз | [2] на сессию | [3] отмена"
+                " — или Y / N"
+            )
+            return [("class:composer-approval", line)]
+
         if self.state.status == "thinking":
             status = f"{SPINNER[self.state.spinner_index]} thinking"
         elif self.state.status == "streaming":
             status = f"{SPINNER[self.state.spinner_index]} streaming"
+        elif self.state.status == "approval":
+            status = "ожидание разрешения — нажми 1 / 2 / 3"
         elif self.state.status == "error":
             status = "error"
         elif self._agent_busy:
@@ -356,7 +489,40 @@ class AxonTUI:
         else:
             status = "ready"
         line = f" {status} | Enter send | Enter+Up steer | Ctrl+J newline | /help"
+        hint = self._task_panel_hint()
+        if hint:
+            line += f" | {hint}"
+        think_hint = "F3 hide thinking" if self._show_thinking else "F3 show thinking"
+        line += f" | {think_hint}"
         return [("class:composer", line)]
+
+    def _approval_pending(self) -> bool:
+        waiter = self._approval_waiter
+        return waiter is not None and not waiter.done()
+
+    def _resolve_approval(self, decision: ApprovalDecision) -> None:
+        labels = {
+            "once": "Разрешено один раз",
+            "session": "Разрешено на сессию",
+            "deny": "Отклонено",
+        }
+        w = self._width()
+        self._append_block(
+            tui_render.render_system(f"→ {labels.get(decision, decision)}", w)
+        )
+        waiter = self._approval_waiter
+        if waiter is not None and not waiter.done():
+            waiter.set_result(decision)
+        if self._agent_busy and self.state.status == "approval":
+            self.state.status = "thinking"
+            self._start_spinner("thinking")
+        get_app().invalidate()
+
+    def _toggle_thinking_panel(self) -> None:
+        self._show_thinking = not self._show_thinking
+        if self._live_active:
+            self._refresh_live_response()
+        get_app().invalidate()
 
     async def _request_approval(self, tool_name: str, detail: str) -> ApprovalDecision:
         from openclaw_mode import is_openclaw_active
@@ -367,6 +533,10 @@ class AxonTUI:
         if is_openclaw_active() or policy.autonomy_enabled:
             return "once"
 
+        self._end_live_response()
+        self._stop_spinner()
+        self.state.status = "approval"
+
         command_detail, preview = split_approval_message(detail)
         label = tool_display_label(tool_name)
         summary = f"{label}: {command_detail.strip() or '(no details)'}"
@@ -374,25 +544,26 @@ class AxonTUI:
         self._append_block(
             tui_render.render_approval_request(summary, w, preview=preview)
         )
+        self._scroll_transcript_to_end()
+
+        loop = asyncio.get_running_loop()
+        self._approval_waiter = loop.create_future()
         get_app().invalidate()
 
-        def _ask() -> ApprovalDecision:
-            from ui.repl import ask_permission
-
-            choice = ask_permission(summary)
-            mapping: dict[str, ApprovalDecision] = {
-                "1": "once",
-                "2": "session",
-                "3": "deny",
-            }
-            return mapping.get(choice, "deny")
-
-        return await run_in_terminal(_ask)
+        try:
+            return await self._approval_waiter
+        finally:
+            self._approval_waiter = None
+            if self.state.status == "approval":
+                self.state.status = "thinking" if self._agent_busy else "ready"
+            get_app().invalidate()
 
     async def _on_tool_start(self, tool_name: str, detail: str) -> None:
         w = self._width()
         label = tool_display_label(tool_name)
         self._append_block(tui_render.render_agent_activity(label, detail, w))
+        if self._bridge_host:
+            self._bridge_host.broadcast_tool_now(tool_name, "start", detail)
         get_app().invalidate()
 
     async def _on_tool_done(self, tool_name: str, detail: str, output: str) -> None:
@@ -401,6 +572,8 @@ class AxonTUI:
         self._append_block(
             tui_render.render_tool_event(label, detail, w, phase="done")
         )
+        if self._bridge_host:
+            self._bridge_host.broadcast_tool_now(tool_name, "done", detail)
         get_app().invalidate()
 
     async def _spinner_loop(self) -> None:
@@ -515,10 +688,36 @@ class AxonTUI:
                         self._append_block(tui_render.render_error(str(exc), w))
                     return
 
+        if cmd == "/thinking":
+            self._toggle_thinking_panel()
+            state = "on" if self._show_thinking else "off"
+            self._append_block(
+                tui_render.render_system(f"Thinking trace: {state} (F3)", w)
+            )
+            return
+
+        if cmd == "/tasks":
+            had_tasks = bool(task_manager.tasks) or self._board.visible
+            self._toggle_task_board()
+            if not had_tasks:
+                self._append_block(
+                    tui_render.render_system("No active plan tasks.", w)
+                )
+            elif self._board_open:
+                self._append_block(tui_render.render_system("Task panel shown (F2 to hide).", w))
+            else:
+                self._append_block(tui_render.render_system("Task panel hidden (F2 to show).", w))
+            return
+
         if cmd == "/clear":
+            from skills.tools import clear_session_approvals
+
             self._transcript_area.text = ""
             self._board.clear()
-            self._sync_board_height()
+            self._board_open = False
+            task_manager.clear()
+            clear_session_approvals()
+            self._sync_board_layout()
             self.llm.messages = [
                 {"role": "system", "content": self.llm.messages[0]["content"]}
             ]
@@ -530,6 +729,8 @@ class AxonTUI:
             if args.strip():
                 self.llm.set_model(args.strip())
                 self.state.model = self.llm.model
+                if self._bridge_host:
+                    self._bridge_host.broadcast_model_now(self.state.model)
             self._append_block(
                 tui_render.render_system(f"Model: {self.state.model}", w)
             )
@@ -886,9 +1087,18 @@ class AxonTUI:
 
             if result.ok and (result.content or self._stream_buffer):
                 body = result.content or "".join(self._stream_buffer)
-                self._transcript_area.text = self._transcript_prefix + tui_render.render_assistant_message(
-                    body, w
-                )
+                thinking = "".join(self._thinking_buffer) if self._show_thinking else ""
+                if thinking.strip():
+                    block = tui_render.render_assistant_live(body, w, thinking=thinking)
+                else:
+                    block = tui_render.render_assistant_message(body, w)
+                self._transcript_area.text = self._transcript_prefix + block
+                if self._bridge_host:
+                    self._bridge_host.broadcast_chat_now(
+                        role="assistant",
+                        text=body,
+                        source="terminal",
+                    )
                 explore = get_turn_explore_summary()
                 if explore:
                     self._append_block(tui_render.render_explore_summary(explore, w))
@@ -903,6 +1113,9 @@ class AxonTUI:
             else:
                 self._append_block(tui_render.render_error(result.display_text, w))
                 self.state.status = "error"
+
+            if self._bridge_host:
+                self._bridge_host.sync_stats_now()
 
             app.invalidate()
         except asyncio.CancelledError:
@@ -925,9 +1138,43 @@ class AxonTUI:
         if not text:
             return False
 
+        if self._approval_pending():
+            lowered = text.lower()
+            mapping: dict[str, ApprovalDecision] = {
+                "1": "once",
+                "2": "session",
+                "3": "deny",
+                "y": "once",
+                "yes": "once",
+                "да": "once",
+                "n": "deny",
+                "no": "deny",
+                "нет": "deny",
+                "ні": "deny",
+            }
+            if lowered in mapping:
+                buff.reset()
+                self._resolve_approval(mapping[lowered])
+                return False
+            buff.reset()
+            w = self._width()
+            self._append_block(
+                tui_render.render_error(
+                    "Ожидается 1, 2, 3, Y или N для разрешения.", w
+                )
+            )
+            get_app().invalidate()
+            return False
+
         w = self._width()
         if not text.startswith("/"):
             self._append_block(tui_render.render_user_message(text, w))
+            if self._bridge_host:
+                self._bridge_host.broadcast_chat_now(
+                    role="user",
+                    text=text,
+                    source="terminal",
+                )
 
         get_app().invalidate()
         self._agent_task = get_app().create_background_task(self._process_message(text))
@@ -939,14 +1186,29 @@ class AxonTUI:
             w, model=self.state.model, cwd=self.state.cwd
         )
         self._scroll_transcript_to_end()
-        self.app.run()
+
+        if self._bridge_host:
+            self._bridge_host.attach(self)
+            self._bridge_host.start()
+
+        async def main() -> None:
+            if self._bridge_host:
+                asyncio.create_task(self._bridge_host.drain_web_inbox())
+                self._bridge_host.sync_stats_now()
+                self._bridge_host.broadcast_model_now(self.state.model)
+            await self.app.run_async()
+
+        asyncio.run(main())
 
 
 def run_tui() -> None:
     """Entry point for `axon tui`."""
     from dotenv import load_dotenv
 
+    from ui.tui_bridge import TuiBridgeHost
+
     os.environ.setdefault("PROMPT_TOOLKIT_BELL", "0")
     load_dotenv()
     llm = LLMManager()
-    AxonTUI(llm).run()
+    bridge_host = TuiBridgeHost()
+    AxonTUI(llm, bridge_host=bridge_host).run()

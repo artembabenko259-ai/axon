@@ -1067,13 +1067,22 @@ class LLMManager:
     @staticmethod
     def _friendly_api_error(exc: APIError) -> str:
         status = getattr(exc, "status_code", None)
+        message = getattr(exc, "message", None) or str(exc)
         if status == 401:
             return "Invalid API key. Save a valid key in the AXON dashboard."
         if status == 402:
             return "Insufficient credits on your OpenRouter account."
+        if status == 403:
+            lowered = message.lower()
+            if "key_model_access_denied" in lowered or "not allowed to access model" in lowered:
+                return (
+                    "This API key cannot use the selected model on OpenRouter. "
+                    "Pick another model: /model meta-llama/llama-3.1-8b-instruct "
+                    "or open the Zenith dashboard → Models."
+                )
+            return "Access denied (403). Check model id and API key permissions."
         if status == 429:
             return "Rate limit reached. Wait a moment and try again."
-        message = getattr(exc, "message", None) or str(exc)
         return message[:200] if message else "Unknown API error."
 
     @staticmethod

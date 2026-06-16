@@ -188,7 +188,9 @@ def ask_permission(command_detail: str) -> str:
     """Print permission menu via Rich (safe for shell metacharacters), then input."""
     safe_print(_permission_menu_text(command_detail))
     sys.stdout.flush()
-    return input("Select (1/2/3): ").strip()
+    return input(
+        "Choose: [1] allow once  [2] allow session  [3] deny — enter 1/2/3: "
+    ).strip()
 
 
 def print_banner(model: str, workspace: Path | None = None) -> None:
@@ -382,7 +384,9 @@ async def start_axon() -> None:
             while choice not in {"1", "2", "3"}:
                 safe_print("[red]Invalid choice. Enter 1, 2, or 3.[/]\n")
                 sys.stdout.flush()
-                choice = input("Select (1/2/3): ").strip()
+                choice = input(
+                    "Choose: [1] allow once  [2] allow session  [3] deny — enter 1/2/3: "
+                ).strip()
 
             decision_map: dict[str, ApprovalDecision] = {
                 "1": "once",
