@@ -255,6 +255,78 @@ class LLMManager:
         self._on_stream_start = on_start
         self._on_stream_end = on_end
 
+    def spawn_worker(self) -> LLMManager:
+        """Isolated LLM session for parallel sub-agents (does not share chat history)."""
+        worker = LLMManager(
+            api_key=self._api_key,
+            model=self.model,
+            approve=self._approve,
+            workspace=self._workspace,
+        )
+        worker._base_url = self._base_url
+        worker._client = self._build_client(self._api_key, self._base_url)
+        worker.session_system_prompt = self.session_system_prompt
+        worker.refresh_system_prompt()
+        if self._on_tool:
+            worker.set_tool_callback(self._on_tool)
+        return worker
+
+    async def complete_text_async(
+        self,
+        *,
+        system: str,
+        user: str,
+        temperature: float = 0.2,
+    ) -> LLMResult:
+        """Single-shot completion without tools or chat history mutation."""
+        self.reload_credentials()
+        try:
+            response = await asyncio.to_thread(
+                self._client.chat.completions.create,
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                temperature=temperature,
+            )
+            choice = response.choices[0] if response.choices else None
+            if choice is None:
+                return LLMResult(
+                    content="",
+                    model=self.model,
+                    error="AXON: Empty response from model.",
+                )
+            raw = (choice.message.content or "").strip()
+            usage = self._parse_usage(response.usage)
+            if usage is not None:
+                record_token_usage(
+                    usage.total_tokens,
+                    model=self.model,
+                    prompt_tokens=usage.prompt_tokens,
+                    completion_tokens=usage.completion_tokens,
+                )
+            if not raw:
+                return LLMResult(
+                    content="",
+                    model=self.model,
+                    error="AXON: Model returned empty text.",
+                    usage=usage,
+                )
+            return LLMResult(content=raw, model=self.model, usage=usage)
+        except APIError as exc:
+            return LLMResult(
+                content="",
+                model=self.model,
+                error=f"AXON: API error — {self._friendly_api_error(exc)}",
+            )
+        except Exception as exc:
+            return LLMResult(
+                content="",
+                model=self.model,
+                error=f"AXON: Could not complete request — {exc}",
+            )
+
     def request_cancel(self) -> None:
         self._cancel_requested = True
 

@@ -56,6 +56,7 @@ echo "task" | axon -p --json
 | `/image <path>` | Load image for vision models |
 | `/create-skill` `/gen-skill` | Create markdown skills |
 | `/create-agent` `/delegate` | Sub-agents |
+| `/multitask <goal>` | Orchestrator — parallel subtasks + synthesis |
 | `/review` `/commit` `/undo` | Git workflows |
 | `/docs` | Generate live docs |
 | `/system` | Session/global system prompts |

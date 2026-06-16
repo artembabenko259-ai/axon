@@ -21,6 +21,7 @@ SLASH_COMMANDS = [
     "/docs",
     "/create-agent",
     "/delegate",
+    "/multitask",
     "/system",
     "/sessions",
     "/resume",
@@ -49,6 +50,7 @@ AXON_COMMANDS: dict[str, str] = {
     "/docs": "Generate and serve interactive project docs at localhost:8000",
     "/create-agent": "Scaffold a sub-agent in .axon/agents/",
     "/delegate": "Delegate task to sub-agent — /delegate <name> <task>",
+    "/multitask": "Orchestrator — parallel subtasks — /multitask <goal>",
     "/system": "Session/global system prompt — /system session|global|edit|clear",
     "/sessions": "List saved chat sessions",
     "/resume": "Resume session — /resume <id>",
@@ -74,7 +76,7 @@ class AxonCommandCompleter(Completer):
             return
 
         if " " in text.strip() and not text.strip().startswith(
-            ("/model", "/plan", "/image", "/delegate", "/gen-skill")
+            ("/model", "/plan", "/image", "/delegate", "/gen-skill", "/multitask")
         ):
             return
 
@@ -88,6 +90,14 @@ class AxonCommandCompleter(Completer):
                     display=command,
                     display_meta=description,
                 )
+
+        if word.startswith("/mul") and "/multitask" not in word:
+            yield Completion(
+                "/multitask ",
+                start_position=-len(word),
+                display="/multitask ",
+                display_meta=AXON_COMMANDS["/multitask"],
+            )
 
         if word.startswith("/del") and "/delegate" not in word:
             yield Completion(

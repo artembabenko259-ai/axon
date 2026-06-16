@@ -57,6 +57,7 @@ from ui.axon_completer import build_axon_completer
 from ui.branding import INSTRUCTIONS, VERSION, build_gradient_logo
 from ui.completer import AXON_COMMANDS
 from message_router import try_chitchat_reply
+from orchestrator import Orchestrator
 from request_context import get_request_source, reset_request_source, set_request_source
 from runtime_policy import load_runtime_policy
 from mcp_client import load_mcp_servers, save_mcp_servers, McpServer
@@ -724,6 +725,69 @@ async def start_axon() -> None:
         if result.usage:
             await sync_stats()
 
+    async def run_multitask(stripped: str, *, background: bool = False) -> None:
+        policy = load_runtime_policy()
+        orch = Orchestrator(
+            llm=llm_manager,
+            workspace=workspace,
+            allow_parallel=policy.allow_parallel_agents,
+        )
+        goal, agents = orch.parse_command(stripped)
+        if not goal:
+            await emit(
+                "[yellow]Usage: /multitask [--agents name,name] <goal>[/]\n"
+                "[dim]Example: /multitask review auth, add tests, update README[/]\n"
+            )
+            available = list_agents(workspace)
+            if available:
+                await emit(f"[dim]Agents: {', '.join(available)}[/]\n")
+            return
+
+        await emit(f"\n[bold cyan]❯ You:[/]\n{stripped}")
+        await emit("[bold magenta]🎯 AXON Orchestrator — planning parallel work...[/]")
+        if not policy.allow_parallel_agents:
+            await emit(
+                "[dim]Parallel agents disabled — running subtasks sequentially. "
+                "Set allow_parallel_agents=true in runtime_policy.json to speed up.[/]\n"
+            )
+        if agents:
+            await emit(f"[dim]Preferred agents: {', '.join(agents)}[/]\n")
+
+        async def on_progress(message: str) -> None:
+            await emit(message)
+
+        async with agent_slot():
+            result = await orch.run(
+                goal,
+                preferred_agents=agents,
+                on_progress=on_progress,
+            )
+
+        if result.error and not result.synthesis:
+            await emit(f"[red]{result.error}[/]\n")
+            return
+
+        llm_manager.messages.append(
+            {"role": "user", "content": f"[Orchestrator multitask] {goal}"}
+        )
+        llm_manager.messages.append(
+            {"role": "assistant", "content": result.synthesis or result.error or ""}
+        )
+
+        await emit(
+            Panel(
+                Markdown(result.synthesis or "(empty synthesis)"),
+                title="🎯 Orchestrator Summary",
+                border_style="cyan",
+                padding=(0, 1),
+            )
+        )
+        await emit(f"[dim]Cost: ${TOTAL_COST:.4f} | Tokens: {TOTAL_TOKENS}[/dim]\n")
+        await sync_stats()
+        from axon_notifications import notify_agent_complete
+
+        notify_agent_complete()
+
     async def run_review(*, background: bool = False) -> None:
         prompt, error = build_review_prompt(workspace)
         if error:
@@ -1087,6 +1151,10 @@ async def start_axon() -> None:
                 await run_delegate("", "", background=background)
             return True
 
+        if cmd == "/multitask":
+            await run_multitask(stripped, background=background)
+            return True
+
         await emit(f"[yellow]AXON: Unknown command {cmd}. Type /help.[/]\n")
         return True
 
@@ -1138,6 +1206,10 @@ async def start_axon() -> None:
                 await run_plan_mode(description, background=background)
             else:
                 await emit("[yellow]Usage: /plan <description>[/]\n")
+            return
+
+        if stripped.lower().startswith("/multitask"):
+            await run_multitask(stripped, background=background)
             return
 
         if stripped.startswith("/"):
