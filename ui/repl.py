@@ -99,23 +99,9 @@ MAX_TOOL_OUTPUT = 4000
 
 def parse_image_command(text: str) -> tuple[str, str]:
     """Parse `/image <path> [prompt]` supporting quoted paths."""
-    rest = text[6:].strip() if text.lower().startswith("/image") else ""
-    if not rest:
-        return "", "Analyze this image."
+    from ui.image_cmd import parse_image_command as _parse
 
-    if rest[0] in "\"'":
-        quote = rest[0]
-        end = rest.find(quote, 1)
-        if end == -1:
-            return rest.strip(quote), "Analyze this image."
-        path = rest[1:end]
-        prompt = rest[end + 1 :].strip() or "Analyze this image."
-        return path, prompt
-
-    parts = rest.split(maxsplit=1)
-    path = parts[0]
-    prompt = parts[1].strip() if len(parts) > 1 else "Analyze this image."
-    return path, prompt
+    return _parse(text)
 
 
 def format_display_mentions(display_text: str) -> str:

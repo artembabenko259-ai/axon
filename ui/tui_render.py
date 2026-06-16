@@ -101,7 +101,7 @@ def render_welcome(width: int, *, model: str, cwd: str) -> str:
         f"| {short}\n"
         f"| {cwd}\n"
         f"| Enter send . Enter+Up steer . /help\n"
-        f"| F2 tasks . F3 thinking . 1/2/3 approve shell/write\n"
+        f"| F2 tasks . F3 thinking . V diff . 1/2/3 approve\n"
         f"+{bar}+"
     )
 
@@ -128,45 +128,84 @@ def render_turn_divider(width: int) -> str:
     return "-" * min(max(width - 2, 20), 72)
 
 
-def render_change_preview(diff_text: str, width: int) -> str:
-    """Cursor-style inline diff block (plain text for prompt_toolkit buffers)."""
+DIFF_PEEK_LINES = 4
+
+
+def _format_diff_line(raw: str, width: int) -> str:
+    line = raw.rstrip()
+    if line.startswith("+"):
+        body = line[1:]
+        prefix = "+ "
+    elif line.startswith("-"):
+        body = line[1:]
+        prefix = "- "
+    elif line.startswith("..."):
+        return f"  {line}"
+    elif line.startswith("@@ "):
+        return line
+    else:
+        body = line[1:] if line.startswith(" ") else line
+        prefix = "  "
+    if len(body) > width - 6:
+        body = body[: width - 9] + "..."
+    return f"{prefix}{body}"
+
+
+def render_change_preview(
+    diff_text: str,
+    width: int,
+    *,
+    expanded: bool = False,
+    peek_lines: int = DIFF_PEEK_LINES,
+) -> str:
+    """Cursor-style diff: file header, peek of changes, V to expand."""
     text = diff_text.strip()
     if not text:
         return ""
 
-    lines: list[str] = []
-    bar = "─" * min(max(width - 2, 24), 72)
+    raw_lines = [line.rstrip() for line in text.splitlines() if line.strip()]
+    header_line = ""
+    body_lines: list[str] = []
 
-    for raw in text.splitlines():
-        line = raw.rstrip()
-        if line.startswith("@@ "):
-            lines.append(line)
-            lines.append(bar)
-            continue
-        if line.startswith("+"):
-            body = line[1:]
-            if len(body) > width - 6:
-                body = body[: width - 9] + "..."
-            lines.append(f"+ {body}")
-        elif line.startswith("-"):
-            body = line[1:]
-            if len(body) > width - 6:
-                body = body[: width - 9] + "..."
-            lines.append(f"- {body}")
-        elif line.startswith("..."):
-            lines.append(f"  {line}")
+    for line in raw_lines:
+        if line.startswith("@@ ") and not header_line:
+            header_line = line
         else:
-            if len(line) > width - 4:
-                line = line[: width - 7] + "..."
-            lines.append(f"  {line}")
+            body_lines.append(line)
 
-    return "\n".join(lines)
+    title = header_line[3:].strip() if header_line.startswith("@@ ") else "changes"
+    bar = "─" * min(max(width - 2, 24), 72)
+    countable = [line for line in body_lines if not line.startswith("... [")]
+
+    lines_out: list[str] = [f"┌ {title}", bar]
+
+    hidden = max(0, len(countable) - peek_lines)
+    if expanded or hidden == 0:
+        for raw in body_lines:
+            lines_out.append(_format_diff_line(raw, width))
+        if expanded and hidden > 0:
+            lines_out.append(f"  ▲ свернуть — V")
+    else:
+        for raw in countable[:peek_lines]:
+            lines_out.append(_format_diff_line(raw, width))
+        lines_out.append(f"  ▼ ещё {hidden} строк — V развернуть")
+
+    lines_out.append(bar)
+    return "\n".join(lines_out)
 
 
-def render_approval_request(detail: str, width: int, *, preview: str = "") -> str:
+def render_approval_request(
+    detail: str,
+    width: int,
+    *,
+    preview: str = "",
+    preview_expanded: bool = False,
+) -> str:
     parts: list[str] = []
     if preview.strip():
-        parts.append(render_change_preview(preview, width))
+        parts.append(
+            render_change_preview(preview, width, expanded=preview_expanded)
+        )
     body = _wrap(detail.strip(), max(width - 4, 40))
     menu = (
         "! Нужно разрешение\n"

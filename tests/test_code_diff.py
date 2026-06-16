@@ -34,9 +34,21 @@ class CodeDiffTests(unittest.TestCase):
             "@@ ui/test.py (+1 -1)\n-old\n+new",
             80,
         )
-        self.assertIn("@@ ui/test.py", block)
+        self.assertIn("ui/test.py (+1 -1)", block)
         self.assertIn("- old", block)
         self.assertIn("+ new", block)
+
+    def test_render_change_preview_collapsed_peek(self) -> None:
+        lines = "\n".join(f"+line{i}" for i in range(12))
+        preview = f"@@ big.py (+12 -0)\n{lines}"
+        collapsed = tui_render.render_change_preview(preview, 80, expanded=False)
+        expanded = tui_render.render_change_preview(preview, 80, expanded=True)
+
+        self.assertIn("▼ ещё 8 строк", collapsed)
+        self.assertIn("+ line0", collapsed)
+        self.assertNotIn("+ line11", collapsed)
+        self.assertIn("+ line11", expanded)
+        self.assertIn("▲ свернуть", expanded)
 
 
 if __name__ == "__main__":

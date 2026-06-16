@@ -113,6 +113,10 @@ class AxonTUI:
         self._board_open = False
         self._show_thinking = True
         self._approval_waiter: asyncio.Future[ApprovalDecision] | None = None
+        self._approval_summary = ""
+        self._approval_preview = ""
+        self._approval_preview_expanded = False
+        self._approval_transcript_prefix = ""
 
         self._transcript_area = TextArea(
             text="",
@@ -420,6 +424,11 @@ class AxonTUI:
         def _(event) -> None:
             self._resolve_approval("deny")
 
+        @kb.add("v", filter=approval_pending)
+        @kb.add("V", filter=approval_pending)
+        def _(event) -> None:
+            self._toggle_approval_diff()
+
         @kb.add("enter", "up", filter=input_focused & agent_busy)
         def _(event) -> None:
             text = event.current_buffer.text.strip()
@@ -474,6 +483,8 @@ class AxonTUI:
                 " ! РАЗРЕШЕНИЕ | [1] один раз | [2] на сессию | [3] отмена"
                 " — или Y / N"
             )
+            if self._approval_preview.strip():
+                line += " | V diff"
             return [("class:composer-approval", line)]
 
         if self.state.status == "thinking":
@@ -524,6 +535,24 @@ class AxonTUI:
             self._refresh_live_response()
         get_app().invalidate()
 
+    def _toggle_approval_diff(self) -> None:
+        if not self._approval_pending() or not self._approval_preview.strip():
+            return
+        self._approval_preview_expanded = not self._approval_preview_expanded
+        self._refresh_approval_block()
+        get_app().invalidate()
+
+    def _refresh_approval_block(self) -> None:
+        w = self._width()
+        block = tui_render.render_approval_request(
+            self._approval_summary,
+            w,
+            preview=self._approval_preview,
+            preview_expanded=self._approval_preview_expanded,
+        )
+        self._transcript_area.text = self._approval_transcript_prefix + block
+        self._scroll_transcript_to_end()
+
     async def _request_approval(self, tool_name: str, detail: str) -> ApprovalDecision:
         from openclaw_mode import is_openclaw_active
         from runtime_policy import load_runtime_policy
@@ -540,11 +569,12 @@ class AxonTUI:
         command_detail, preview = split_approval_message(detail)
         label = tool_display_label(tool_name)
         summary = f"{label}: {command_detail.strip() or '(no details)'}"
-        w = self._width()
-        self._append_block(
-            tui_render.render_approval_request(summary, w, preview=preview)
-        )
-        self._scroll_transcript_to_end()
+        self._approval_summary = summary
+        self._approval_preview = preview
+        self._approval_preview_expanded = False
+        prefix = self._transcript_area.text
+        self._approval_transcript_prefix = f"{prefix}\n\n" if prefix else ""
+        self._refresh_approval_block()
 
         loop = asyncio.get_running_loop()
         self._approval_waiter = loop.create_future()
@@ -554,6 +584,10 @@ class AxonTUI:
             return await self._approval_waiter
         finally:
             self._approval_waiter = None
+            self._approval_summary = ""
+            self._approval_preview = ""
+            self._approval_preview_expanded = False
+            self._approval_transcript_prefix = ""
             if self.state.status == "approval":
                 self.state.status = "thinking" if self._agent_busy else "ready"
             get_app().invalidate()
@@ -675,6 +709,29 @@ class AxonTUI:
                 )
                 return
             get_app().create_background_task(self._run_multitask(goal_line))
+            return
+
+        if cmd == "/image":
+            from ui.image_cmd import parse_image_command
+
+            image_path, prompt = parse_image_command(text)
+            if not image_path:
+                self._append_block(
+                    tui_render.render_error(
+                        "Usage: /image <path|@file> [prompt]", w
+                    )
+                )
+                return
+            error = self.llm.load_image_into_context(image_path, prompt)
+            if error:
+                self._append_block(tui_render.render_error(error, w))
+            else:
+                self._append_block(
+                    tui_render.render_system(
+                        f"Image loaded: {image_path}. Ask a question about it.",
+                        w,
+                    )
+                )
             return
 
         if cmd.startswith("/"):
@@ -1155,6 +1212,10 @@ class AxonTUI:
             if lowered in mapping:
                 buff.reset()
                 self._resolve_approval(mapping[lowered])
+                return False
+            if lowered == "v" and self._approval_preview.strip():
+                buff.reset()
+                self._toggle_approval_diff()
                 return False
             buff.reset()
             w = self._width()

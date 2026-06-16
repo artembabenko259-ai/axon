@@ -47,7 +47,7 @@ AXON_COMMANDS: dict[str, str] = {
     "/plan": "Plan Mode — /plan <description> to break work into steps",
     "/tasks": "Toggle plan task side panel — F2",
     "/thinking": "Toggle AI reasoning trace in chat — F3",
-    "/image": "Load image for vision — /image <path> [prompt]",
+    "/image": "Vision — /image <path|@file> [prompt]",
     "/create-skill": "Interactive wizard to create a new SKILL.md",
     "/gen-skill": "AI-generate a skill from a description — /gen-skill \"...\"",
     "/review": "Review current git diff for bugs and code smells",
