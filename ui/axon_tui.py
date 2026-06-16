@@ -27,7 +27,11 @@ from llm_client import LLMManager, TOTAL_COST, TOTAL_TOKENS
 from orchestrator import Orchestrator, SubTask
 from plugins.loader import discover_plugins, list_plugin_commands
 from runtime_policy import POLICY_PATH, load_runtime_policy
-from skills.tasks import set_multitask_runner, set_plan_render_callback
+from skills_manager import (
+    create_skill_file,
+    parse_gen_skill_description,
+    save_generated_skill_file,
+)
 from skills.tools import (
     ApprovalDecision,
     format_tool_activity_line,
@@ -357,21 +361,25 @@ class AxonTUI:
     async def _request_approval(self, tool_name: str, detail: str) -> ApprovalDecision:
         from openclaw_mode import is_openclaw_active
         from runtime_policy import load_runtime_policy
+        from ui.code_diff import split_approval_message
 
         policy = load_runtime_policy()
         if is_openclaw_active() or policy.autonomy_enabled:
             return "once"
 
+        command_detail, preview = split_approval_message(detail)
         label = tool_display_label(tool_name)
-        command_detail = f"{label}: {detail.strip() or '(no details)'}"
+        summary = f"{label}: {command_detail.strip() or '(no details)'}"
         w = self._width()
-        self._append_block(tui_render.render_approval_request(command_detail, w))
+        self._append_block(
+            tui_render.render_approval_request(summary, w, preview=preview)
+        )
         get_app().invalidate()
 
         def _ask() -> ApprovalDecision:
             from ui.repl import ask_permission
 
-            choice = ask_permission(command_detail)
+            choice = ask_permission(summary)
             mapping: dict[str, ApprovalDecision] = {
                 "1": "once",
                 "2": "session",
@@ -486,7 +494,7 @@ class AxonTUI:
                 goal_line = goal_line[len("/multitask") :].strip()
             if not goal_line:
                 self._append_block(
-                    tui_render.render_error("Usage: /multitask <goal>"), w
+                    tui_render.render_error("Usage: /multitask <goal>", w)
                 )
                 return
             get_app().create_background_task(self._run_multitask(goal_line))
@@ -531,7 +539,23 @@ class AxonTUI:
             )
             return
 
-        self._append_block(tui_render.render_error(f"Unknown command {cmd}. /help"), w)
+        if cmd == "/gen-skill":
+            description = parse_gen_skill_description(text) or args
+            if not description.strip():
+                self._append_block(
+                    tui_render.render_error('Usage: /gen-skill "description"', w)
+                )
+                return
+            get_app().create_background_task(self._run_gen_skill(description))
+            return
+
+        if cmd == "/create-skill":
+            get_app().create_background_task(self._run_create_skill())
+            return
+
+        self._append_block(
+            tui_render.render_error(f"Unknown command {cmd}. /help", w)
+        )
         self.state.status = "error"
 
     async def _multitask_for_tool(self, goal: str) -> str:
@@ -676,6 +700,106 @@ class AxonTUI:
             self.state.status = "error"
         app.invalidate()
 
+    async def _run_gen_skill(self, description: str) -> None:
+        app = get_app()
+        w = self._width()
+        self._append_block(tui_render.render_system("Generating skill with AI...", w))
+        app.invalidate()
+
+        self._agent_busy = True
+        self._start_spinner("thinking")
+        try:
+            result = await self.llm.generate_skill_file_async(description.strip())
+        finally:
+            self._stop_spinner()
+            self._agent_busy = False
+
+        self.state.cost = TOTAL_COST
+        self.state.tokens = TOTAL_TOKENS
+
+        if not result.ok:
+            self._append_block(tui_render.render_error(result.display_text, w))
+            self.state.status = "error"
+            app.invalidate()
+            return
+
+        try:
+            _path, skill_name = save_generated_skill_file(
+                result.content,
+                workspace=Path.cwd(),
+            )
+        except (OSError, ValueError) as exc:
+            self._append_block(tui_render.render_error(f"Failed to save skill — {exc}", w))
+            self.state.status = "error"
+            app.invalidate()
+            return
+
+        self.llm.reload_skills()
+        self._append_block(
+            tui_render.render_system(
+                f'Skill "{skill_name}" created and loaded. Use !{skill_name}.',
+                w,
+            )
+        )
+        self.state.status = "ready"
+        app.invalidate()
+
+    async def _run_create_skill(self) -> None:
+        app = get_app()
+        w = self._width()
+        self._append_block(tui_render.render_system("Creating a new AXON skill...", w))
+        app.invalidate()
+
+        def _prompt_fields() -> tuple[str, str, str]:
+            name = input("Skill Name (e.g., check-logs): ").strip()
+            description = input("Description: ").strip()
+            shell_cmd = input(
+                "Auto-execute shell command (optional, press Enter to skip): "
+            ).strip()
+            return name, description, shell_cmd
+
+        try:
+            name, description, shell_cmd = await run_in_terminal(_prompt_fields)
+        except Exception as exc:
+            self._append_block(tui_render.render_error(f"Skill wizard cancelled — {exc}", w))
+            self.state.status = "error"
+            app.invalidate()
+            return
+
+        if not name:
+            self._append_block(tui_render.render_error("Skill name is required.", w))
+            self.state.status = "error"
+            app.invalidate()
+            return
+        if not description:
+            self._append_block(tui_render.render_error("Description is required.", w))
+            self.state.status = "error"
+            app.invalidate()
+            return
+
+        try:
+            path = create_skill_file(
+                name,
+                description,
+                shell_cmd,
+                workspace=Path.cwd(),
+            )
+        except OSError as exc:
+            self._append_block(tui_render.render_error(f"Failed to create skill — {exc}", w))
+            self.state.status = "error"
+            app.invalidate()
+            return
+
+        self.llm.reload_skills()
+        self._append_block(
+            tui_render.render_system(
+                f"Skill created: {path.parent.name}",
+                w,
+            )
+        )
+        self.state.status = "ready"
+        app.invalidate()
+
     async def _process_message(self, text: str) -> None:
         app = get_app()
         w = self._width()
@@ -765,8 +889,7 @@ class AxonTUI:
             self._end_live_response()
             self._agent_busy = False
             self._append_block(
-                tui_render.render_error(traceback.format_exc(limit=2)),
-                w,
+                tui_render.render_error(traceback.format_exc(limit=2), w)
             )
             self.state.status = "error"
             app.invalidate()

@@ -795,11 +795,17 @@ async def execute_tool(
         return f"Error: tool '{tool_name}' is denied by runtime policy."
 
     detail = _approval_detail(tool_name, arguments)
+    preview = ""
+    if tool_name in {"write_file", "apply_patch"}:
+        from ui.code_diff import build_approval_preview, combine_approval_message
+
+        preview = build_approval_preview(tool_name, arguments)
+    approval_message = combine_approval_message(detail, preview)
 
     if _needs_approval(tool_name) and not is_session_approved(tool_name, detail):
         if approve is None:
             return "User denied permission (no approval handler configured)"
-        decision = await approve(tool_name, detail)
+        decision = await approve(tool_name, approval_message)
         if decision == "deny":
             log_tool_event(
                 tool=tool_name,

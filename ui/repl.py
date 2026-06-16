@@ -349,9 +349,11 @@ async def start_axon() -> None:
             console.print(renderable)
 
     async def request_approval(tool_name: str, detail: str) -> ApprovalDecision:
+        from ui.code_diff import split_approval_message
+
         label = tool_display_label(tool_name)
-        display_detail = detail.strip() or "(no details)"
-        command_detail = f"{label}: {display_detail}"
+        display_detail, preview = split_approval_message(detail)
+        command_detail = f"{label}: {display_detail or '(no details)'}"
         policy = load_runtime_policy()
         source = get_request_source()
 
@@ -366,6 +368,12 @@ async def start_axon() -> None:
         from axon_notifications import notify_approval_needed
 
         notify_approval_needed()
+
+        if preview.strip():
+            from ui import tui_render
+
+            diff_block = tui_render.render_change_preview(preview, 100)
+            await emit(f"[dim]{diff_block}[/]\n")
 
         def _ask() -> ApprovalDecision:
             choice = ask_permission(command_detail)

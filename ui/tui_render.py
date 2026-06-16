@@ -123,9 +123,52 @@ def render_tool_event(tool: str, detail: str, width: int, *, phase: str = "run")
     return f"  {mark} {line}"
 
 
-def render_approval_request(detail: str, width: int) -> str:
+def render_turn_divider(width: int) -> str:
+    return "-" * min(max(width - 2, 20), 72)
+
+
+def render_change_preview(diff_text: str, width: int) -> str:
+    """Cursor-style inline diff block (plain text for prompt_toolkit buffers)."""
+    text = diff_text.strip()
+    if not text:
+        return ""
+
+    lines: list[str] = []
+    bar = "─" * min(max(width - 2, 24), 72)
+
+    for raw in text.splitlines():
+        line = raw.rstrip()
+        if line.startswith("@@ "):
+            lines.append(line)
+            lines.append(bar)
+            continue
+        if line.startswith("+"):
+            body = line[1:]
+            if len(body) > width - 6:
+                body = body[: width - 9] + "..."
+            lines.append(f"+ {body}")
+        elif line.startswith("-"):
+            body = line[1:]
+            if len(body) > width - 6:
+                body = body[: width - 9] + "..."
+            lines.append(f"- {body}")
+        elif line.startswith("..."):
+            lines.append(f"  {line}")
+        else:
+            if len(line) > width - 4:
+                line = line[: width - 7] + "..."
+            lines.append(f"  {line}")
+
+    return "\n".join(lines)
+
+
+def render_approval_request(detail: str, width: int, *, preview: str = "") -> str:
+    parts: list[str] = []
+    if preview.strip():
+        parts.append(render_change_preview(preview, width))
     body = _wrap(detail.strip(), max(width - 4, 40))
-    return f"! Permission required\n{body}\n  1 once  2 session  3 deny"
+    parts.append(f"! Allow change?\n{body}\n  1 once  2 session  3 deny")
+    return "\n\n".join(part for part in parts if part)
 
 
 def render_system(text: str, width: int) -> str:
@@ -141,7 +184,3 @@ def render_explore_summary(summary: str, width: int) -> str:
     if len(text) > width - 2:
         text = text[: width - 5] + "..."
     return f"  {text}"
-
-
-def render_turn_divider(width: int) -> str:
-    return "-" * min(max(width - 2, 20), 72)
