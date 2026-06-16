@@ -112,13 +112,13 @@ export function LogsConsole() {
     <GlassCard hover={false} className="flex flex-col overflow-hidden !p-0">
       <div className="flex items-center gap-2 border-b border-white/5 px-4 py-3">
         <Terminal className="h-4 w-4 text-zinc-500" strokeWidth={1.75} />
-        <span className="label-caps">Live Logs</span>
+        <span className="label-caps">Live logs</span>
         <motion.span
           animate={{ opacity: [1, 0.4, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
-          className="ml-auto flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-emerald-400"
+          className="ml-auto flex items-center gap-1.5 font-mono text-[10px] font-medium uppercase tracking-wider text-[#5DE4FF]"
         >
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <span className="h-1.5 w-1.5 rounded-full bg-[#5DE4FF] glow-cyan" />
           LIVE
         </motion.span>
       </div>

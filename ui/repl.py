@@ -52,11 +52,15 @@ from skills.tools import (
     clear_session_approvals,
     set_tool_result_callback,
     tool_display_label,
+    format_tool_activity,
+    format_tool_activity_line,
+    tool_activity_detail,
 )
 from ui.axon_completer import build_axon_completer
 from ui.branding import INSTRUCTIONS, VERSION, build_gradient_logo
-from ui.completer import AXON_COMMANDS
+from ui.explore_stats import get_turn_explore_summary
 from ui.config_cmd import handle_config_command
+from ui.openclaw_cmd import handle_claw_command
 from message_router import try_chitchat_reply
 from orchestrator import Orchestrator
 from plugins.loader import discover_plugins, list_plugin_commands
@@ -312,7 +316,8 @@ async def start_axon() -> None:
             console.print(Rule("Tool Execution History", style="dim"))
             for name, detail, output in tool_history[-5:]:
                 label = tool_display_label(name)
-                console.print(f"[bold cyan]✦ {label}[/] [dim]{detail}[/]")
+                activity = format_tool_activity_line(label, detail)
+                console.print(f"[bold cyan]{activity}[/]")
                 if output:
                     body = output.strip()
                     if len(body) > 500:
@@ -353,7 +358,9 @@ async def start_axon() -> None:
         if source == "web" and not policy.web_control_enabled:
             return "deny"
 
-        if policy.autonomy_enabled:
+        from openclaw_mode import is_openclaw_active
+
+        if is_openclaw_active() or policy.autonomy_enabled:
             return "once"
 
         from axon_notifications import notify_approval_needed
@@ -417,22 +424,15 @@ async def start_axon() -> None:
     async def on_tool_result(tool_name: str, detail: str, output: str) -> None:
         label = tool_display_label(tool_name)
         display_detail = detail.strip() or "(no details)"
+        activity = format_tool_activity_line(label, display_detail)
         
         # Save to history for Shift+Tab navigation
         tool_history.append((tool_name, display_detail, output))
         if len(tool_history) > 20:
             tool_history.pop(0)
 
-        if tool_name == "execute_shell":
-            title = f"Shell: {display_detail}"
-        elif tool_name == "write_file":
-            title = f"Write: {display_detail}"
-        else:
-            title = f"{label}: {display_detail}"
-
-        # More compact, elegant tool results
-        await bridge.broadcast_tool_event(tool_name, "done", display_detail)
-        await emit(f"[dim]  [green]✓[/] {title}[/dim]")
+        await bridge.broadcast_tool_event(tool_name, "done", activity)
+        await emit(f"[dim]  [green]✓[/] {activity}[/dim]")
         if output and tool_name in {"execute_shell", "read_file", "web_search"}:
             body = output.strip()
             if len(body) > MAX_TOOL_OUTPUT:
@@ -513,8 +513,10 @@ async def start_axon() -> None:
                 sys.stdout.flush()
 
         async def on_tool(tool_name: str, detail: str) -> None:
-            await bridge.broadcast_tool_event(tool_name, "start", detail)
-            await emit(f"[dim]  [cyan]process[/] {tool_name}...[/dim]")
+            label = tool_display_label(tool_name)
+            activity = format_tool_activity_line(label, detail)
+            await bridge.broadcast_tool_event(tool_name, "start", activity)
+            await emit(f"[dim]  [cyan]›[/] {activity}[/dim]")
 
         llm_manager.set_tool_callback(on_tool)
         llm_manager.set_stream_callbacks(
@@ -551,6 +553,13 @@ async def start_axon() -> None:
                 await emit(Markdown(result.content, code_theme="monokai"))
         else:
             await emit(f"[red]{result.display_text}[/]")
+
+        explore = get_turn_explore_summary()
+        if explore:
+            await emit(f"[dim]{explore}[/]")
+            await bridge.broadcast(
+                {"type": "explore_summary", "summary": explore},
+            )
 
         await emit(
             f"\n[dim]Cost: ${TOTAL_COST:.4f} | Tokens: {TOTAL_TOKENS}[/dim]\n"
@@ -1001,6 +1010,9 @@ async def start_axon() -> None:
         if await handle_config_command(stripped, emit=emit):
             return True
 
+        if await handle_claw_command(stripped, emit=emit):
+            return True
+
         if await try_plugin_command(stripped):
             return True
 
@@ -1417,12 +1429,24 @@ async def start_axon() -> None:
     print_banner(llm_manager.model, workspace)
 
     runtime = load_runtime_policy()
+    from openclaw_mode import is_openclaw_active, is_process_elevated
+
+    claw_line = ""
+    if runtime.openclaw_enabled or is_openclaw_active():
+        claw_state = "ON" if is_openclaw_active() else "armed (need admin)"
+        claw_line = f" · openclaw [cyan]{claw_state}[/cyan]"
 
     console.print(
         f"[dim]Bridge ws://127.0.0.1:8765 · PIN [cyan]{runtime.bridge_pin}[/cyan] · "
         f"autonomy [cyan]{'on' if runtime.autonomy_enabled else 'off'}[/cyan] · "
-        f"web [cyan]{'on' if runtime.web_control_enabled else 'off'}[/cyan][/dim]"
+        f"web [cyan]{'on' if runtime.web_control_enabled else 'off'}[/cyan]"
+        f"{claw_line}[/dim]"
     )
+    if runtime.openclaw_enabled and not is_process_elevated():
+        console.print(
+            "[yellow]OpenClaw is enabled in policy but this terminal is not elevated — "
+            "run as Administrator or use /claw off.[/yellow]"
+        )
     if has_bundled_zenith():
         console.print(
             f"[dim]Control panel: [cyan]{panel_url()}[/cyan] · "

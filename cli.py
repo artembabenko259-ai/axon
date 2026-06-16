@@ -19,8 +19,8 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(dest="command")
 
-    sub.add_parser("repl", help="Interactive REPL (default)")
-    sub.add_parser("tui", help="Fullscreen terminal UI (lighter than REPL)")
+    sub.add_parser("repl", help="Rich REPL with full slash commands and WebSocket bridge")
+    sub.add_parser("tui", help="Fullscreen terminal UI (default)")
 
     mt_p = sub.add_parser("multitask", help="Run orchestrator headless")
     mt_p.add_argument("goal", help="Goal to decompose and run")
@@ -37,6 +37,12 @@ def _build_parser() -> argparse.ArgumentParser:
     )
 
     sub.add_parser("tray", help="System tray icon (Windows)")
+
+    claw_p = sub.add_parser("claw", help="OpenClaw full autonomy (admin terminal)")
+    claw_sub = claw_p.add_subparsers(dest="claw_cmd")
+    claw_sub.add_parser("status", help="Show OpenClaw state")
+    claw_sub.add_parser("on", help="Enable OpenClaw (elevated process required)")
+    claw_sub.add_parser("off", help="Disable OpenClaw")
 
     export_p = sub.add_parser("export", help="Export a saved session to Markdown")
     export_p.add_argument("session_id", nargs="?", help="Session id (latest if omitted)")
@@ -257,6 +263,14 @@ def _run_serve(*, once: bool, tray: bool = False) -> int:
     return run_serve(once=once, tray=tray)
 
 
+def _run_claw(action: str) -> int:
+    from openclaw_mode import handle_claw_arg
+
+    code, msg = handle_claw_arg(action)
+    print(msg)
+    return code
+
+
 def _run_multitask(
     goal: str,
     *,
@@ -386,7 +400,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"AXON: invalid --cwd — {exc}", file=sys.stderr)
             return 1
 
-    command = args.command or "repl"
+    command = args.command or "tui"
 
     if args.prompt and args.command is None:
         from ui.headless import run_headless
@@ -436,6 +450,10 @@ def main(argv: list[str] | None = None) -> int:
     if command == "tray":
         return _run_tray()
 
+    if command == "claw":
+        claw_cmd = getattr(args, "claw_cmd", None) or "status"
+        return _run_claw(claw_cmd)
+
     if command == "export":
         return _run_export(
             getattr(args, "session_id", None),
@@ -471,13 +489,16 @@ def main(argv: list[str] | None = None) -> int:
             cwd=getattr(args, "cwd", None),
         )
 
-    from ui.repl import start_axon
+    if command == "repl":
+        from ui.repl import start_axon
 
-    try:
-        asyncio.run(start_axon())
-    except KeyboardInterrupt:
+        try:
+            asyncio.run(start_axon())
+        except KeyboardInterrupt:
+            return 0
         return 0
-    return 0
+
+    parser.error(f"unknown command: {command}")
 
 
 if __name__ == "__main__":

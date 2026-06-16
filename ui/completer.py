@@ -23,6 +23,8 @@ SLASH_COMMANDS = [
     "/delegate",
     "/multitask",
     "/config",
+    "/claw",
+    "/openclaw",
     "/system",
     "/sessions",
     "/resume",
@@ -39,7 +41,7 @@ AXON_COMMANDS: dict[str, str] = {
     "/clear": "Clear chat context (keeps system prompt)",
     "/cost": "Show session cost and token usage",
     "/usage": "Alias for /cost",
-    "/compact": "Summarize older messages to free context window",
+    "/compact": "Summarize older messages to free context window (also runs automatically)",
     "/model": "Switch model — e.g. /model anthropic/claude-3.5-sonnet",
     "/plan": "Plan Mode — /plan <description> to break work into steps",
     "/image": "Load image for vision — /image <path> [prompt]",
@@ -53,6 +55,8 @@ AXON_COMMANDS: dict[str, str] = {
     "/delegate": "Delegate task to sub-agent — /delegate <name> <task>",
     "/multitask": "Orchestrator — parallel subtasks — /multitask <goal>",
     "/config": "Runtime policy — /config | /config set <key> <value>",
+    "/claw": "OpenClaw full autonomy — /claw on|off|status (admin)",
+    "/openclaw": "Alias for /claw",
     "/system": "Session/global system prompt — /system session|global|edit|clear",
     "/sessions": "List saved chat sessions",
     "/resume": "Resume session — /resume <id>",
@@ -78,7 +82,21 @@ class AxonCommandCompleter(Completer):
             return
 
         if " " in text.strip() and not text.strip().startswith(
-            ("/model", "/plan", "/image", "/delegate", "/gen-skill", "/multitask", "/config")
+            (
+                "/model",
+                "/plan",
+                "/image",
+                "/delegate",
+                "/gen-skill",
+                "/multitask",
+                "/config",
+                "/claw",
+                "/openclaw",
+                "/resume",
+                "/export",
+                "/mcp",
+                "/system",
+            )
         ):
             return
 

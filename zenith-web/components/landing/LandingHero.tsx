@@ -1,13 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  Terminal,
-} from "lucide-react";
-import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher";
+import { ArrowRight, ArrowUpRight, Terminal } from "lucide-react";
+import { AgentOrb } from "@/components/ui/AgentOrb";
 import { BridgeStatus } from "@/components/ui/BridgeStatus";
 import { ConfigWidget } from "@/components/config/ConfigWidget";
 import { Sparkline } from "@/components/ui/Sparkline";
@@ -52,6 +49,7 @@ const fadeUp = {
 export function LandingHero() {
   const {
     connected,
+    isStreaming,
     stats,
     uptimeLabel,
     tokenSeries,
@@ -61,23 +59,25 @@ export function LandingHero() {
   const { activeModelId } = useModel();
   const { tokensLabel, costLabel } = formatBridgeStats(stats);
 
-  const modelName =
-    (activeModel || activeModelId).split("/").pop() ?? "—";
-  const statusLabel = connected ? "Ready" : "Offline";
+  const modelName = (activeModel || activeModelId).split("/").pop() ?? "—";
+  const orbStatus = !connected ? "idle" : isStreaming ? "streaming" : "ready";
 
   return (
-    <div className="axon-canvas relative min-h-screen bg-black text-[#fafafa]">
-      <div aria-hidden className="axon-grid-decor landing-grid-fade" />
-
+    <div className="lunar-bg axon-canvas relative min-h-screen text-[#E6F0FF]">
       <header className="glass relative z-10 sticky top-0 flex h-16 items-center justify-between px-6 lg:px-12">
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="flex h-6 w-6 items-center justify-center rounded bg-white">
-            <span className="text-[10px] font-bold text-black">A</span>
+        <Link href="/" className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]">
+            <Image src="/axon-icon.svg" alt="AXON" width={20} height={20} />
           </div>
-          <span className="text-sm font-semibold tracking-tight">AXON</span>
+          <div className="leading-tight">
+            <span className="text-sm font-bold tracking-[0.18em]">AXON</span>
+            <span className="ml-2 font-mono text-[10px] uppercase tracking-[0.28em] text-white/40">
+              Zenith
+            </span>
+          </div>
         </Link>
 
-        <nav className="hidden items-center gap-8 text-sm text-[#a1a1aa] md:flex">
+        <nav className="hidden items-center gap-8 text-sm text-white/55 md:flex">
           <Link href="/docs" className="transition-colors hover:text-white">
             Docs
           </Link>
@@ -90,11 +90,10 @@ export function LandingHero() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <ThemeSwitcher />
           <ConfigWidget />
           <Link
             href="/dashboard"
-            className="btn-vercel-primary ml-1 hidden sm:inline-flex"
+            className="btn-lunar-primary ml-1 hidden sm:inline-flex"
           >
             Dashboard
             <ArrowRight className="h-3.5 w-3.5" />
@@ -105,16 +104,14 @@ export function LandingHero() {
       <main className="relative z-10 mx-auto max-w-6xl px-6 pb-28 pt-14 lg:px-12 lg:pt-20">
         <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
           <div>
-            <motion.div
-              custom={0}
-              variants={fadeUp}
-              initial="hidden"
-              animate="show"
-            >
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 font-mono text-[11px] text-[#a1a1aa]">
+            <motion.div custom={0} variants={fadeUp} initial="hidden" animate="show">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 font-mono text-[11px] text-white/55">
                 <Terminal className="h-3 w-3" />
-                terminal ai · v1.0
-                <BridgeStatus variant="inline" className="ml-1 border-l border-white/10 pl-2" />
+                lunar panel · v1.0.1
+                <BridgeStatus
+                  variant="inline"
+                  className="ml-1 border-l border-white/10 pl-2"
+                />
               </span>
             </motion.div>
 
@@ -123,11 +120,11 @@ export function LandingHero() {
               variants={fadeUp}
               initial="hidden"
               animate="show"
-              className="mt-7 text-[2.75rem] font-semibold leading-[1.02] tracking-[-0.045em] sm:text-6xl lg:text-[4.25rem]"
+              className="mt-7 text-[2.75rem] font-semibold leading-[1.02] tracking-[-0.04em] sm:text-6xl lg:text-[4rem]"
             >
-              <span className="text-gradient-hero">Ship intelligence</span>
+              <span className="text-gradient-hero">Command your agent</span>
               <br />
-              <span className="text-white/90">from your terminal.</span>
+              <span className="text-white/90">from the void.</span>
             </motion.h1>
 
             <motion.p
@@ -135,10 +132,10 @@ export function LandingHero() {
               variants={fadeUp}
               initial="hidden"
               animate="show"
-              className="mt-6 max-w-lg text-base leading-relaxed text-[#a1a1aa]"
+              className="mt-6 max-w-lg text-base leading-relaxed text-white/55"
             >
-              AXON is the control plane for your CLI agent — monitor sessions,
-              switch models, and sync chat without leaving the browser.
+              Zenith is the local control plane for AXON — monitor sessions,
+              switch models, approve tools, and sync chat with your terminal.
             </motion.p>
 
             <motion.div
@@ -148,11 +145,11 @@ export function LandingHero() {
               animate="show"
               className="mt-9 flex flex-wrap items-center gap-3"
             >
-              <Link href="/dashboard" className="btn-vercel-primary">
+              <Link href="/dashboard" className="btn-lunar-primary">
                 Open Dashboard
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link href="/chat" className="btn-vercel-secondary">
+              <Link href="/chat" className="btn-lunar-secondary">
                 Open Chat
               </Link>
             </motion.div>
@@ -162,7 +159,7 @@ export function LandingHero() {
               variants={fadeUp}
               initial="hidden"
               animate="show"
-              className="mt-12 flex flex-wrap gap-8 border-t border-white/[0.06] pt-8"
+              className="mt-12 flex flex-wrap gap-8 border-t border-white/[0.08] pt-8"
             >
               {[
                 { k: "Bridge", v: connected ? "<50ms" : "—" },
@@ -173,7 +170,7 @@ export function LandingHero() {
                   <p className="font-mono text-xl font-medium tabular-nums text-white">
                     {item.v}
                   </p>
-                  <p className="mt-1 text-xs text-[#71717a]">{item.k}</p>
+                  <p className="mt-1 text-xs text-white/40">{item.k}</p>
                 </div>
               ))}
             </motion.div>
@@ -186,28 +183,20 @@ export function LandingHero() {
             animate="show"
             className="relative"
           >
-            <div className="landing-preview-ring overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0a0a0a]">
+            <div className="landing-preview-ring lunar-card overflow-hidden">
               <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <div className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]/90" />
-                  <div className="h-2.5 w-2.5 rounded-full bg-[#febc2e]/90" />
-                  <div className="h-2.5 w-2.5 rounded-full bg-[#28c840]/90" />
-                  <span className="ml-1 font-mono text-[11px] text-[#71717a]">
-                    axon — dashboard
-                  </span>
-                </div>
+                <span className="font-mono text-[11px] text-white/45">
+                  zenith — live preview
+                </span>
                 <BridgeStatus variant="inline" />
+              </div>
+
+              <div className="flex flex-col items-center border-b border-white/[0.06] py-8">
+                <AgentOrb size="md" status={orbStatus} />
               </div>
 
               <div className="grid gap-px bg-white/[0.04] p-px sm:grid-cols-2">
                 {[
-                  {
-                    l: "Status",
-                    v: statusLabel,
-                    spark: false,
-                    series: [] as number[],
-                    id: "",
-                  },
                   {
                     l: "Model",
                     v: modelName,
@@ -224,17 +213,21 @@ export function LandingHero() {
                   },
                   {
                     l: "Tokens",
-                    v: connected ? `${tokensLabel} · ${costLabel}` : "—",
+                    v: connected ? tokensLabel : "—",
                     spark: true,
                     series: normalizeSparkline(tokenSeries),
                     id: "landing-tokens",
                   },
+                  {
+                    l: "Cost",
+                    v: connected ? costLabel : "—",
+                    spark: false,
+                    series: [] as number[],
+                    id: "",
+                  },
                 ].map((m) => (
-                  <div
-                    key={m.l}
-                    className="bg-[#080808] px-4 py-4"
-                  >
-                    <p className="label-caps">{m.l}</p>
+                  <div key={m.l} className="bg-[#050813]/60 px-4 py-4">
+                    <p className="label-mono">{m.l}</p>
                     <p className="mt-2 truncate font-mono text-sm tabular-nums text-white">
                       {m.v}
                     </p>
@@ -243,22 +236,18 @@ export function LandingHero() {
                         <Sparkline
                           data={m.series}
                           fillId={m.id}
-                          stroke="rgba(255,255,255,0.45)"
+                          stroke="rgba(93, 228, 255, 0.55)"
                         />
                       </div>
                     ) : null}
                   </div>
                 ))}
               </div>
-
-              <div className="border-t border-white/[0.06] px-4 py-2.5 font-mono text-[10px] text-[#52525b]">
-                bridge · ws://localhost:8765 · {connected ? "synced" : "no agent"}
-              </div>
             </div>
           </motion.div>
         </div>
 
-        <div className="relative z-10 mt-24 space-y-px overflow-hidden rounded-2xl border border-white/[0.06]">
+        <div className="relative z-10 mt-24 space-y-3">
           {pillars.map((item, i) => (
             <motion.div
               key={item.label}
@@ -269,23 +258,23 @@ export function LandingHero() {
             >
               <Link
                 href={item.href}
-                className="group pillar-row flex flex-col gap-4 bg-[#0a0a0a] p-6 transition-colors hover:bg-[#111] sm:flex-row sm:items-center sm:justify-between"
+                className="group lunar-card lunar-card-hover flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="flex items-start gap-5">
-                  <span className="pillar-num font-mono text-xs text-[#52525b] transition-colors">
+                  <span className="pillar-num font-mono text-xs text-white/35 transition-colors group-hover:text-[#5DE4FF]">
                     {item.n}
                   </span>
                   <div>
-                    <p className="label-caps">{item.label}</p>
+                    <p className="label-mono">{item.label}</p>
                     <h3 className="mt-1 text-base font-medium text-white">
                       {item.title}
                     </h3>
-                    <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#a1a1aa]">
+                    <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/50">
                       {item.desc}
                     </p>
                   </div>
                 </div>
-                <span className="inline-flex shrink-0 items-center gap-1 text-xs text-[#71717a] transition-colors group-hover:text-white">
+                <span className="inline-flex shrink-0 items-center gap-1 text-xs text-white/40 transition-colors group-hover:text-[#5DE4FF]">
                   Explore
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </span>
@@ -295,8 +284,8 @@ export function LandingHero() {
         </div>
       </main>
 
-      <footer className="relative z-10 border-t border-white/[0.06] py-8 text-center text-xs text-[#71717a]">
-        AXON — AI control plane for developers
+      <footer className="relative z-10 border-t border-white/[0.08] py-8 text-center text-xs text-white/40">
+        AXON Zenith — local-first AI control plane
       </footer>
     </div>
   );

@@ -11,7 +11,6 @@ from typing import Literal
 
 from prompt_toolkit.application import Application, get_app, run_in_terminal
 from prompt_toolkit.buffer import Buffer
-from prompt_toolkit.completion import merge_completers
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition, has_completions, has_focus
 from prompt_toolkit.history import FileHistory
@@ -29,10 +28,17 @@ from orchestrator import Orchestrator, SubTask
 from plugins.loader import discover_plugins, list_plugin_commands
 from runtime_policy import POLICY_PATH, load_runtime_policy
 from skills.tasks import set_multitask_runner, set_plan_render_callback
-from skills.tools import ApprovalDecision, tool_display_label
+from skills.tools import (
+    ApprovalDecision,
+    format_tool_activity_line,
+    set_tool_result_callback,
+    tool_display_label,
+)
 from task_manager import task_manager
 from ui.agent_intent import detect_intent
-from ui.completer import AXON_COMMANDS, AxonCommandCompleter
+from ui.axon_completer import build_axon_completer
+from ui.completer import AXON_COMMANDS
+from ui.explore_stats import get_turn_explore_summary
 from ui import tui_render
 from ui.tui_taskboard import TaskBoardItem, TaskBoardState
 
@@ -111,7 +117,7 @@ class AxonTUI:
         )
 
         self.input_buffer = Buffer(
-            completer=merge_completers([AxonCommandCompleter()]),
+            completer=build_axon_completer(),
             history=FileHistory(os.path.expanduser("~/.axon_history")),
             complete_while_typing=True,
             multiline=True,
@@ -159,6 +165,7 @@ class AxonTUI:
 
         self.llm.set_approval_callback(self._request_approval)
         self.llm.set_tool_callback(self._on_tool_start)
+        set_tool_result_callback(self._on_tool_done)
         set_plan_render_callback(self._on_plan_board_update)
         set_multitask_runner(self._multitask_for_tool)
 
@@ -348,6 +355,13 @@ class AxonTUI:
         return [("class:composer", line)]
 
     async def _request_approval(self, tool_name: str, detail: str) -> ApprovalDecision:
+        from openclaw_mode import is_openclaw_active
+        from runtime_policy import load_runtime_policy
+
+        policy = load_runtime_policy()
+        if is_openclaw_active() or policy.autonomy_enabled:
+            return "once"
+
         label = tool_display_label(tool_name)
         command_detail = f"{label}: {detail.strip() or '(no details)'}"
         w = self._width()
@@ -371,6 +385,14 @@ class AxonTUI:
         w = self._width()
         label = tool_display_label(tool_name)
         self._append_block(tui_render.render_agent_activity(label, detail, w))
+        get_app().invalidate()
+
+    async def _on_tool_done(self, tool_name: str, detail: str, output: str) -> None:
+        w = self._width()
+        label = tool_display_label(tool_name)
+        self._append_block(
+            tui_render.render_tool_event(label, detail, w, phase="done")
+        )
         get_app().invalidate()
 
     async def _spinner_loop(self) -> None:
@@ -409,14 +431,45 @@ class AxonTUI:
             return
 
         if cmd == "/config":
+            from openclaw_mode import is_openclaw_active, is_process_elevated
+
             policy = load_runtime_policy()
+            claw = "ON" if is_openclaw_active() else (
+                "armed" if policy.openclaw_enabled else "off"
+            )
             body = (
                 f"Policy: {POLICY_PATH}\n"
                 f"parallel={policy.allow_parallel_agents}  "
                 f"auto_save={policy.auto_save_session}\n"
-                f"Use REPL /config set for edits."
+                f"openclaw={claw}  elevated={'yes' if is_process_elevated() else 'no'}\n"
+                f"Use /claw on|off or REPL /config set for other keys."
             )
             self._append_block(tui_render.render_system(body, w))
+            return
+
+        if cmd in {"/claw", "/openclaw"}:
+            from openclaw_mode import (
+                disable_openclaw,
+                enable_openclaw,
+                openclaw_status_lines,
+            )
+
+            verb = args.strip().lower() or "status"
+            if verb == "on":
+                ok, msg = enable_openclaw()
+                kind = "system" if ok else "error"
+                self._append_block(
+                    tui_render.render_system(msg, w)
+                    if kind == "system"
+                    else tui_render.render_error(msg, w)
+                )
+            elif verb == "off":
+                self._append_block(
+                    tui_render.render_system(disable_openclaw(), w)
+                )
+            else:
+                body = "\n".join(openclaw_status_lines())
+                self._append_block(tui_render.render_system(body, w))
             return
 
         if cmd == "/plan":
@@ -686,6 +739,9 @@ class AxonTUI:
                 self._transcript_area.text = self._transcript_prefix + tui_render.render_assistant_message(
                     body, w
                 )
+                explore = get_turn_explore_summary()
+                if explore:
+                    self._append_block(tui_render.render_explore_summary(explore, w))
                 self._append_block(tui_render.render_turn_divider(w))
                 self.state.status = "ready"
             elif result.ok:

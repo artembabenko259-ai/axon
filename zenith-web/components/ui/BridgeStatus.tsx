@@ -8,28 +8,35 @@ interface BridgeStatusProps {
   className?: string;
 }
 
+function statusDot(connected: boolean, reconnecting?: boolean) {
+  if (connected) return "live-dot-on bg-[#5DE4FF]";
+  if (reconnecting) return "bg-[#F4C77B]";
+  return "bg-[#F47B7B]";
+}
+
 export function BridgeStatus({
   variant = "pill",
   className,
 }: BridgeStatusProps) {
   const { connected, stats, uptimeLabel } = useChat();
   const { tokensLabel, costLabel } = formatBridgeStats(stats);
+  const reconnecting = !connected;
 
   if (variant === "inline") {
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 font-mono text-[10px] text-[#71717a]",
+          "inline-flex items-center gap-1.5 font-mono text-[10px] text-white/45",
           className,
         )}
       >
         <span
           className={cn(
             "live-dot h-1.5 w-1.5 rounded-full",
-            connected ? "live-dot-on" : "bg-zinc-600",
+            statusDot(connected, reconnecting),
           )}
         />
-        {connected ? "live" : "offline"}
+        {connected ? "live" : reconnecting ? "reconnecting" : "offline"}
       </span>
     );
   }
@@ -38,17 +45,17 @@ export function BridgeStatus({
     return (
       <div
         className={cn(
-          "flex items-center gap-2 font-mono text-[10px] text-[#71717a]",
+          "flex items-center gap-2 font-mono text-[10px] text-white/45",
           className,
         )}
       >
         <span
           className={cn(
             "live-dot h-1.5 w-1.5 rounded-full",
-            connected ? "live-dot-on" : "bg-zinc-600",
+            statusDot(connected, reconnecting),
           )}
         />
-        <span className={connected ? "text-[#a1a1aa]" : "text-[#52525b]"}>
+        <span className={connected ? "text-white/70" : "text-white/35"}>
           {connected ? uptimeLabel : "no agent"}
         </span>
       </div>
@@ -56,33 +63,34 @@ export function BridgeStatus({
   }
 
   return (
-    <div
-      className={cn(
-        "rounded-lg border border-white/[0.06] bg-[#0a0a0a] px-3 py-2",
-        className,
-      )}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              "live-dot h-1.5 w-1.5 rounded-full",
-              connected ? "live-dot-on" : "bg-zinc-600",
-            )}
-          />
-          <span className="text-[11px] font-medium text-[#a1a1aa]">
-            {connected ? "Bridge live" : "Bridge offline"}
-          </span>
-        </div>
-        <span className="font-mono text-[10px] text-[#52525b]">:8765</span>
+    <div className={cn("lunar-card p-4", className)}>
+      <div className="label-mono mb-2">Bridge</div>
+      <div className="flex items-center gap-2">
+        <span
+          className={cn(
+            "h-2 w-2 rounded-full",
+            statusDot(connected, reconnecting),
+            connected && "glow-cyan",
+          )}
+        />
+        <span className="font-mono text-xs text-white/80">
+          {connected
+            ? "Bridge connected"
+            : reconnecting
+              ? "Reconnecting…"
+              : "Bridge offline"}
+        </span>
+      </div>
+      <div className="mt-2 truncate font-mono text-[10px] text-white/40">
+        ws://127.0.0.1:8765
       </div>
       {connected ? (
-        <p className="mt-1.5 truncate font-mono text-[10px] tabular-nums text-[#71717a]">
+        <p className="mt-2 truncate font-mono text-[10px] tabular-nums text-white/45">
           {uptimeLabel} · {tokensLabel} · {costLabel}
         </p>
       ) : (
-        <p className="mt-1.5 text-[10px] text-[#52525b]">
-          Start AXON CLI to sync
+        <p className="mt-2 text-[10px] text-white/35">
+          Run <span className="font-mono text-white/55">axon tui</span> to sync
         </p>
       )}
     </div>

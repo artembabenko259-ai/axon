@@ -5,7 +5,45 @@ from pathlib import Path
 
 from audit_log import scan_secrets
 from session_store import list_sessions, load_session, save_session
-from skills.tools import glob_files, list_dir, read_file, write_file
+from skills.tools import (
+    format_tool_activity,
+    glob_files,
+    list_dir,
+    read_file,
+    tool_activity_detail,
+    write_file,
+)
+
+
+class ToolActivityTests(unittest.TestCase):
+    def test_read_file_activity(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            old = os.getcwd()
+            os.chdir(tmp)
+            try:
+                path = Path("src/main.py")
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("x", encoding="utf-8")
+                detail = tool_activity_detail("read_file", {"filepath": str(path)})
+                self.assertEqual(detail, "@src/main.py")
+                line = format_tool_activity("read_file", {"filepath": str(path)})
+                self.assertEqual(line, "Read @src/main.py")
+            finally:
+                os.chdir(old)
+
+    def test_grep_activity(self) -> None:
+        line = format_tool_activity(
+            "search_code",
+            {"pattern": "def main", "path": "."},
+        )
+        self.assertIn("Grep", line)
+        self.assertIn('"def main"', line)
+        self.assertIn("@.", line)
+
+    def test_shell_activity_truncates(self) -> None:
+        cmd = "echo " + "x" * 200
+        detail = tool_activity_detail("execute_shell", {"command": cmd})
+        self.assertLessEqual(len(detail), 96)
 
 
 class ToolsTests(unittest.TestCase):
@@ -64,6 +102,24 @@ class AuditTests(unittest.TestCase):
     def test_scan_secrets(self) -> None:
         hits = scan_secrets("token sk-or-v1-abcdefghijklmnopqrstuvwxyz")
         self.assertTrue(hits)
+
+    def test_read_file_cache_skips_unchanged_content(self) -> None:
+        from skills.tools import clear_read_file_cache, read_file
+
+        clear_read_file_cache()
+        with tempfile.TemporaryDirectory() as tmp:
+            previous = os.getcwd()
+            try:
+                os.chdir(tmp)
+                path = Path("sample.txt")
+                path.write_text("hello cache", encoding="utf-8")
+                first = read_file(str(path))
+                second = read_file(str(path))
+            finally:
+                os.chdir(previous)
+        self.assertIn("hello cache", first)
+        self.assertIn("Cached", second)
+        self.assertNotIn("hello cache", second)
 
 
 class VersionTests(unittest.TestCase):

@@ -10,7 +10,7 @@ from rich.text import Text
 from ui.theme import CLITheme
 
 APP_NAME = "AXON"
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 INSTRUCTIONS = "Type /help for commands • /exit to quit"
 LOGO_FONTS = ("slant", "small")
 

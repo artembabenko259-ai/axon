@@ -52,7 +52,7 @@ export function ModelSelector({ selected, onSelect }: ModelSelectorProps) {
 
   return (
     <LayoutGroup>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="space-y-2">
         {allModels.map((model, index) => {
           const active = current === model.id;
           return (
@@ -67,41 +67,23 @@ export function ModelSelector({ selected, onSelect }: ModelSelectorProps) {
               whileTap={TAP_PRESS}
               onClick={() => handleSelect(model.id)}
               className={cn(
-                "group relative overflow-hidden rounded-lg border border-white/[0.06] bg-[#0a0a0a] p-4 text-left transition-colors duration-200",
+                "group relative w-full overflow-hidden rounded-lg border px-3 py-2.5 text-left transition-colors duration-200",
                 active
-                  ? "border-white/15 bg-[#111]"
-                  : "hover:border-white/10 hover:bg-[#111]",
+                  ? "border-[#5DE4FF]/35 bg-[#5DE4FF]/8"
+                  : "border-white/[0.06] hover:border-white/15 hover:bg-white/[0.03]",
               )}
             >
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-              >
-                <div className="absolute -top-[40%] left-1/2 h-[120%] w-[140%] -translate-x-1/2 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.06),transparent_65%)]" />
-              </div>
-              <div className="relative">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium tracking-tight text-white">
-                    {model.name}
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate font-mono text-xs text-white/85">
+                  {model.id}
+                </span>
+                {active ? (
+                  <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#5DE4FF]">
+                    active
                   </span>
-                  <div className="flex items-center gap-1.5">
-                    {model.isCustom && (
-                      <span className="label-caps !text-[9px] rounded-md border border-white/5 bg-zinc-950 px-1.5 py-0.5">
-                        Custom
-                      </span>
-                    )}
-                    {active && (
-                      <motion.span
-                        layoutId="model-active-dot"
-                        className="h-1.5 w-1.5 rounded-full bg-white"
-                      />
-                    )}
-                  </div>
-                </div>
-                <p className="label-caps mt-2 !text-[9px]">{model.provider}</p>
-                <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-[#71717a]">
-                  {model.description}
-                </p>
+                ) : (
+                  <span className="text-[10px] text-white/35">select</span>
+                )}
               </div>
             </motion.button>
           );

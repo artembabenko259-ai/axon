@@ -10,10 +10,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_SETUP = ROOT / "release" / "AXON_Setup_v1.0.0.exe"
-FALLBACK_SETUP = ROOT / "dist" / "setup" / "AXON_Setup_v1.0.0.exe"
+DEFAULT_SETUP = ROOT / "release" / "AXON_Setup_v1.0.1.exe"
+FALLBACK_SETUP = ROOT / "dist" / "setup" / "AXON_Setup_v1.0.1.exe"
 WINGET_INSTALLER = ROOT / "winget" / "Core.AXON.installer.yaml"
-WINGET_MANIFEST_DIR = ROOT / "winget" / "manifests" / "c" / "Core" / "AXON" / "1.0.0"
+WINGET_MANIFEST_DIR = ROOT / "winget" / "manifests" / "c" / "Core" / "AXON" / "1.0.1"
 
 
 def sha256_file(path: Path) -> str:

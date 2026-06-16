@@ -100,17 +100,15 @@ export function ModelMarketplace() {
   );
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-white/[0.06] bg-[#0a0a0a]">
-      <div className="border-b border-white/[0.06] bg-[#111] px-4 py-4 sm:px-5">
+    <div className="lunar-card flex flex-col overflow-hidden">
+      <div className="border-b border-white/[0.06] px-4 py-4 sm:px-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#71717a]">
-              Marketplace
-            </p>
+            <p className="label-mono">Marketplace</p>
             <h2 className="mt-1 text-sm font-semibold tracking-tight text-white">
               Model Marketplace
             </h2>
-            <p className="mt-0.5 text-xs text-[#a1a1aa]">
+            <p className="mt-0.5 text-xs text-white/45">
               {loading
                 ? "Loading pricing from OpenRouter…"
                 : `${filtered.length} models available`}
@@ -138,8 +136,8 @@ export function ModelMarketplace() {
               className={cn(
                 "rounded-md px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest transition-colors",
                 category === cat.id
-                  ? "bg-zinc-800 text-zinc-100"
-                  : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300",
+                  ? "bg-[#5DE4FF]/15 text-[#5DE4FF]"
+                  : "text-white/40 hover:bg-white/[0.04] hover:text-white/70",
               )}
             >
               {cat.label}

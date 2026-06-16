@@ -7,6 +7,10 @@ import { GlassCard } from "@/components/ui/GlassCard";
 
 export interface RuntimePolicy {
   autonomy_enabled: boolean;
+  openclaw_enabled?: boolean;
+  openclaw_active?: boolean;
+  process_elevated?: boolean;
+  openclaw_enabled_at?: string;
   web_control_enabled: boolean;
   terminal_control_enabled: boolean;
   require_desktop_confirmation: boolean;
@@ -115,6 +119,20 @@ export function RuntimePolicyPanel() {
           checked={policy.autonomy_enabled}
           onChange={(v) => setPolicy((p) => ({ ...p, autonomy_enabled: v }))}
         />
+        <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-3">
+          <p className="text-sm text-white">OpenClaw</p>
+          <p className="mt-1 text-xs leading-relaxed text-[#71717a]">
+            Full autonomy when the CLI runs as Administrator. Enable with{" "}
+            <span className="font-mono text-[#a1a1aa]">/claw on</span> or{" "}
+            <span className="font-mono text-[#a1a1aa]">axon claw on</span> in an
+            elevated terminal — not from the browser.
+          </p>
+          <p className="mt-2 font-mono text-xs text-[#a1a1aa]">
+            policy: {policy.openclaw_enabled ? "on" : "off"} · active:{" "}
+            {policy.openclaw_active ? "yes" : "no"} · admin:{" "}
+            {policy.process_elevated ? "yes" : "no"}
+          </p>
+        </div>
         <Toggle
           label="Web control"
           hint="Allow commands from the browser dashboard (requires bridge token)."

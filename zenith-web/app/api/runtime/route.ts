@@ -11,6 +11,8 @@ function runtimePolicyPath(): string {
 
 export interface RuntimePolicyPayload {
   autonomy_enabled: boolean;
+  openclaw_enabled?: boolean;
+  openclaw_enabled_at?: string;
   web_control_enabled: boolean;
   terminal_control_enabled: boolean;
   require_desktop_confirmation: boolean;
@@ -60,6 +62,12 @@ export async function POST(request: NextRequest) {
     const current = await readPolicy();
     const next: RuntimePolicyPayload = {
       autonomy_enabled: body.autonomy_enabled ?? current.autonomy_enabled,
+      openclaw_enabled:
+        body.openclaw_enabled === false
+          ? false
+          : current.openclaw_enabled ?? false,
+      openclaw_enabled_at:
+        body.openclaw_enabled === false ? "" : current.openclaw_enabled_at ?? "",
       web_control_enabled:
         body.web_control_enabled ?? current.web_control_enabled,
       terminal_control_enabled:

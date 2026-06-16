@@ -174,9 +174,17 @@ class AxonBridge:
                 if msg_type == "set_policy":
                     updates = data.get("policy") or data
                     current = load_runtime_policy()
+                    # OpenClaw can only be enabled from an elevated CLI (/claw on).
+                    openclaw_next = current.openclaw_enabled
+                    if updates.get("openclaw_enabled") is False:
+                        openclaw_next = False
                     merged = RuntimePolicy(
                         autonomy_enabled=bool(
                             updates.get("autonomy_enabled", current.autonomy_enabled)
+                        ),
+                        openclaw_enabled=openclaw_next,
+                        openclaw_enabled_at=(
+                            "" if not openclaw_next else current.openclaw_enabled_at
                         ),
                         web_control_enabled=bool(
                             updates.get(
@@ -230,6 +238,11 @@ class AxonBridge:
                             updates.get(
                                 "notification_volume",
                                 current.notification_volume,
+                            )
+                        ),
+                        auto_save_session=bool(
+                            updates.get(
+                                "auto_save_session", current.auto_save_session
                             )
                         ),
                     )

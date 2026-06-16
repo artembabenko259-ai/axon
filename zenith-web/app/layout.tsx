@@ -1,25 +1,27 @@
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono, Inter } from "next/font/google";
+import { JetBrains_Mono, Sora } from "next/font/google";
 import { AppProviders } from "@/components/providers/AppProviders";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const sora = Sora({
+  variable: "--font-sora",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600", "700", "800"],
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrains = JetBrains_Mono({
+  variable: "--font-jetbrains",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "AXON — AI Control Panel",
+  title: "AXON Zenith — Lunar Control Panel",
   description:
     "Premium web control panel for the AXON AI CLI. Monitor agents, switch models, and manage configuration.",
-  applicationName: "AXON",
+  applicationName: "AXON Zenith",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -29,7 +31,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#000000",
+  themeColor: "#050813",
 };
 
 export default function RootLayout({
@@ -40,10 +42,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${sora.variable} ${jetbrains.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full bg-black text-[#fafafa]">
+      <body className="min-h-full bg-[#050813] text-[#E6F0FF]">
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

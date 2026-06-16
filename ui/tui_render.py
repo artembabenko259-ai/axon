@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import textwrap
 
+from skills.tools import format_tool_activity_line
+
 
 def _wrap(text: str, width: int) -> str:
     if width < 20:
@@ -62,12 +64,11 @@ def render_task_board(
 
 
 def render_agent_activity(label: str, detail: str, width: int) -> str:
-    detail = detail.strip()
-    if len(detail) > width - 4:
-        detail = detail[: width - 7] + "..."
-    if detail:
-        return f"  * {label}: {detail}"
-    return f"  * {label}"
+    """Cursor-style tool activity line in the transcript."""
+    line = format_tool_activity_line(label, detail)
+    if len(line) > width - 2:
+        line = line[: width - 5] + "..."
+    return f"  › {line}"
 
 
 def render_thinking(text: str, width: int) -> str:
@@ -115,9 +116,11 @@ def render_assistant_message(text: str, width: int) -> str:
 
 
 def render_tool_event(tool: str, detail: str, width: int, *, phase: str = "run") -> str:
-    mark = "*" if phase == "run" else "+"
-    extra = f" {detail.strip()}" if detail.strip() else ""
-    return f"  {mark} {tool}{extra}"
+    mark = "›" if phase == "run" else "✓"
+    line = format_tool_activity_line(tool, detail)
+    if len(line) > width - 4:
+        line = line[: width - 7] + "..."
+    return f"  {mark} {line}"
 
 
 def render_approval_request(detail: str, width: int) -> str:
@@ -131,6 +134,13 @@ def render_system(text: str, width: int) -> str:
 
 def render_error(text: str, width: int) -> str:
     return f"! {_wrap(text, max(width - 4, 40))}"
+
+
+def render_explore_summary(summary: str, width: int) -> str:
+    text = summary.strip()
+    if len(text) > width - 2:
+        text = text[: width - 5] + "..."
+    return f"  {text}"
 
 
 def render_turn_divider(width: int) -> str:

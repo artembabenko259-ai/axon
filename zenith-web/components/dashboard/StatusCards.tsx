@@ -28,53 +28,53 @@ export function StatusCards({
 }: StatusCardProps) {
   const cards = [
     {
-      label: "Agent Status",
+      label: "Agent",
       value: status,
       icon: Activity,
-      accent: "text-emerald-400",
-      dot: "bg-emerald-400",
+      accent: "text-[#5DE4FF]",
+      dot: "bg-[#5DE4FF]",
       sparkline: false as const,
       fillId: "",
       series: [] as number[],
       stroke: "",
     },
     {
-      label: "Active Model",
+      label: "Active model",
       value: model,
       icon: Cpu,
-      accent: "text-white",
-      dot: "bg-zinc-400",
+      accent: "text-[#E6F0FF]",
+      dot: "bg-white/50",
       sparkline: false as const,
       fillId: "",
       series: [] as number[],
       stroke: "",
     },
     {
-      label: "Session Uptime",
+      label: "Uptime",
       value: uptime,
       icon: Clock,
-      accent: "text-white",
-      dot: "bg-zinc-500",
+      accent: "text-[#E6F0FF]",
+      dot: "bg-white/35",
       sparkline: true as const,
       fillId: "uptime-spark-fill",
       series: normalizeSparkline(uptimeSeries),
-      stroke: "rgba(255, 255, 255, 0.5)",
+      stroke: "rgba(93, 228, 255, 0.55)",
     },
     {
-      label: "Tokens / Cost",
+      label: "Tokens · Cost",
       value: `${tokensUsed} · ${sessionCost}`,
       icon: Coins,
-      accent: "text-white",
-      dot: "bg-white/40",
+      accent: "text-[#E6F0FF]",
+      dot: "bg-[#5DE4FF]/60",
       sparkline: true as const,
       fillId: "tokens-spark-fill",
       series: normalizeSparkline(tokenSeries),
-      stroke: "rgba(255, 255, 255, 0.65)",
+      stroke: "rgba(93, 228, 255, 0.7)",
     },
   ];
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((card, index) => {
         const Icon = card.icon;
         return (
@@ -86,16 +86,16 @@ export function StatusCards({
             whileHover={{ y: -2, transition: { duration: 0.2, ease: EASE_OUT } }}
             whileTap={TAP_PRESS}
             className={cn(
-              "card-interactive overflow-hidden rounded-xl border border-white/[0.06] bg-[#0a0a0a] p-4",
+              "lunar-card lunar-card-hover overflow-hidden p-4",
               card.sparkline && "flex flex-col",
             )}
           >
             <div className="flex items-start justify-between">
               <div className="min-w-0 flex-1">
-                <p className="label-caps">{card.label}</p>
+                <p className="label-mono">{card.label}</p>
                 <p
                   className={cn(
-                    "mt-2 font-mono text-lg font-medium tabular-nums tracking-tight",
+                    "mt-2 truncate font-mono text-lg font-medium tabular-nums tracking-tight",
                     card.accent,
                   )}
                 >
@@ -109,7 +109,7 @@ export function StatusCards({
                     card.dot,
                   )}
                 />
-                <Icon className="h-4 w-4 text-[#71717a]" strokeWidth={1.75} />
+                <Icon className="h-4 w-4 text-white/40" strokeWidth={1.75} />
               </div>
             </div>
             {card.sparkline ? (

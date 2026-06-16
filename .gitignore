@@ -73,6 +73,7 @@ htmlcov/
 
 # =============================================================================
 # Deploy / site (runaxon.xyz) — keep private, do not commit secrets
+deploy/.ftp.env
 # =============================================================================
 deploy/site/
 deploy/dist/
@@ -82,8 +83,12 @@ deploy/*.local
 .vercel/
 .netlify/
 
+# Reference imports (not part of AXON distribution)
+_import/
+
 # Local release artifacts (upload to hosting manually)
 deploy/downloads/
+deploy/*.zip
 *.7z
 
 # User AXON data (if ever copied into repo by mistake)

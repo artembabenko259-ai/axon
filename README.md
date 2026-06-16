@@ -11,7 +11,8 @@ pip install -r requirements.txt
 cp .env.example .env
 # Set OPENROUTER_API_KEY in .env or via http://localhost:3000/config
 
-axon          # interactive REPL (same as axon repl)
+axon          # fullscreen TUI (default)
+axon repl     # classic Rich REPL
 python cli.py # equivalent
 python main.py # backward-compatible
 ```
@@ -20,14 +21,15 @@ python main.py # backward-compatible
 
 | Command | Description |
 |---------|-------------|
-| `axon` / `axon repl` | Interactive REPL with WebSocket bridge |
+| `axon` / `axon tui` | Fullscreen TUI (default) |
+| `axon repl` | Interactive REPL with WebSocket bridge |
 | `axon -p "task"` | Headless single prompt (CI/scripts) |
 | `axon doctor` | Environment checks |
 | `axon version` | Print version |
 | `axon update` | Check runaxon.xyz for updates |
 | `axon doctor --check-updates` | Doctor + update check |
 | `axon web --open` | Dashboard and open browser |
-| `axon tui` | Fullscreen terminal UI |
+| `axon tui` | Fullscreen terminal UI (alias for default) |
 | `axon multitask "goal"` | Orchestrator headless (parallel sub-agents) |
 | `axon tray` | System tray icon (Windows) |
 | `axon export [id]` | Export session to Markdown |

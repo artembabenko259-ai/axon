@@ -1,7 +1,6 @@
 "use client";
 
 import { motion, LayoutGroup } from "framer-motion";
-import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { LogsConsole } from "@/components/dashboard/LogsConsole";
 import { ModelSelector } from "@/components/dashboard/ModelSelector";
@@ -9,30 +8,44 @@ import { StatusCards } from "@/components/dashboard/StatusCards";
 import { ToolTracePanel } from "@/components/dashboard/ToolTracePanel";
 import { MultitaskPanel } from "@/components/dashboard/MultitaskPanel";
 import { ModelMarketplace } from "@/components/marketplace/ModelMarketplace";
-import { AgentOrb } from "@/components/ui/AgentOrb";
+import { AgentOrb, type OrbStatus } from "@/components/ui/AgentOrb";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { StaggerGrid, StaggerItem } from "@/components/ui/StaggerGrid";
 import { useChat, formatBridgeStats } from "@/context/ChatContext";
 import { useModel } from "@/context/ModelContext";
 
+function deriveOrbStatus(
+  connected: boolean,
+  isStreaming: boolean,
+  isSwitching: boolean,
+): OrbStatus {
+  if (!connected) return "idle";
+  if (isSwitching) return "switching";
+  if (isStreaming) return "streaming";
+  return "ready";
+}
+
 export default function DashboardPage() {
   const { activeModelId, isSwitching } = useModel();
-  const { messages, connected, stats, uptimeLabel, tokenSeries, uptimeSeries } =
-    useChat();
+  const {
+    connected,
+    isStreaming,
+    stats,
+    uptimeLabel,
+    tokenSeries,
+    uptimeSeries,
+  } = useChat();
   const { tokensLabel, costLabel } = formatBridgeStats(stats);
-  const [status, setStatus] = useState<"ready" | "thinking" | "streaming">(
-    "ready",
-  );
 
-  useEffect(() => {
-    const last = messages[messages.length - 1];
-    if (!last) return;
-    if (last.role === "assistant" && last.source === "terminal") {
-      setStatus("ready");
-    }
-  }, [messages]);
-
+  const orbStatus = deriveOrbStatus(connected, isStreaming, isSwitching);
   const shortModel = activeModelId.split("/").pop() ?? activeModelId;
+  const statusLabel = connected
+    ? isStreaming
+      ? "Streaming"
+      : isSwitching
+        ? "Switching"
+        : "Ready"
+    : "Offline";
 
   return (
     <AppShell title="Dashboard">
@@ -42,25 +55,21 @@ export default function DashboardPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4 }}
-          className="flex flex-1 flex-col gap-6"
+          className="mx-auto flex max-w-[1500px] flex-1 flex-col gap-6"
         >
           <StaggerGrid className="flex flex-col gap-6">
             <StaggerItem>
               <div className="mb-2">
-                <p className="label-caps">Overview</p>
-                <h2 className="text-lg font-semibold tracking-tight text-white">Dashboard</h2>
-                <p className="mt-1 text-sm text-[#a1a1aa]">
-                  Real-time agent metrics and model orchestration
+                <p className="label-mono">Overview</p>
+                <h2 className="text-lg font-semibold tracking-tight text-white">
+                  Mission control
+                </h2>
+                <p className="mt-1 text-sm text-white/50">
+                  Live agent telemetry, models, and orchestration
                 </p>
               </div>
               <StatusCards
-                status={
-                  connected
-                    ? status === "ready"
-                      ? "Ready"
-                      : status
-                    : "Reconnecting…"
-                }
+                status={statusLabel}
                 model={shortModel}
                 uptime={uptimeLabel}
                 tokensUsed={tokensLabel}
@@ -70,43 +79,39 @@ export default function DashboardPage() {
               />
             </StaggerItem>
 
-            <div className="grid gap-4 lg:grid-cols-5">
-              <StaggerItem className="lg:col-span-2">
+            <div className="grid gap-4 lg:grid-cols-[1fr_1.1fr]">
+              <StaggerItem>
                 <GlassCard
                   layoutId="orb-card"
-                  className="flex flex-col items-center justify-center !py-12"
+                  className="flex min-h-[320px] flex-col items-center justify-center !py-10"
                   delay={0.1}
                 >
                   <AgentOrb
-                    size="md"
-                    status={status}
+                    size="lg"
+                    status={orbStatus}
                     isSwitching={isSwitching}
                   />
                   <motion.p
                     key={activeModelId}
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mt-6 max-w-[200px] truncate text-center text-xs text-[#71717a]"
+                    className="mt-6 max-w-[240px] truncate text-center font-mono text-xs text-white/45"
                   >
                     Active:{" "}
-                    <span className="text-white">{shortModel}</span>
+                    <span className="text-[#E6F0FF]">{shortModel}</span>
                   </motion.p>
-                  <p className="mt-1 text-center text-[10px] capitalize text-[#71717a]">
-                    {isSwitching ? "Switching model…" : `Agent is ${status}`}
-                  </p>
                 </GlassCard>
               </StaggerItem>
 
-              <StaggerItem className="lg:col-span-3">
+              <StaggerItem>
                 <GlassCard layoutId="model-grid" delay={0.15}>
-                  <p className="label-caps">Inference</p>
-                  <h2 className="mt-1 text-sm font-semibold tracking-tight text-white">
-                    Model Selection
-                  </h2>
-                  <p className="mt-1 text-xs text-[#a1a1aa]">
-                    Default and custom models — click to activate
-                  </p>
-                  <div className="mt-4 max-h-64 overflow-y-auto logs-scroll pr-1">
+                  <div className="flex items-center justify-between">
+                    <p className="label-mono">Model selection</p>
+                    <span className="font-mono text-[11px] text-white/40">
+                      click = switch in CLI
+                    </span>
+                  </div>
+                  <div className="mt-4 max-h-72 overflow-y-auto logs-scroll pr-1">
                     <ModelSelector />
                   </div>
                 </GlassCard>
@@ -119,13 +124,14 @@ export default function DashboardPage() {
               </motion.div>
             </StaggerItem>
 
-            <StaggerItem>
-              <MultitaskPanel />
-            </StaggerItem>
-
-            <StaggerItem>
-              <ToolTracePanel />
-            </StaggerItem>
+            <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
+              <StaggerItem>
+                <MultitaskPanel />
+              </StaggerItem>
+              <StaggerItem>
+                <ToolTracePanel />
+              </StaggerItem>
+            </div>
 
             <StaggerItem>
               <LogsConsole />

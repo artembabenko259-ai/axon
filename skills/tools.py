@@ -16,6 +16,7 @@ from request_context import get_request_source
 from runtime_policy import load_runtime_policy
 from rich.panel import Panel
 from rich.text import Text
+from ui.explore_stats import record_explore_tool
 
 ApprovalDecision = Literal["once", "session", "deny"]
 ApprovalCallback = Callable[[str, str], Awaitable[ApprovalDecision]]
@@ -24,6 +25,7 @@ ToolResultCallback = Callable[[str, str, str], Awaitable[None]]
 MAX_FILE_SIZE = 64 * 1024
 SHELL_TIMEOUT_SECONDS = 60
 MAX_PANEL_OUTPUT = 4000
+_READ_FILE_CACHE: dict[str, tuple[float, int, int]] = {}
 
 SHELL_DENY_PATTERNS: list[tuple[str, str]] = [
     (r"rm\s+-rf", "recursive force delete"),
@@ -253,7 +255,7 @@ def tool_display_label(tool_name: str) -> str:
         "list_dir": "List",
         "glob_files": "Glob",
         "search_code": "Grep",
-        "apply_patch": "Patch",
+        "apply_patch": "Edit",
         "web_search": "Search",
         "create_plan": "Plan",
         "complete_task": "Task",
@@ -262,6 +264,108 @@ def tool_display_label(tool_name: str) -> str:
     if tool_name in builtin:
         return builtin[tool_name]
     return f"Skill:{tool_name}"
+
+
+def _truncate_activity(text: str, max_len: int = 96) -> str:
+    compact = " ".join(text.split())
+    if len(compact) <= max_len:
+        return compact
+    return f"{compact[: max_len - 1]}…"
+
+
+def _display_path(raw: str) -> str:
+    """Cursor-style @path (relative to cwd when possible)."""
+    raw = (raw or "").strip()
+    if not raw:
+        return ""
+    if raw.startswith("@"):
+        return raw
+    try:
+        path = Path(raw).expanduser()
+        if not path.is_absolute():
+            path = (Path.cwd() / path).resolve()
+        else:
+            path = path.resolve()
+        cwd = Path.cwd().resolve()
+        if path == cwd:
+            return "@."
+        try:
+            rel = path.relative_to(cwd)
+            return f"@{rel.as_posix()}"
+        except ValueError:
+            return f"@{path.as_posix()}"
+    except OSError:
+        return f"@{raw}"
+
+
+def _quote_activity(text: str) -> str:
+    text = (text or "").strip()
+    if not text:
+        return '""'
+    if " " in text or '"' in text:
+        escaped = text.replace('"', '\\"')
+        return f'"{escaped}"'
+    return text
+
+
+def tool_activity_detail(tool_name: str, args: dict[str, Any]) -> str:
+    """Human-readable target for approvals, bridge events, and activity feeds."""
+    if tool_name == "execute_shell":
+        return _truncate_activity(str(args.get("command", "")))
+    if tool_name in {"read_file", "write_file", "apply_patch"}:
+        return _display_path(str(args.get("filepath", "")))
+    if tool_name == "list_dir":
+        path = _display_path(str(args.get("path", ".")))
+        if args.get("recursive"):
+            return f"{path} (recursive)" if path else "(recursive)"
+        return path or "@."
+    if tool_name == "glob_files":
+        pattern = str(args.get("pattern", "")).strip() or "*"
+        root = _display_path(str(args.get("path", "."))) or "@."
+        return f"{pattern} in {root}"
+    if tool_name == "search_code":
+        pattern = _quote_activity(str(args.get("pattern", "")))
+        root = _display_path(str(args.get("path", "."))) or "@."
+        return f"{pattern} in {root}"
+    if tool_name == "web_search":
+        return _quote_activity(str(args.get("query", "")))
+    if tool_name == "create_plan":
+        goal = str(args.get("goal", "")).strip()
+        tasks = args.get("tasks") or []
+        count = len(tasks) if isinstance(tasks, list) else 0
+        if goal:
+            return _truncate_activity(f"{_quote_activity(goal)} ({count} steps)")
+        return f"{count} steps"
+    if tool_name == "complete_task":
+        task_id = args.get("task_id", args.get("id", ""))
+        return f"#{task_id}" if task_id != "" else ""
+    if tool_name == "update_task_status":
+        task_id = args.get("task_id", args.get("id", ""))
+        status = str(args.get("status", "")).strip()
+        if task_id != "" and status:
+            return f"#{task_id} → {status}"
+        if task_id != "":
+            return f"#{task_id}"
+        return status
+    # plugin / unknown tools — show first string arg if any
+    for value in args.values():
+        if isinstance(value, str) and value.strip():
+            return _truncate_activity(value.strip())
+    return _truncate_activity(json.dumps(args, ensure_ascii=False))
+
+
+def format_tool_activity(tool_name: str, args: dict[str, Any]) -> str:
+    """Cursor / Claude Code style line, e.g. 'Read @ui/repl.py'."""
+    label = tool_display_label(tool_name)
+    detail = tool_activity_detail(tool_name, args)
+    return format_tool_activity_line(label, detail)
+
+
+def format_tool_activity_line(label: str, detail: str = "") -> str:
+    detail = (detail or "").strip()
+    if detail:
+        return f"{label} {detail}"
+    return label
 
 
 def build_permission_panel(tool_name: str, detail: str) -> Panel:
@@ -343,6 +447,11 @@ def _resolve_safe_path(filepath: str) -> Path | str:
     return path
 
 
+def clear_read_file_cache() -> None:
+    """Drop cached file reads (new user turn / session reset)."""
+    _READ_FILE_CACHE.clear()
+
+
 def read_file(filepath: str) -> str:
     """Read and return file content."""
     path = _resolve_safe_path(filepath)
@@ -353,8 +462,22 @@ def read_file(filepath: str) -> str:
         return f"Error: file not found — {path}"
 
     try:
-        size = path.stat().st_size
+        stat = path.stat()
+        size = stat.st_size
+        cache_key = str(path)
+        cached = _READ_FILE_CACHE.get(cache_key)
+        if cached and cached[0] == stat.st_mtime and cached[1] == size:
+            line_count = cached[2]
+            return (
+                f"[Cached — {path.name} unchanged, {size} bytes, ~{line_count} lines. "
+                "Content is already in context from the previous read; "
+                "only read again if the file may have changed.]"
+            )
+
         text = path.read_text(encoding="utf-8", errors="replace")
+        line_count = text.count("\n") + (1 if text else 0)
+        _READ_FILE_CACHE[cache_key] = (stat.st_mtime, size, line_count)
+
         if size > MAX_FILE_SIZE:
             return (
                 f"{text[:MAX_FILE_SIZE]}\n\n"
@@ -381,6 +504,7 @@ def write_file(filepath: str, content: str) -> str:
         backup_path = backup_manager.backup_if_exists(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
+        _READ_FILE_CACHE.pop(str(path.resolve()), None)
         if backup_path:
             return (
                 f"Successfully wrote {len(content)} characters to {path} "
@@ -569,6 +693,7 @@ def apply_patch(filepath: str, patch: str) -> str:
     backup_manager.set_workspace(Path.cwd())
     backup_manager.backup_if_exists(path)
     path.write_text("".join(out), encoding="utf-8")
+    _READ_FILE_CACHE.pop(str(path.resolve()), None)
     return f"Successfully patched {path}"
 
 
@@ -616,13 +741,7 @@ def execute_shell(command: str) -> str:
 
 
 def _approval_detail(tool_name: str, args: dict[str, Any]) -> str:
-    if tool_name == "execute_shell":
-        return str(args.get("command", "")).strip()
-    if tool_name == "write_file":
-        return str(args.get("filepath", "")).strip()
-    if tool_name == "apply_patch":
-        return str(args.get("filepath", "")).strip()
-    return json.dumps(args, ensure_ascii=False)[:120]
+    return tool_activity_detail(tool_name, args)
 
 
 def _run_tool_sync(tool_name: str, args: dict[str, Any]) -> str:
@@ -652,8 +771,10 @@ def _run_tool_sync(tool_name: str, args: dict[str, Any]) -> str:
 
 
 def _needs_approval(tool_name: str) -> bool:
+    from openclaw_mode import is_openclaw_active
+
     policy = load_runtime_policy()
-    if policy.autonomy_enabled:
+    if is_openclaw_active() or policy.autonomy_enabled:
         return False
     mode = policy.tool_mode(tool_name)
     if mode == "auto":
@@ -691,6 +812,7 @@ async def execute_tool(
             grant_session_approval(tool_name, detail)
 
     result = _run_tool_sync(tool_name, arguments)
+    record_explore_tool(tool_name, detail)
 
     log_tool_event(
         tool=tool_name,

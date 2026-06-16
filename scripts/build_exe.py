@@ -20,6 +20,7 @@ BUNDLE_DIR = BUILD_DIR / "bundle-staging"
 DIST_EXE_DIR = ROOT / "dist" / "exe"
 SPEC_DIR = BUILD_DIR / "pyinstaller"
 WORK_DIR = SPEC_DIR / "work"
+ICON_PATH = ROOT / "assets" / "axon.ico"
 
 
 def parse_version() -> str:
@@ -101,6 +102,7 @@ def collect_hidden_imports() -> list[str]:
         "axon_auth",
         "zenith_server",
         "ui.repl",
+        "ui.axon_tui",
         "ui.headless",
         "ui.axon_completer",
         "ui.branding",
@@ -195,6 +197,11 @@ def run_pyinstaller(*, clean: bool) -> Path:
     ]
     if clean:
         cmd.append("--clean")
+
+    if ICON_PATH.is_file():
+        cmd.extend(["--icon", str(ICON_PATH)])
+    else:
+        print("Warning: assets/axon.ico not found — run: python scripts/build_icon.py")
 
     cmd.extend(collect_add_data_args())
     cmd.extend(collect_hidden_imports())

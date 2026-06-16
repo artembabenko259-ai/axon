@@ -118,6 +118,25 @@ def skills_root(workspace: Path | None = None) -> Path:
     return (workspace or Path.cwd()) / ".axon" / "skills"
 
 
+def skills_dir_fingerprint(workspace: Path | None = None) -> str:
+    """Cheap change detector — skip skill rescans when nothing on disk changed."""
+    root = skills_root(workspace)
+    if not root.is_dir():
+        return ""
+    parts: list[str] = []
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        if path.name != "SKILL.md" and path.suffix != ".skill":
+            continue
+        try:
+            stat = path.stat()
+            parts.append(f"{path}:{stat.st_mtime_ns}:{stat.st_size}")
+        except OSError:
+            parts.append(str(path))
+    return "|".join(parts)
+
+
 def project_memory_path(workspace: Path | None = None) -> Path:
     return (workspace or Path.cwd()) / ".axon" / "memory.md"
 
@@ -447,6 +466,15 @@ class SkillManager:
     workspace: Path = field(default_factory=Path.cwd)
     _skills: dict[str, Skill] = field(default_factory=dict, init=False)
     _by_tool_name: dict[str, Skill] = field(default_factory=dict, init=False)
+    _reload_fingerprint: str = field(default="", init=False)
+
+    def reload_if_changed(self) -> int:
+        fingerprint = skills_dir_fingerprint(self.workspace)
+        if fingerprint == self._reload_fingerprint and self._skills:
+            return len(self._skills)
+        count = self.reload()
+        self._reload_fingerprint = fingerprint
+        return count
 
     def reload(self) -> int:
         self._skills.clear()

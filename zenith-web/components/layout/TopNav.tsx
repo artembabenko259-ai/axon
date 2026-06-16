@@ -3,10 +3,17 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, LayoutDashboard, Menu, MessageSquare, Settings, Sparkles, X } from "lucide-react";
+import {
+  BookOpen,
+  LayoutDashboard,
+  Menu,
+  MessageSquare,
+  Settings,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { BridgeStatus } from "@/components/ui/BridgeStatus";
-import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher";
 import { ConfigWidget } from "@/components/config/ConfigWidget";
 import { TAP_PRESS } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -29,8 +36,13 @@ export function TopNav({ title = "Control Panel" }: TopNavProps) {
 
   return (
     <>
-      <header className="glass flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8">
-        <h1 className="text-sm font-semibold tracking-tight text-white">{title}</h1>
+      <header className="glass relative z-10 flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div>
+          <p className="label-mono hidden sm:block">Zenith</p>
+          <h1 className="text-sm font-semibold tracking-tight text-white sm:-mt-0.5">
+            {title}
+          </h1>
+        </div>
         <div className="flex items-center gap-2">
           <BridgeStatus variant="compact" className="hidden sm:flex" />
           <nav className="hidden items-center gap-1 md:flex">
@@ -44,8 +56,8 @@ export function TopNav({ title = "Control Panel" }: TopNavProps) {
                     className={cn(
                       "rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
                       active
-                        ? "nav-link-active text-[#fafafa]"
-                        : "text-[#71717a] hover:text-[#a1a1aa]",
+                        ? "nav-link-active text-[#E6F0FF]"
+                        : "text-white/45 hover:text-white/75",
                     )}
                   >
                     {item.label}
@@ -54,13 +66,12 @@ export function TopNav({ title = "Control Panel" }: TopNavProps) {
               );
             })}
           </nav>
-          <ThemeSwitcher />
           <ConfigWidget />
           <motion.button
             type="button"
             whileTap={TAP_PRESS}
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="rounded-lg p-2 text-[#a1a1aa] hover:bg-white/[0.05] md:hidden"
+            className="rounded-lg p-2 text-white/55 hover:bg-white/[0.05] md:hidden"
             aria-label="Toggle menu"
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -68,20 +79,20 @@ export function TopNav({ title = "Control Panel" }: TopNavProps) {
         </div>
       </header>
 
-      {mobileOpen && (
-        <nav className="border-b border-white/[0.06] bg-black p-2 md:hidden">
+      {mobileOpen ? (
+        <nav className="relative z-10 border-b border-white/[0.08] bg-[#050813]/95 p-2 backdrop-blur-md md:hidden">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               onClick={() => setMobileOpen(false)}
-              className="block rounded-lg px-3 py-2.5 text-sm text-[#a1a1aa] hover:bg-white/[0.05] hover:text-white"
+              className="block rounded-lg px-3 py-2.5 text-sm text-white/55 hover:bg-white/[0.05] hover:text-white"
             >
               {item.label}
             </Link>
           ))}
         </nav>
-      )}
+      ) : null}
     </>
   );
 }

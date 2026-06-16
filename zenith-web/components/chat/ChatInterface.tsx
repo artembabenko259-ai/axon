@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Wifi, WifiOff } from "lucide-react";
+import { Globe, Send, Terminal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -18,51 +18,86 @@ const bubbleVariants = {
   },
 };
 
+function SourceBadge({ source }: { source: "web" | "terminal" }) {
+  const isWeb = source === "web";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.18em]",
+        isWeb
+          ? "border-[#5DE4FF]/25 bg-[#5DE4FF]/10 text-[#5DE4FF]"
+          : "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
+      )}
+    >
+      {isWeb ? <Globe className="h-2.5 w-2.5" /> : <Terminal className="h-2.5 w-2.5" />}
+      {isWeb ? "WEB" : "TERM"}
+    </span>
+  );
+}
+
 export function ChatInterface() {
-  const { messages, connected, sendMessage } = useChat();
+  const { messages, connected, isStreaming, sendMessage } = useChat();
   const [input, setInput] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isStreaming]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || !connected) return;
     sendMessage(input);
     setInput("");
   };
 
+  const statusLabel = connected ? "connected" : "reconnecting";
+  const statusColor = connected ? "text-[#5DE4FF]" : "text-amber-300";
+
   return (
-    <div className="flex h-full min-h-[min(640px,calc(100dvh-7rem))] flex-1 flex-col overflow-hidden rounded-xl border border-white/[0.06] bg-[#0a0a0a]">
-      <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#111] px-4 py-3 sm:px-5">
-        <div>
-          <p className="label-caps">Bridge</p>
-          <h2 className="text-sm font-medium tracking-tight text-white">Chat</h2>
+    <div className="lunar-card flex h-full min-h-[min(640px,calc(100dvh-7rem))] flex-1 flex-col overflow-hidden">
+      <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3">
+        <div className="flex items-center gap-2">
+          <Terminal className="h-4 w-4 text-white/60" />
+          <span className="label-mono">axon · sync chat</span>
         </div>
-        <div
-          className={cn(
-            "flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[10px] tabular-nums",
-            connected
-              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-              : "border-red-500/20 bg-red-500/10 text-red-400",
-          )}
-        >
-          {connected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
-          {connected ? "connected" : "reconnecting"}
-        </div>
+        <span className={cn("font-mono text-[11px]", statusColor)}>
+          ● bridge {statusLabel}
+        </span>
       </div>
 
-      <div
-        ref={scrollRef}
-        className="flex-1 space-y-3 overflow-y-auto px-3 py-4 logs-scroll sm:px-5"
-      >
+      <div className="flex-1 space-y-4 overflow-y-auto p-6 logs-scroll">
         <AnimatePresence initial={false}>
-          {messages.map((msg) => {
+          {messages.length === 0 ? (
+            <div className="mt-12 text-center font-mono text-sm text-white/45">
+              No messages yet — send one below.
+              <br />
+              <span className="text-xs text-white/30">
+                Anything you type here also flows to the CLI.
+              </span>
+            </div>
+          ) : null}
+          {messages.map((msg, index) => {
             const isUser = msg.role === "user";
             const isSystem = msg.role === "system";
+            const streaming =
+              isStreaming &&
+              msg.role === "assistant" &&
+              index === messages.length - 1;
+
+            if (isSystem) {
+              return (
+                <motion.div
+                  key={msg.id}
+                  variants={bubbleVariants}
+                  initial="hidden"
+                  animate="visible"
+                  className="my-2 self-center font-mono text-[11px] text-white/40"
+                >
+                  {msg.content}
+                </motion.div>
+              );
+            }
 
             return (
               <motion.div
@@ -70,41 +105,43 @@ export function ChatInterface() {
                 variants={bubbleVariants}
                 initial="hidden"
                 animate="visible"
-                className={cn(
-                  "flex",
-                  isUser ? "justify-end" : "justify-start",
-                  isSystem && "justify-center",
-                )}
+                className={cn("flex", isUser ? "justify-end" : "justify-start")}
               >
-                <div
-                  className={cn(
-                    "max-w-[92%] rounded-xl px-4 py-3 sm:max-w-[75%]",
-                    isUser && "border border-white/20 bg-white text-black",
-                    msg.role === "assistant" && "border border-white/[0.06] bg-[#111]",
-                    isSystem && "border border-white/[0.06] bg-transparent px-3 py-1.5 text-[10px] text-[#71717a]",
-                  )}
-                >
-                  {!isSystem && (
-                    <p className="mb-1 font-mono text-[9px] uppercase tracking-wider text-[#666]">
-                      {msg.source === "terminal" ? "terminal" : "web"} · {msg.role}
-                    </p>
-                  )}
-                  {isUser || isSystem ? (
-                    <p
-                      className={cn(
-                        "text-sm leading-relaxed",
-                        isUser ? "text-black" : "text-[#888]",
-                      )}
-                    >
-                      {msg.content}
-                    </p>
-                  ) : (
-                    <div className="prose-vercel prose prose-invert prose-sm max-w-none text-sm leading-relaxed [&_code]:rounded [&_code]:bg-white/10 [&_code]:px-1 [&_p]:my-1">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <div className={cn("max-w-[78%]", !isUser && "w-full")}>
+                  <div
+                    className={cn(
+                      "mb-1.5 flex items-center gap-2",
+                      isUser && "justify-end",
+                    )}
+                  >
+                    <span className="label-mono">{isUser ? "you" : "axon"}</span>
+                    <SourceBadge source={msg.source} />
+                    {streaming ? (
+                      <span className="animate-pulse font-mono text-[10px] text-[#5DE4FF]">
+                        streaming…
+                      </span>
+                    ) : null}
+                  </div>
+                  <div
+                    className={cn(
+                      "rounded-2xl border px-4 py-3",
+                      isUser
+                        ? "rounded-tr-sm border-[#5DE4FF]/25 bg-[#5DE4FF]/12"
+                        : "rounded-tl-sm border-white/[0.08] bg-white/[0.025]",
+                    )}
+                  >
+                    {isUser ? (
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-white">
                         {msg.content}
-                      </ReactMarkdown>
-                    </div>
-                  )}
+                      </p>
+                    ) : (
+                      <div className="prose-axon">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {msg.content || "_…_"}
+                        </ReactMarkdown>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             );
@@ -115,26 +152,29 @@ export function ChatInterface() {
 
       <form
         onSubmit={handleSubmit}
-        className="border-t border-white/[0.08] bg-[#141418] p-3 sm:p-4"
+        className="flex gap-2 border-t border-white/[0.06] p-3"
       >
-        <div className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-black px-3 py-2 focus-within:border-white/20">
-          <span className="font-mono text-[#71717a]">›</span>
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Message AXON…"
-            className="min-w-0 flex-1 bg-transparent py-1.5 text-sm text-white outline-none placeholder:text-[#555]"
-          />
-          <motion.button
-            type="submit"
-            disabled={!input.trim() || !connected}
-            whileTap={TAP_PRESS}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white text-black hover:bg-white/90 disabled:opacity-30"
-            aria-label="Send message"
-          >
-            <Send className="h-3.5 w-3.5" />
-          </motion.button>
-        </div>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={
+            connected
+              ? "Type a message…"
+              : "Bridge offline — messages won't send"
+          }
+          disabled={!connected}
+          className="input-lunar flex-1 disabled:opacity-50"
+        />
+        <motion.button
+          type="submit"
+          disabled={!input.trim() || !connected}
+          whileTap={TAP_PRESS}
+          className="btn-lunar-primary shrink-0 px-4 disabled:cursor-not-allowed disabled:opacity-30"
+          aria-label="Send message"
+        >
+          <Send className="h-4 w-4" />
+          Send
+        </motion.button>
       </form>
     </div>
   );

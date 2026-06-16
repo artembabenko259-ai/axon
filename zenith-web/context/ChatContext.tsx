@@ -52,6 +52,7 @@ export interface MultitaskState {
 interface BridgeContextValue {
   messages: ChatMessage[];
   connected: boolean;
+  isStreaming: boolean;
   stats: BridgeStats;
   activeModel: string;
   uptimeLabel: string;
@@ -130,6 +131,7 @@ function storeSessionStart(ms: number) {
 export function BridgeProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [connected, setConnected] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [stats, setStats] = useState<BridgeStats>({ tokens: 0, cost: 0 });
   const [activeModel, setActiveModel] = useState("");
   const [sessionStartedAtMs, setSessionStartedAtMs] = useState<number | null>(
@@ -245,6 +247,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
             status?: string;
           }>;
           synthesis?: string;
+          summary?: string;
         };
 
         if (data.type === "auth_required") {
@@ -320,6 +323,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
         if (data.type === "stream_start") {
           const id = data.id ?? `stream-${Date.now()}`;
           seenIds.current.add(id);
+          setIsStreaming(true);
           setMessages((prev) => [
             ...prev,
             {
@@ -344,6 +348,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
         }
 
         if (data.type === "stream_end" && data.id) {
+          setIsStreaming(false);
           const text = data.text ?? "";
           setMessages((prev) =>
             prev.map((m) =>
@@ -354,10 +359,27 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
         }
 
         if (data.type === "tool_event") {
+          const status = data.status ?? "event";
+          const activity =
+            (data.detail as string | undefined)?.trim() ||
+            (data.tool as string | undefined) ||
+            "tool";
+          const prefix = status === "done" ? "✓" : "›";
           appendMessage({
             id: `tool-${Date.now()}`,
             role: "system",
-            content: `[${data.status ?? "event"}] ${data.tool ?? "tool"}${data.detail ? ` — ${data.detail}` : ""}`,
+            content: `${prefix} ${activity}`,
+            source: "terminal",
+            timestamp: Date.now(),
+          });
+          return;
+        }
+
+        if (data.type === "explore_summary" && data.summary) {
+          appendMessage({
+            id: `explore-${Date.now()}`,
+            role: "system",
+            content: String(data.summary),
             source: "terminal",
             timestamp: Date.now(),
           });
@@ -524,6 +546,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     () => ({
       messages,
       connected,
+      isStreaming,
       stats,
       activeModel,
       uptimeLabel,
@@ -537,6 +560,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     [
       messages,
       connected,
+      isStreaming,
       stats,
       activeModel,
       uptimeLabel,
@@ -553,9 +577,10 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     <BridgeContext.Provider value={value}>
       {children}
       {pendingApproval ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="w-full max-w-md rounded-xl border border-white/10 bg-[#0a0a0a] p-5 shadow-2xl">
-            <h3 className="text-sm font-semibold text-white">Approve tool</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050813]/80 p-4 backdrop-blur-sm">
+          <div className="lunar-card w-full max-w-md p-5 shadow-2xl">
+            <p className="label-mono">Approval required</p>
+            <h3 className="mt-2 text-sm font-semibold text-white">Approve tool</h3>
             <p className="mt-2 text-xs text-[#a1a1aa]">
               {pendingApproval.tool} — {pendingApproval.detail}
             </p>

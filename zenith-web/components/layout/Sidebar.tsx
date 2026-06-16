@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -26,17 +27,36 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-[240px] shrink-0 flex-col border-r border-white/[0.06] bg-black lg:flex">
-      <div className="flex h-14 items-center gap-2.5 border-b border-white/[0.06] px-5">
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="flex h-5 w-5 items-center justify-center rounded bg-white">
-            <span className="text-[9px] font-bold text-black">A</span>
+    <aside
+      className="relative z-10 hidden w-[240px] shrink-0 flex-col border-r border-white/[0.08] lg:flex"
+      style={{
+        background:
+          "linear-gradient(180deg, rgba(8,12,24,0.85) 0%, rgba(5,8,19,0.95) 100%)",
+        backdropFilter: "blur(8px)",
+      }}
+    >
+      <Link
+        href="/"
+        className="flex items-center gap-3 px-6 pb-6 pt-7"
+      >
+        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+          <Image
+            src="/axon-icon.svg"
+            alt="AXON"
+            width={24}
+            height={24}
+            className="h-6 w-6"
+          />
+        </div>
+        <div className="leading-tight">
+          <div className="text-sm font-bold tracking-[0.22em]">AXON</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/45">
+            Zenith
           </div>
-          <span className="text-sm font-semibold tracking-tight text-white">AXON</span>
-        </Link>
-      </div>
+        </div>
+      </Link>
 
-      <nav className="flex flex-1 flex-col gap-0.5 p-3">
+      <nav className="flex flex-1 flex-col gap-1 px-3">
         {navItems.map((item) => {
           const active =
             pathname === item.href ||
@@ -47,22 +67,22 @@ export function Sidebar() {
               <motion.span
                 whileTap={TAP_PRESS}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
+                  "group flex items-center gap-3 rounded-xl border px-4 py-2.5 text-sm transition-colors",
                   active
-                    ? "bg-white text-black"
-                    : "text-[#a1a1aa] hover:bg-white/[0.05] hover:text-white",
+                    ? "border-white/15 bg-white/[0.05] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                    : "border-transparent text-white/65 hover:bg-white/[0.03] hover:text-white",
                 )}
               >
-                <Icon className="h-4 w-4" strokeWidth={1.75} />
-                {item.label}
+                <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                <span className="font-medium tracking-tight">{item.label}</span>
               </motion.span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="border-t border-white/[0.06] p-4">
-        <BridgeStatus />
+      <div className="m-3">
+        <BridgeStatus variant="pill" />
       </div>
     </aside>
   );

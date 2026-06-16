@@ -70,9 +70,14 @@ export function ToolTracePanel() {
 
   return (
     <GlassCard delay={0.2}>
-      <div className="flex items-center gap-2">
-        <Wrench className="h-4 w-4 text-white" />
-        <h2 className="text-sm font-medium text-white">Tool trace</h2>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Wrench className="h-4 w-4 text-[#5DE4FF]" />
+          <h2 className="text-sm font-medium text-white">Tool trace</h2>
+        </div>
+        <span className="font-mono text-[11px] text-white/40">
+          {events.length} calls
+        </span>
       </div>
       <div className="mt-3 max-h-48 space-y-2 overflow-y-auto text-xs">
         {events.length === 0 ? (

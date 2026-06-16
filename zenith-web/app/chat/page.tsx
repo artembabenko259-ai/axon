@@ -11,7 +11,7 @@ export default function ChatPage() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex min-h-0 flex-1 flex-col"
+        className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col"
       >
         <ChatInterface />
       </motion.div>

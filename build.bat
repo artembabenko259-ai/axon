@@ -10,7 +10,7 @@ set "ROOT=%~dp0"
 if "%ROOT:~-1%"=="\" set "ROOT=%ROOT:~0,-1%"
 cd /d "%ROOT%"
 
-set "VERSION=1.0.0"
+set "VERSION=1.0.1"
 set "SETUP_NAME=AXON_Setup_v%VERSION%.exe"
 set "RELEASE_DIR=%ROOT%\release"
 set "VENV_PY=%ROOT%\.venv-build\Scripts\python.exe"
@@ -22,7 +22,16 @@ echo   AXON Master Builder v%VERSION%
 echo ========================================================================
 echo.
 
-REM --- Step 0: Python venv (lean PyInstaller, no manual setup) ---------------
+REM --- Step 0: App icon (ICO for exe + installer) ---------------------------
+if not exist "%ROOT%\assets\axon.ico" (
+    echo [0/6] Building axon.ico ...
+    "%VENV_PY%" "%ROOT%\scripts\build_icon.py"
+    if errorlevel 1 goto :fail
+) else (
+    echo [0/6] Using assets\axon.ico
+)
+
+REM --- Step 1: Python venv (lean PyInstaller, no manual setup) ---------------
 if not exist "%VENV_PY%" (
     echo [1/6] Creating build virtualenv .venv-build ...
     python -m venv "%ROOT%\.venv-build"

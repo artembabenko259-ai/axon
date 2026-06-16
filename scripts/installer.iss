@@ -2,16 +2,18 @@
 ; Built automatically by build.bat (PyInstaller + ISCC)
 
 #define MyAppName "AXON"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "AXON Core Team"
 #define MyAppExeName "axon.exe"
 #define MyAppId "{{A7F3E2B1-4C8D-4E9A-9F1B-2D8E6C5A4F30}"
+#define MySetupIcon "..\assets\axon.ico"
 
 [Setup]
 AppId={#MyAppId}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
+SetupIconFile={#MySetupIcon}
 DefaultDirName={localappdata}\Programs\AXON
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
@@ -43,8 +45,8 @@ Source: "..\build\bundle-staging\zenith-web\*"; DestDir: "{app}\zenith-web"; Fla
 Source: "..\build\bundle-staging\node\*"; DestDir: "{app}\node"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\{#MyAppExeName}"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent

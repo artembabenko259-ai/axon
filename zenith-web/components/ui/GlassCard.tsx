@@ -38,7 +38,11 @@ export function GlassCard({
         hover ? { y: -2, transition: { duration: 0.2, ease: EASE_OUT } } : undefined
       }
       whileTap={interactive ? TAP_PRESS : undefined}
-      className={cn("panel p-5", hover && "card-interactive", className)}
+      className={cn(
+        "lunar-card p-5",
+        hover && "lunar-card-hover",
+        className,
+      )}
     >
       {children}
     </motion.div>

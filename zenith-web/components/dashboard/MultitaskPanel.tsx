@@ -50,22 +50,24 @@ export function MultitaskPanel() {
     <GlassCard delay={0.18}>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Target className="h-4 w-4 text-white" />
+          <Target className="h-4 w-4 text-[#5DE4FF]" />
           <h2 className="text-sm font-medium text-white">Orchestrator</h2>
         </div>
         {multitask ? (
-          <span className="text-[10px] uppercase tracking-wide text-[#71717a]">
+          <span className="font-mono text-[10px] uppercase tracking-wide text-white/40">
             {phaseLabel(multitask.phase)}
           </span>
-        ) : null}
+        ) : (
+          <span className="font-mono text-[11px] text-white/40">multitask</span>
+        )}
       </div>
 
       {!connected ? (
-        <p className="mt-3 text-xs text-[#71717a]">Waiting for bridge connection…</p>
+        <p className="mt-3 text-xs text-white/45">Waiting for bridge connection…</p>
       ) : !multitask ? (
-        <p className="mt-3 text-xs text-[#71717a]">
-          Run <span className="font-mono text-[#a1a1aa]">/multitask</span> in the CLI to
-          see live progress here.
+        <p className="mt-3 text-xs text-white/45">
+          Run <span className="font-mono text-white/70">/multitask</span> in the CLI
+          to see live progress here.
         </p>
       ) : (
         <div className="mt-3 space-y-3">

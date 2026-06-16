@@ -17,9 +17,11 @@ from system_prompt_store import get_global_system_prompt
 from skills.tasks import execute_task_tool, get_task_tool_schemas, is_task_tool
 from skills.tools import (
     ApprovalCallback,
+    clear_read_file_cache,
     execute_tool,
     get_tools_schema,
     parse_tool_arguments,
+    tool_activity_detail,
 )
 from skills_manager import SkillManager, load_project_memory
 from agent_manager import load_agent_prompt
@@ -27,6 +29,11 @@ from mcp_client import get_mcp_tool_schemas
 from task_manager import task_manager
 
 from pricing import estimate_cost
+from context_optimizer import (
+    compose_system_prompt,
+    prepare_messages_for_api,
+    should_auto_compact,
+)
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_MODEL = "meta-llama/llama-3.1-8b-instruct"
@@ -156,6 +163,11 @@ class LLMManager:
         self._on_stream_end: StreamLifecycleCallback | None = None
         self._stream_loop: asyncio.AbstractEventLoop | None = None
         self._cancel_requested = False
+        self._tool_schemas_cache: list[dict[str, Any]] | None = None
+        self._tool_schemas_key: tuple[Any, ...] | None = None
+        self.prompt_cache_enabled = True
+        self.trim_tool_history = True
+        self.auto_compact_enabled = True
 
     def set_session_system_prompt(self, text: str) -> None:
         self.session_system_prompt = text.strip()
@@ -166,22 +178,23 @@ class LLMManager:
         self.refresh_system_prompt()
 
     def _build_system_prompt(self) -> str:
-        parts = [AXON_SYSTEM_PROMPT_BASE]
+        dynamic_parts: list[str] = []
 
         global_prompt = get_global_system_prompt()
         if global_prompt:
-            parts.append(f"User Instructions (always apply):\n{global_prompt}")
+            dynamic_parts.append(f"User Instructions (always apply):\n{global_prompt}")
 
         if self.session_system_prompt:
-            parts.append(f"Session Instructions:\n{self.session_system_prompt}")
+            dynamic_parts.append(f"Session Instructions:\n{self.session_system_prompt}")
 
         memory = load_project_memory(self._workspace)
         if memory:
-            parts.append(f"Project Context:\n{memory}")
+            dynamic_parts.append(f"Project Context:\n{memory}")
         skills_block = self._skill_manager.skills_summary_for_system()
         if skills_block:
-            parts.append(skills_block)
-        return "\n\n".join(parts)
+            dynamic_parts.append(skills_block)
+
+        return compose_system_prompt(AXON_SYSTEM_PROMPT_BASE, "\n\n".join(dynamic_parts))
 
     def _build_agent_system_prompt(self, agent_prompt: str) -> str:
         parts = [
@@ -207,23 +220,37 @@ class LLMManager:
 
     def reload_skills(self) -> int:
         """Rescan `.axon/skills/` and refresh the system prompt."""
-        count = self._skill_manager.reload()
+        count = self._skill_manager.reload_if_changed()
+        self._invalidate_tool_schema_cache()
         self.refresh_system_prompt()
         return count
 
+    def _invalidate_tool_schema_cache(self) -> None:
+        self._tool_schemas_cache = None
+        self._tool_schemas_key = None
+
     def _get_all_tool_schemas(self) -> list[dict[str, Any]]:
+        skill_names = tuple(sorted(self._skill_manager._by_tool_name))
+        cache_key = (task_manager.plan_mode, skill_names)
+        if self._tool_schemas_cache is not None and cache_key == self._tool_schemas_key:
+            return self._tool_schemas_cache
+
         if task_manager.plan_mode:
-            return [
+            schemas = [
                 schema
                 for schema in get_task_tool_schemas()
                 if schema["function"]["name"] == "create_plan"
             ]
-        return (
-            get_tools_schema()
-            + get_task_tool_schemas()
-            + self._skill_manager.get_tool_schemas()
-            + get_mcp_tool_schemas()
-        )
+        else:
+            schemas = (
+                get_tools_schema()
+                + get_task_tool_schemas()
+                + self._skill_manager.get_tool_schemas()
+                + get_mcp_tool_schemas()
+            )
+        self._tool_schemas_cache = schemas
+        self._tool_schemas_key = cache_key
+        return schemas
 
     async def _dispatch_tool(
         self,
@@ -729,6 +756,12 @@ class LLMManager:
             )
 
         self.clear_cancel()
+        from ui.explore_stats import reset_turn_explore_stats
+
+        reset_turn_explore_stats()
+        clear_read_file_cache()
+        if self.auto_compact_enabled and should_auto_compact(self.messages):
+            await self.compact_context()
         self.messages.append({"role": "user", "content": user_text})
         last_usage: TokenUsage | None = None
         tool_steps = 0
@@ -787,7 +820,7 @@ class LLMManager:
                             tool_call["function"].get("arguments") or "{}"
                         )
                         if self._on_tool is not None:
-                            detail = json.dumps(arguments, ensure_ascii=False)[:120]
+                            detail = tool_activity_detail(tool_name, arguments)
                             await self._on_tool(tool_name, detail)
                         result = await self._dispatch_tool(tool_name, arguments)
                         self.messages.append(
@@ -874,7 +907,12 @@ class LLMManager:
     ) -> _ApiStreamResult:
         kwargs: dict[str, Any] = {
             "model": self.model,
-            "messages": self.messages,
+            "messages": prepare_messages_for_api(
+                self.messages,
+                model=self.model,
+                prompt_cache_enabled=self.prompt_cache_enabled,
+                trim_tool_history=self.trim_tool_history,
+            ),
             "stream": True,
         }
         if tools:
@@ -964,7 +1002,12 @@ class LLMManager:
     def _call_api(self, *, tools: list[dict[str, Any]] | None = None) -> Any:
         kwargs: dict[str, Any] = {
             "model": self.model,
-            "messages": self.messages,
+            "messages": prepare_messages_for_api(
+                self.messages,
+                model=self.model,
+                prompt_cache_enabled=self.prompt_cache_enabled,
+                trim_tool_history=self.trim_tool_history,
+            ),
         }
         if tools:
             kwargs["tools"] = tools
