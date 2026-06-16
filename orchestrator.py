@@ -53,6 +53,9 @@ class OrchestratorResult:
 
 
 ProgressCallback = Callable[[str], Awaitable[None] | None]
+MultitaskEventCallback = Callable[
+    [str, str, list[SubTask], str], Awaitable[None] | None
+]
 
 
 @dataclass
@@ -91,6 +94,7 @@ class Orchestrator:
         *,
         preferred_agents: list[str] | None = None,
         on_progress: ProgressCallback | None = None,
+        on_multitask_event: MultitaskEventCallback | None = None,
     ) -> OrchestratorResult:
         goal = goal.strip()
         if not goal:
@@ -102,6 +106,9 @@ class Orchestrator:
             self._last_run = result
             return result
 
+        await self._emit_multitask(
+            on_multitask_event, "decompose_start", goal, [], ""
+        )
         await self._emit(on_progress, "[bold]Step 1/3[/] Decomposing goal into subtasks...")
         subtasks = await self._decompose(goal, preferred_agents=preferred_agents or [])
         if not subtasks:
@@ -113,6 +120,9 @@ class Orchestrator:
             self._last_run = result
             return result
 
+        await self._emit_multitask(
+            on_multitask_event, "decompose_done", goal, subtasks, ""
+        )
         await self._emit(on_progress, self._render_board(subtasks, goal))
         await self._emit(
             on_progress,
@@ -121,14 +131,27 @@ class Orchestrator:
         )
 
         if self.allow_parallel:
-            await self._run_parallel(subtasks, on_progress=on_progress)
+            await self._run_parallel(
+                subtasks,
+                goal=goal,
+                on_progress=on_progress,
+                on_multitask_event=on_multitask_event,
+            )
         else:
-            await self._run_sequential(subtasks, on_progress=on_progress)
+            await self._run_sequential(
+                subtasks,
+                goal=goal,
+                on_progress=on_progress,
+                on_multitask_event=on_multitask_event,
+            )
 
         await self._emit(on_progress, self._render_board(subtasks, goal))
         await self._emit(on_progress, "[bold]Step 3/3[/] Synthesizing results...")
 
         synthesis = await self._synthesize(goal, subtasks)
+        await self._emit_multitask(
+            on_multitask_event, "synthesis_done", goal, subtasks, synthesis
+        )
         result = OrchestratorResult(goal=goal, subtasks=subtasks, synthesis=synthesis)
         self._last_run = result
         return result
@@ -225,22 +248,38 @@ class Orchestrator:
         self,
         subtasks: list[SubTask],
         *,
+        goal: str,
         on_progress: ProgressCallback | None,
+        on_multitask_event: MultitaskEventCallback | None,
     ) -> None:
         for subtask in subtasks:
-            await self._run_one(subtask, on_progress=on_progress)
+            await self._run_one(
+                subtask,
+                goal=goal,
+                subtasks=subtasks,
+                on_progress=on_progress,
+                on_multitask_event=on_multitask_event,
+            )
 
     async def _run_parallel(
         self,
         subtasks: list[SubTask],
         *,
+        goal: str,
         on_progress: ProgressCallback | None,
+        on_multitask_event: MultitaskEventCallback | None,
     ) -> None:
         semaphore = asyncio.Semaphore(self.max_parallel)
 
         async def _wrapped(task: SubTask) -> None:
             async with semaphore:
-                await self._run_one(task, on_progress=on_progress)
+                await self._run_one(
+                    task,
+                    goal=goal,
+                    subtasks=subtasks,
+                    on_progress=on_progress,
+                    on_multitask_event=on_multitask_event,
+                )
 
         await asyncio.gather(*[_wrapped(task) for task in subtasks])
 
@@ -248,9 +287,15 @@ class Orchestrator:
         self,
         subtask: SubTask,
         *,
+        goal: str,
+        subtasks: list[SubTask],
         on_progress: ProgressCallback | None,
+        on_multitask_event: MultitaskEventCallback | None,
     ) -> None:
         subtask.status = "running"
+        await self._emit_multitask(
+            on_multitask_event, "subtask_status", goal, subtasks, ""
+        )
         await self._emit(
             on_progress,
             f"[cyan]▶ Task {subtask.id}[/] [{subtask.agent}] {subtask.title}",
@@ -268,6 +313,9 @@ class Orchestrator:
         except Exception as exc:
             subtask.status = "failed"
             subtask.error = str(exc)
+            await self._emit_multitask(
+                on_multitask_event, "subtask_status", goal, subtasks, ""
+            )
             await self._emit(
                 on_progress,
                 f"[red]✗ Task {subtask.id} failed — {exc}[/]",
@@ -280,6 +328,9 @@ class Orchestrator:
             preview = subtask.result.replace("\n", " ")
             if len(preview) > 120:
                 preview = preview[:117] + "..."
+            await self._emit_multitask(
+                on_multitask_event, "subtask_status", goal, subtasks, ""
+            )
             await self._emit(
                 on_progress,
                 f"[green]✓ Task {subtask.id} done[/] [dim]{preview}[/]",
@@ -287,6 +338,9 @@ class Orchestrator:
         else:
             subtask.status = "failed"
             subtask.error = result.display_text
+            await self._emit_multitask(
+                on_multitask_event, "subtask_status", goal, subtasks, ""
+            )
             await self._emit(
                 on_progress,
                 f"[red]✗ Task {subtask.id}[/] {result.display_text}",
@@ -338,6 +392,20 @@ class Orchestrator:
         if not callback:
             return
         maybe = callback(message)
+        if asyncio.iscoroutine(maybe):
+            await maybe
+
+    async def _emit_multitask(
+        self,
+        callback: MultitaskEventCallback | None,
+        phase: str,
+        goal: str,
+        subtasks: list[SubTask],
+        synthesis: str,
+    ) -> None:
+        if not callback:
+            return
+        maybe = callback(phase, goal, subtasks, synthesis)
         if asyncio.iscoroutine(maybe):
             await maybe
 

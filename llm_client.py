@@ -49,12 +49,16 @@ AXON_SYSTEM_PROMPT_BASE = (
     "explain alternatives. When executing a plan, call complete_task after each "
     "finished step. After using tools, always reply with a clear summary "
     "for the user in plain language. "
+    "When the user asks for a multi-step plan, call create_plan with 3-5 tasks. "
+    "When the goal has independent parallel workstreams (e.g. review code AND "
+    "write tests AND update docs), call run_multitask with the full goal. "
     "Never call tools for simple greetings, thanks, goodbye, or other small talk — "
     "reply briefly in plain text instead."
 )
 
 ToolNotifyCallback = Callable[[str, str], Awaitable[None]]
 StreamTokenCallback = Callable[[str], Awaitable[None]]
+StreamThinkingCallback = Callable[[str], Awaitable[None]]
 StreamLifecycleCallback = Callable[[], Awaitable[None]]
 
 TOTAL_TOKENS: int = 0
@@ -147,6 +151,7 @@ class LLMManager:
         self._approve = approve
         self._on_tool: ToolNotifyCallback | None = None
         self._on_stream_token: StreamTokenCallback | None = None
+        self._on_stream_thinking: StreamThinkingCallback | None = None
         self._on_stream_start: StreamLifecycleCallback | None = None
         self._on_stream_end: StreamLifecycleCallback | None = None
         self._stream_loop: asyncio.AbstractEventLoop | None = None
@@ -248,10 +253,12 @@ class LLMManager:
         self,
         *,
         on_token: StreamTokenCallback | None = None,
+        on_thinking: StreamThinkingCallback | None = None,
         on_start: StreamLifecycleCallback | None = None,
         on_end: StreamLifecycleCallback | None = None,
     ) -> None:
         self._on_stream_token = on_token
+        self._on_stream_thinking = on_thinking
         self._on_stream_start = on_start
         self._on_stream_end = on_end
 
@@ -887,6 +894,10 @@ class LLMManager:
             if self._on_stream_token:
                 await self._on_stream_token(token)
 
+        async def _emit_thinking(token: str) -> None:
+            if self._on_stream_thinking:
+                await self._on_stream_thinking(token)
+
         async def _emit_end() -> None:
             if self._on_stream_end:
                 await self._on_stream_end()
@@ -905,6 +916,12 @@ class LLMManager:
                 continue
 
             delta = chunk.choices[0].delta
+            reasoning = getattr(delta, "reasoning_content", None) or getattr(
+                delta, "reasoning", None
+            )
+            if reasoning:
+                if self._on_stream_thinking:
+                    self._schedule_stream(_emit_thinking(reasoning))
             if delta.content:
                 content_parts.append(delta.content)
                 if self._on_stream_token:

@@ -6,8 +6,10 @@ from typing import Any
 from task_manager import task_manager
 
 PlanRenderCallback = Callable[[], Awaitable[None]]
+MultitaskRunner = Callable[[str], Awaitable[str]]
 
 _on_plan_update: PlanRenderCallback | None = None
+_multitask_runner: MultitaskRunner | None = None
 
 TASK_TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
@@ -76,10 +78,32 @@ TASK_TOOL_SCHEMAS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "run_multitask",
+            "description": (
+                "Decompose a complex goal into parallel subtasks, run them with "
+                "sub-agents, and return a unified synthesis. Use when the user wants "
+                "multiple independent workstreams (review + tests + docs) without "
+                "a strict sequential plan."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "goal": {
+                        "type": "string",
+                        "description": "Full goal to decompose and execute in parallel",
+                    },
+                },
+                "required": ["goal"],
+            },
+        },
+    },
 ]
 
 TASK_TOOL_NAMES = frozenset(
-    {"create_plan", "complete_task", "update_task_status"}
+    {"create_plan", "complete_task", "update_task_status", "run_multitask"}
 )
 
 
@@ -90,6 +114,11 @@ def get_task_tool_schemas() -> list[dict[str, Any]]:
 def set_plan_render_callback(callback: PlanRenderCallback | None) -> None:
     global _on_plan_update
     _on_plan_update = callback
+
+
+def set_multitask_runner(callback: MultitaskRunner | None) -> None:
+    global _multitask_runner
+    _multitask_runner = callback
 
 
 async def _render_plan() -> None:
@@ -127,6 +156,17 @@ async def execute_task_tool(tool_name: str, arguments: dict[str, Any]) -> str:
             return f"Error: task id {task_id} not found."
         await _render_plan()
         return f"Task {task_id} set to {task.status}: {task.name}"
+
+    if tool_name == "run_multitask":
+        goal = str(arguments.get("goal", "")).strip()
+        if not goal:
+            return "Error: run_multitask requires a goal string."
+        if _multitask_runner is None:
+            return "Error: multitask runner is not configured in this session."
+        try:
+            return await _multitask_runner(goal)
+        except Exception as exc:
+            return f"Error: multitask failed — {exc}"
 
     return f"Error: unknown task tool '{tool_name}'."
 

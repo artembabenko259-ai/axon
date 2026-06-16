@@ -32,6 +32,23 @@ export interface BridgeStats {
   cost: number;
 }
 
+export type MultitaskSubtaskStatus = "pending" | "running" | "done" | "failed";
+
+export interface MultitaskSubtask {
+  id: number;
+  title: string;
+  agent: string;
+  status: MultitaskSubtaskStatus;
+}
+
+export interface MultitaskState {
+  phase: string;
+  goal: string;
+  subtasks: MultitaskSubtask[];
+  synthesis: string;
+  updatedAt: number;
+}
+
 interface BridgeContextValue {
   messages: ChatMessage[];
   connected: boolean;
@@ -40,6 +57,7 @@ interface BridgeContextValue {
   uptimeLabel: string;
   tokenSeries: number[];
   uptimeSeries: number[];
+  multitask: MultitaskState | null;
   sendMessage: (text: string) => void;
   sendSetModel: (model: string) => void;
   clearMessages: () => void;
@@ -120,6 +138,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   const [uptimeLabel, setUptimeLabel] = useState("00:00:00");
   const [tokenSeries, setTokenSeries] = useState<number[]>([]);
   const [uptimeSeries, setUptimeSeries] = useState<number[]>([]);
+  const [multitask, setMultitask] = useState<MultitaskState | null>(null);
   const [pendingApproval, setPendingApproval] = useState<{
     id: string;
     tool: string;
@@ -217,6 +236,15 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
           delta?: string;
           status?: string;
           policy?: { bridge_token?: string };
+          phase?: string;
+          goal?: string;
+          subtasks?: Array<{
+            id?: number;
+            title?: string;
+            agent?: string;
+            status?: string;
+          }>;
+          synthesis?: string;
         };
 
         if (data.type === "auth_required") {
@@ -332,6 +360,29 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
             content: `[${data.status ?? "event"}] ${data.tool ?? "tool"}${data.detail ? ` — ${data.detail}` : ""}`,
             source: "terminal",
             timestamp: Date.now(),
+          });
+          return;
+        }
+
+        if (data.type === "multitask_update") {
+          const phase = data.phase ?? "update";
+          const goal = data.goal ?? "";
+          const subtasks = (data.subtasks ?? []).map((task, index) => ({
+            id: Number(task.id ?? index + 1),
+            title: task.title ?? `Task ${index + 1}`,
+            agent: task.agent ?? "axon",
+            status: (["pending", "running", "done", "failed"].includes(
+              task.status ?? "",
+            )
+              ? task.status
+              : "pending") as MultitaskSubtaskStatus,
+          }));
+          setMultitask({
+            phase,
+            goal,
+            subtasks,
+            synthesis: data.synthesis ?? "",
+            updatedAt: Date.now(),
           });
           return;
         }
@@ -478,6 +529,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
       uptimeLabel,
       tokenSeries,
       uptimeSeries,
+      multitask,
       sendMessage,
       sendSetModel,
       clearMessages,
@@ -490,6 +542,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
       uptimeLabel,
       tokenSeries,
       uptimeSeries,
+      multitask,
       sendMessage,
       sendSetModel,
       clearMessages,

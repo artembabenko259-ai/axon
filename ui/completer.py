@@ -22,6 +22,7 @@ SLASH_COMMANDS = [
     "/create-agent",
     "/delegate",
     "/multitask",
+    "/config",
     "/system",
     "/sessions",
     "/resume",
@@ -51,6 +52,7 @@ AXON_COMMANDS: dict[str, str] = {
     "/create-agent": "Scaffold a sub-agent in .axon/agents/",
     "/delegate": "Delegate task to sub-agent — /delegate <name> <task>",
     "/multitask": "Orchestrator — parallel subtasks — /multitask <goal>",
+    "/config": "Runtime policy — /config | /config set <key> <value>",
     "/system": "Session/global system prompt — /system session|global|edit|clear",
     "/sessions": "List saved chat sessions",
     "/resume": "Resume session — /resume <id>",
@@ -76,7 +78,7 @@ class AxonCommandCompleter(Completer):
             return
 
         if " " in text.strip() and not text.strip().startswith(
-            ("/model", "/plan", "/image", "/delegate", "/gen-skill", "/multitask")
+            ("/model", "/plan", "/image", "/delegate", "/gen-skill", "/multitask", "/config")
         ):
             return
 

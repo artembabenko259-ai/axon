@@ -56,8 +56,10 @@ from skills.tools import (
 from ui.axon_completer import build_axon_completer
 from ui.branding import INSTRUCTIONS, VERSION, build_gradient_logo
 from ui.completer import AXON_COMMANDS
+from ui.config_cmd import handle_config_command
 from message_router import try_chitchat_reply
 from orchestrator import Orchestrator
+from plugins.loader import discover_plugins, list_plugin_commands
 from request_context import get_request_source, reset_request_source, set_request_source
 from runtime_policy import load_runtime_policy
 from mcp_client import load_mcp_servers, save_mcp_servers, McpServer
@@ -245,6 +247,47 @@ async def start_axon() -> None:
     }
 
     tool_history: list[tuple[str, str, str]] = []
+    loaded_plugins = discover_plugins(workspace)
+
+    def plugin_commands() -> dict[str, str]:
+        return list_plugin_commands(workspace)
+
+    def merged_help_commands() -> dict[str, str]:
+        merged = dict(AXON_COMMANDS)
+        merged.update(plugin_commands())
+        return merged
+
+    async def try_plugin_command(stripped: str) -> bool:
+        if not stripped.startswith("/"):
+            return False
+        cmd_name = stripped.split(maxsplit=1)[0].lstrip("/").lower()
+        args = stripped.split(maxsplit=1)[1] if " " in stripped.strip() else ""
+        for plugin in loaded_plugins:
+            if cmd_name not in plugin.commands:
+                continue
+            try:
+                result = plugin.run(cmd_name, *args.split())
+                text = str(result) if result is not None else "(ok)"
+                await emit(f"[green]{text}[/]\n")
+            except Exception as exc:
+                await emit(f"[red]Plugin {plugin.name} failed — {exc}[/]\n")
+            return True
+        return False
+
+    async def maybe_auto_save_session() -> None:
+        policy = load_runtime_policy()
+        if not policy.auto_save_session:
+            return
+        user_msgs = [
+            m for m in llm_manager.messages if m.get("role") == "user"
+        ]
+        if not user_msgs:
+            return
+        from datetime import datetime
+
+        title = f"auto-{datetime.now().strftime('%Y-%m-%d-%H%M')}"
+        await persist_session(title=title)
+        await emit(f"[dim]Session auto-saved as {current_session_id['id']}[/]\n")
 
     def get_toolbar():
         short_model = llm_manager.model.rsplit("/", 1)[-1]
@@ -756,11 +799,36 @@ async def start_axon() -> None:
         async def on_progress(message: str) -> None:
             await emit(message)
 
+        def _subtask_payload(subtasks: list) -> list[dict[str, object]]:
+            return [
+                {
+                    "id": task.id,
+                    "title": task.title,
+                    "agent": task.agent,
+                    "status": task.status,
+                }
+                for task in subtasks
+            ]
+
+        async def on_multitask_event(
+            phase: str,
+            event_goal: str,
+            subtasks: list,
+            synthesis: str = "",
+        ) -> None:
+            await bridge.broadcast_multitask_update(
+                phase,
+                event_goal,
+                _subtask_payload(subtasks),
+                synthesis,
+            )
+
         async with agent_slot():
             result = await orch.run(
                 goal,
                 preferred_agents=agents,
                 on_progress=on_progress,
+                on_multitask_event=on_multitask_event,
             )
 
         if result.error and not result.synthesis:
@@ -917,16 +985,23 @@ async def start_axon() -> None:
         args = parts[1] if len(parts) > 1 else ""
 
         if cmd == "/exit":
+            await maybe_auto_save_session()
             await emit("[dim]AXON: Goodbye.[/dim]")
             shutdown.set()
             return True
 
         if cmd == "/help":
             lines = [
-                f"  [cyan]{name:<10}[/] {desc}"
-                for name, desc in AXON_COMMANDS.items()
+                f"  [cyan]{name:<14}[/] {desc}"
+                for name, desc in merged_help_commands().items()
             ]
             await emit("[bold]AXON Commands[/bold]\n" + "\n".join(lines) + "\n")
+            return True
+
+        if await handle_config_command(stripped, emit=emit):
+            return True
+
+        if await try_plugin_command(stripped):
             return True
 
         if await handle_system_command(

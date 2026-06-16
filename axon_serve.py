@@ -127,9 +127,22 @@ def process_next() -> QueuedTask | None:
     return None
 
 
-def run_serve(*, once: bool = False) -> int:
+def run_serve(*, once: bool = False, tray: bool = False) -> int:
     print("AXON serve — background queue (Ctrl+C to stop)")
     print(f"Queue file: {QUEUE_PATH}")
+
+    if tray:
+        import threading
+
+        from axon_tray import run_tray
+
+        threading.Thread(
+            target=run_tray,
+            kwargs={"panel_url": "http://127.0.0.1:3000"},
+            daemon=True,
+        ).start()
+        print("Tray icon active (Open Zenith / Quit from menu).")
+
     try:
         while True:
             task = process_next()

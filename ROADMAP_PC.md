@@ -29,13 +29,17 @@
 **Parallel mode:** set `"allow_parallel_agents": true` in `runtime_policy.json` (max 3 at once).  
 When `false`, subtasks run sequentially (safer for approval prompts).
 
-## Next
+## Next (see DAY_PLAN.md for full day schedule)
 
-- Wire plugins into REPL `/help`
-- Tray icon + `axon serve` as Windows service
-- VS Code / Cursor extension (overlay)
-- Full TUI parity with REPL (bridge, slash commands, `/multitask`)
-- Zenith: notification + export UI + orchestrator dashboard
+Wave 2 in progress — execute `DAY_PLAN.md` phases A→G.
+
+- [ ] Phase A: `axon multitask` CLI + `/config`
+- [ ] Phase B: Plugins in REPL
+- [ ] Phase C: Auto-save on exit
+- [ ] Phase D: TUI parity
+- [ ] Phase E: Tray + serve
+- [ ] Phase F: Zenith orchestrator panel
+- [ ] Phase G: VS Code / Cursor MVP
 
 ## Ollama setup
 

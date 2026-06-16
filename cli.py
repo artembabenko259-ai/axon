@@ -22,6 +22,22 @@ def _build_parser() -> argparse.ArgumentParser:
     sub.add_parser("repl", help="Interactive REPL (default)")
     sub.add_parser("tui", help="Fullscreen terminal UI (lighter than REPL)")
 
+    mt_p = sub.add_parser("multitask", help="Run orchestrator headless")
+    mt_p.add_argument("goal", help="Goal to decompose and run")
+    mt_p.add_argument(
+        "--agents",
+        metavar="NAMES",
+        help="Comma-separated agent names (optional)",
+    )
+    mt_p.add_argument("--json", action="store_true", help="JSON output")
+    mt_p.add_argument(
+        "--yes",
+        action="store_true",
+        help="Auto-approve dangerous tools",
+    )
+
+    sub.add_parser("tray", help="System tray icon (Windows)")
+
     export_p = sub.add_parser("export", help="Export a saved session to Markdown")
     export_p.add_argument("session_id", nargs="?", help="Session id (latest if omitted)")
     export_p.add_argument("-o", "--output", metavar="PATH", help="Output .md path")
@@ -31,6 +47,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--once",
         action="store_true",
         help="Process pending tasks once and exit",
+    )
+    serve_p.add_argument(
+        "--tray",
+        action="store_true",
+        help="Show system tray icon while serving (Windows)",
     )
 
     queue_p = sub.add_parser("queue", help="Background task queue")
@@ -230,10 +251,42 @@ def _run_export(session_id: str | None, output: str | None) -> int:
     return 0
 
 
-def _run_serve(*, once: bool) -> int:
+def _run_serve(*, once: bool, tray: bool = False) -> int:
     from axon_serve import run_serve
 
-    return run_serve(once=once)
+    return run_serve(once=once, tray=tray)
+
+
+def _run_multitask(
+    goal: str,
+    *,
+    agents: str | None,
+    json_output: bool,
+    auto_approve: bool,
+) -> int:
+    from axon_multitask_cli import run_multitask_headless
+
+    agent_list = None
+    if agents:
+        from agent_manager import sanitize_agent_name
+
+        agent_list = [sanitize_agent_name(n) for n in agents.split(",") if n.strip()]
+    return run_multitask_headless(
+        goal,
+        agents=agent_list,
+        json_output=json_output,
+        auto_approve=auto_approve,
+    )
+
+
+def _run_tray() -> int:
+    from axon_tray import run_tray_blocking
+
+    try:
+        run_tray_blocking()
+    except KeyboardInterrupt:
+        pass
+    return 0
 
 
 def _run_queue(command: str, *, prompt: str = "", cwd: str | None = None) -> int:
@@ -372,6 +425,17 @@ def main(argv: list[str] | None = None) -> int:
     if command == "tui":
         return _run_tui()
 
+    if command == "multitask":
+        return _run_multitask(
+            getattr(args, "goal", ""),
+            agents=getattr(args, "agents", None),
+            json_output=getattr(args, "json", False),
+            auto_approve=getattr(args, "yes", False),
+        )
+
+    if command == "tray":
+        return _run_tray()
+
     if command == "export":
         return _run_export(
             getattr(args, "session_id", None),
@@ -379,7 +443,10 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     if command == "serve":
-        return _run_serve(once=getattr(args, "once", False))
+        return _run_serve(
+            once=getattr(args, "once", False),
+            tray=getattr(args, "tray", False),
+        )
 
     if command == "queue":
         return _run_queue(

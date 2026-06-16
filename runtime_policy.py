@@ -47,6 +47,7 @@ class RuntimePolicy:
     sound_on_approval: bool = True
     sound_on_complete: bool = True
     notification_volume: float = 1.0
+    auto_save_session: bool = False
 
     def resolved_tool_policy(self) -> dict[str, str]:
         merged = dict(DEFAULT_TOOL_POLICY)
@@ -102,6 +103,7 @@ def load_runtime_policy() -> RuntimePolicy:
         sound_on_approval=bool(raw.get("sound_on_approval", True)),
         sound_on_complete=bool(raw.get("sound_on_complete", True)),
         notification_volume=float(raw.get("notification_volume", 1.0)),
+        auto_save_session=bool(raw.get("auto_save_session", False)),
     )
     if policy.bridge_auth_enabled:
         policy.ensure_secrets()
@@ -135,6 +137,7 @@ def policy_for_client() -> dict[str, object]:
         "sound_on_approval": policy.sound_on_approval,
         "sound_on_complete": policy.sound_on_complete,
         "notification_volume": policy.notification_volume,
+        "auto_save_session": policy.auto_save_session,
         "policy_path": str(POLICY_PATH),
     }
 

@@ -400,6 +400,23 @@ class AxonBridge:
             }
         )
 
+    async def broadcast_multitask_update(
+        self,
+        phase: str,
+        goal: str,
+        subtasks: list[dict[str, object]],
+        synthesis: str = "",
+    ) -> None:
+        await self.broadcast(
+            {
+                "type": "multitask_update",
+                "phase": phase,
+                "goal": goal,
+                "subtasks": subtasks,
+                "synthesis": synthesis,
+            }
+        )
+
     async def broadcast_tool_event(
         self,
         tool_name: str,

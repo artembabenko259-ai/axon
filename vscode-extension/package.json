@@ -1,0 +1,69 @@
+{
+  "name": "axon",
+  "displayName": "AXON",
+  "description": "Send editor selections to the AXON CLI headless prompt (axon -p).",
+  "version": "0.1.0",
+  "publisher": "core",
+  "license": "MIT",
+  "icon": "media/icon.svg",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:axon.sendSelection"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "axon.sendSelection",
+        "title": "AXON: Send Selection to Prompt",
+        "icon": "$(sparkle)"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "axon.sendSelection",
+          "when": "editorHasSelection",
+          "group": "navigation@100"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "axon.sendSelection",
+          "when": "editorHasSelection"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "AXON",
+      "properties": {
+        "axon.executable": {
+          "type": "string",
+          "default": "axon",
+          "description": "AXON CLI executable name or full path (must be on PATH or absolute)."
+        },
+        "axon.headlessArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Extra arguments appended to axon -p (e.g. --yes, --json)."
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "axon.sendSelection",
+        "key": "ctrl+shift+a",
+        "mac": "cmd+shift+a",
+        "when": "editorTextFocus && editorHasSelection"
+      }
+    ]
+  }
+}

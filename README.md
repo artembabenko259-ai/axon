@@ -28,9 +28,12 @@ python main.py # backward-compatible
 | `axon doctor --check-updates` | Doctor + update check |
 | `axon web --open` | Dashboard and open browser |
 | `axon tui` | Fullscreen terminal UI |
+| `axon multitask "goal"` | Orchestrator headless (parallel sub-agents) |
+| `axon tray` | System tray icon (Windows) |
 | `axon export [id]` | Export session to Markdown |
 | `axon queue add "…"` | Queue background task |
 | `axon serve` | Run background queue |
+| `axon serve --tray` | Queue worker + tray icon (Windows) |
 | `axon watch [dir]` | Run AXON when files change |
 | `axon schedule` | Daily scheduled headless tasks |
 
@@ -57,6 +60,7 @@ echo "task" | axon -p --json
 | `/create-skill` `/gen-skill` | Create markdown skills |
 | `/create-agent` `/delegate` | Sub-agents |
 | `/multitask <goal>` | Orchestrator — parallel subtasks + synthesis |
+| `/config` | View/edit runtime_policy (parallel, auto-save, sounds) |
 | `/review` `/commit` `/undo` | Git workflows |
 | `/docs` | Generate live docs |
 | `/system` | Session/global system prompts |
