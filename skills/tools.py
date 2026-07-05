@@ -258,6 +258,21 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
+            "name": "inspect_image",
+            "description": "Load and inspect a local image file (PNG, JPG, etc.) into the vision context to analyze its visual contents.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filepath": {"type": "string", "description": "Path to the local image file."},
+                    "purpose": {"type": "string", "description": "What you want to verify or look for in the image (optional)."}
+                },
+                "required": ["filepath"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "deep_search",
             "description": "Perform multi-step research on a query: searches the web, reads top pages, and synthesizes a detailed report.",
             "parameters": {
@@ -557,6 +572,8 @@ def tool_activity_detail(tool_name: str, args: dict[str, Any]) -> str:
         return "entire workspace"
     if tool_name == "read_webpage":
         return _display_path(str(args.get("url", "")))
+    if tool_name == "inspect_image":
+        return _display_path(str(args.get("filepath", "")))
     if tool_name == "deep_search":
         return _quote_activity(str(args.get("query", "")))
     if tool_name == "check_syntax":
@@ -932,6 +949,15 @@ def read_webpage_tool(url: str) -> str:
     return read_webpage(url)
 
 
+def inspect_image_tool(filepath: str) -> str:
+    path = _resolve_safe_path(filepath)
+    if isinstance(path, str):
+        return path
+    if not path.is_file():
+        return f"Error: image file not found — {filepath}"
+    return f"Screenshot saved: {path}"
+
+
 def deep_search_tool(query: str) -> str:
     from web_research import deep_search
     return deep_search(query)
@@ -1135,6 +1161,8 @@ def _run_tool_sync(tool_name: str, args: dict[str, Any]) -> str:
         return get_codebase_map()
     if tool_name == "read_webpage":
         return read_webpage_tool(str(args.get("url", "")))
+    if tool_name == "inspect_image":
+        return inspect_image_tool(str(args.get("filepath", "")))
     if tool_name == "deep_search":
         return deep_search_tool(str(args.get("query", "")))
     if tool_name == "check_syntax":
@@ -1360,7 +1388,7 @@ async def execute_tool(
     )
 
     observe_note: str | None = None
-    if tool_name == "take_screenshot" and not result.startswith("Error"):
+    if tool_name in {"take_screenshot", "inspect_image"} and not result.startswith("Error"):
         from ui.observe_mode import enrich_screenshot_result, _resolve_screenshot_path
         from runtime_policy import load_runtime_policy
         from axon_telegram import send_telegram_photo
@@ -1382,7 +1410,7 @@ async def execute_tool(
     if _on_tool_result is not None:
         if tool_name in REQUIRES_APPROVAL:
             await _on_tool_result(tool_name, detail, result)
-        elif tool_name == "take_screenshot" and not result.startswith("Error"):
+        elif tool_name in {"take_screenshot", "inspect_image"} and not result.startswith("Error"):
             await _on_tool_result(tool_name, detail, result)
 
     return result
