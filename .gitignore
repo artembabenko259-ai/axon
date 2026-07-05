@@ -92,6 +92,7 @@ deploy/*.zip
 *.7z
 
 # User AXON data (if ever copied into repo by mistake)
+.axon/
 .axon/backups/
 .DS_Store
 Thumbs.db

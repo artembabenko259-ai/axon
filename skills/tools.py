@@ -219,6 +219,31 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
+            "name": "search_symbol",
+            "description": "Find where a class, function, or method is defined in the workspace using indexed AST.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Name of the class, function, or method (case-insensitive substring)."}
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_codebase_map",
+            "description": "Retrieve a map of all files, classes, and functions in the workspace.",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "apply_patch",
             "description": (
                 "Apply a unified diff patch to a file. Requires user approval."
@@ -430,6 +455,10 @@ def tool_activity_detail(tool_name: str, args: dict[str, Any]) -> str:
         pattern = _quote_activity(str(args.get("pattern", "")))
         root = _display_path(str(args.get("path", "."))) or "@."
         return f"{pattern} in {root}"
+    if tool_name == "search_symbol":
+        return _quote_activity(str(args.get("query", "")))
+    if tool_name == "get_codebase_map":
+        return "entire workspace"
     if tool_name == "web_search":
         return _quote_activity(str(args.get("query", "")))
     if tool_name == "take_screenshot":
@@ -759,6 +788,35 @@ def search_code(pattern: str, path: str) -> str:
     return "\n".join(matches) if matches else f"No matches for /{pattern}/ in {target}"
 
 
+def search_symbol(query: str) -> str:
+    from workspace_indexer import WorkspaceIndexer
+    try:
+        indexer = WorkspaceIndexer(Path.cwd())
+        results = indexer.search_symbol(query)
+        if not results:
+            return f"No symbols matching '{query}' found."
+        
+        lines = []
+        for r in results:
+            args_str = f"({', '.join(r['args'])})" if r['args'] else ""
+            doc_note = f"\n  Docstring: {r['docstring']}" if r['docstring'] else ""
+            lines.append(
+                f"- {r['name']}{args_str} [{r['kind']}] defined in {r['file']}:L{r['start_line']}-L{r['end_line']}{doc_note}"
+            )
+        return "\n".join(lines)
+    except Exception as exc:
+        return f"Error: failed to search symbol — {exc}"
+
+
+def get_codebase_map() -> str:
+    from workspace_indexer import WorkspaceIndexer
+    try:
+        indexer = WorkspaceIndexer(Path.cwd())
+        return indexer.get_codebase_map()
+    except Exception as exc:
+        return f"Error: failed to generate codebase map — {exc}"
+
+
 def apply_patch(filepath: str, patch: str) -> str:
     path = _resolve_safe_path(filepath)
     if isinstance(path, str):
@@ -880,6 +938,10 @@ def _run_tool_sync(tool_name: str, args: dict[str, Any]) -> str:
         return glob_files(str(args.get("pattern", "")), str(args.get("path", ".")))
     if tool_name == "search_code":
         return search_code(str(args.get("pattern", "")), str(args.get("path", ".")))
+    if tool_name == "search_symbol":
+        return search_symbol(str(args.get("query", "")))
+    if tool_name == "get_codebase_map":
+        return get_codebase_map()
     if tool_name == "apply_patch":
         return apply_patch(
             str(args.get("filepath", "")),
