@@ -43,6 +43,7 @@ const DEFAULT_ENDPOINTS: Record<ProviderType, string> = {
   openrouter: "https://openrouter.ai/api/v1",
   ollama: "http://127.0.0.1:11434/v1",
   custom: "",
+  antigravity: "google-antigravity-sdk",
 };
 
 function endpointForProvider(
@@ -55,6 +56,9 @@ function endpointForProvider(
 ): string {
   if (provider === "openrouter") {
     return DEFAULT_ENDPOINTS.openrouter;
+  }
+  if (provider === "antigravity") {
+    return DEFAULT_ENDPOINTS.antigravity;
   }
   if (provider === "ollama") {
     return data.ollamaBaseUrl || data.storedEndpoint || DEFAULT_ENDPOINTS.ollama;
@@ -137,9 +141,11 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
       endpointUrl:
         provider === "openrouter"
           ? DEFAULT_ENDPOINTS.openrouter
-          : provider === "ollama"
-            ? prev.endpointUrl || DEFAULT_ENDPOINTS.ollama
-            : prev.endpointUrl || "",
+          : provider === "antigravity"
+            ? DEFAULT_ENDPOINTS.antigravity
+            : provider === "ollama"
+              ? prev.endpointUrl || DEFAULT_ENDPOINTS.ollama
+              : prev.endpointUrl || "",
     }));
   }, []);
 
@@ -158,6 +164,14 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
       return {
         baseUrl: DEFAULT_ENDPOINTS.openrouter,
         apiKey: apiKey || null,
+        provider,
+      };
+    }
+
+    if (provider === "antigravity") {
+      return {
+        baseUrl: DEFAULT_ENDPOINTS.antigravity,
+        apiKey: "sdk",
         provider,
       };
     }

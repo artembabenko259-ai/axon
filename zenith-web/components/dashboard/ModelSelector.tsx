@@ -4,6 +4,7 @@ import { motion, LayoutGroup } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { EASE_OUT, TAP_PRESS } from "@/lib/motion";
 import { useModel } from "@/context/ModelContext";
+import { useConfig } from "@/context/ConfigContext";
 
 export interface ModelOption {
   id: string;
@@ -40,6 +41,51 @@ export const DEFAULT_MODELS: ModelOption[] = [
   },
 ];
 
+export const ANTIGRAVITY_MODELS: ModelOption[] = [
+  {
+    id: "gemini-3.5-flash",
+    name: "Gemini 3.5 Flash",
+    provider: "Google",
+    description: "Default model. High speed, balanced for agent tasks and coding.",
+  },
+  {
+    id: "gemini-3.1-pro-high",
+    name: "Gemini 3.1 Pro (high)",
+    provider: "Google",
+    description: "Advanced model for complex logic, planning, and large contexts.",
+  },
+  {
+    id: "gemini-3.1-pro-low",
+    name: "Gemini 3.1 Pro (low)",
+    provider: "Google",
+    description: "Speed-optimized Pro model for standard orchestration tasks.",
+  },
+  {
+    id: "gemini-3-flash",
+    name: "Gemini 3 Flash",
+    provider: "Google",
+    description: "Basic fast model for simple subtasks.",
+  },
+  {
+    id: "claude-sonnet-4.6-thinking",
+    name: "Claude Sonnet 4.6 (thinking)",
+    provider: "Anthropic",
+    description: "Deep step-by-step reasoning and coding.",
+  },
+  {
+    id: "claude-opus-4.6-thinking",
+    name: "Claude Opus 4.6 (thinking)",
+    provider: "Anthropic",
+    description: "Flagship heavy model for complex analysis.",
+  },
+  {
+    id: "gpt-oss-120b",
+    name: "GPT-OSS-120b",
+    provider: "Open-Source",
+    description: "Large open-source model available within ecosystem.",
+  },
+];
+
 interface ModelSelectorProps {
   selected?: string;
   onSelect?: (id: string) => void;
@@ -47,13 +93,16 @@ interface ModelSelectorProps {
 
 export function ModelSelector({ selected, onSelect }: ModelSelectorProps) {
   const { activeModelId, allModels, setActiveModel } = useModel();
+  const { config } = useConfig();
   const current = selected ?? activeModelId;
   const handleSelect = onSelect ?? setActiveModel;
+
+  const displayModels = config.provider === "antigravity" ? ANTIGRAVITY_MODELS : allModels;
 
   return (
     <LayoutGroup>
       <div className="space-y-2">
-        {allModels.map((model, index) => {
+        {displayModels.map((model, index) => {
           const active = current === model.id;
           return (
             <motion.button

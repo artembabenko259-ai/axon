@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 
 const PROVIDERS: { value: ProviderType; label: string }[] = [
   { value: "openrouter", label: "OpenRouter" },
+  { value: "antigravity", label: "Google Antigravity" },
   { value: "ollama", label: "Local Ollama" },
   { value: "custom", label: "Custom" },
 ];
