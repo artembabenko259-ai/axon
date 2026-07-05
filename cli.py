@@ -237,7 +237,7 @@ def _run_tui() -> int:
     return 0
 
 
-def _run_dart(binary: str | None) -> int:
+def _run_dart(target: str | None) -> int:
     from config_store import load_config, save_config
     config = load_config()
     disabled = list(config.get("disabled_skills", []) or [])
@@ -246,12 +246,29 @@ def _run_dart(binary: str | None) -> int:
         save_config({"disabled_skills": disabled})
         
     import os
-    if binary:
-        abs_path = os.path.abspath(binary)
-        os.environ["AXON_DART_BINARY"] = abs_path
-        print(f"[AXON DART] Loaded binary: {abs_path}")
+    scan_path = os.path.abspath(target or ".")
+    
+    binary_exts = {".exe", ".dll", ".sys", ".bin", ".elf", ".so", ".dylib"}
+    found_binaries = []
+    
+    if os.path.isfile(scan_path):
+        found_binaries.append(scan_path)
+    elif os.path.isdir(scan_path):
+        for entry in os.scandir(scan_path):
+            if entry.is_file() and not entry.name.startswith("."):
+                ext = os.path.splitext(entry.name)[1].lower()
+                if ext in binary_exts:
+                    found_binaries.append(entry.path)
+                    
+    if found_binaries:
+        os.environ["AXON_DART_BINARIES"] = ";".join(found_binaries)
+        print(f"[AXON DART] Detected {len(found_binaries)} binary targets in {scan_path}:")
+        for b in found_binaries[:5]:
+            print(f"  - {os.path.basename(b)}")
+        if len(found_binaries) > 5:
+            print(f"  ... and {len(found_binaries)-5} more files")
     else:
-        print("[AXON DART] Started. Load a binary via: axon dart <path>")
+        print(f"[AXON DART] No binaries found in {scan_path}.")
         
     from ui.axon_tui import run_tui
     try:

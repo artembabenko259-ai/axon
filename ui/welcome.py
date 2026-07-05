@@ -99,10 +99,19 @@ def _build_welcome_column(theme: CLITheme, model: str, workspace: Path) -> Rende
     body.append(f"{short_model}\n", style=Style(color=theme.accent_soft, bold=True))
     body.append(f"{provider}\n\n", style=Style(color=theme.text_muted, dim=True))
     
-    binary = os.environ.get("AXON_DART_BINARY")
-    if binary:
-        body.append("Dart Target\n", style=Style(color=theme.text_muted))
-        body.append(f"{Path(binary).name}\n\n", style=Style(color=theme.error, bold=True))
+    binaries_str = os.environ.get("AXON_DART_BINARIES")
+    if binaries_str:
+        binaries = [b for b in binaries_str.split(";") if b.strip()]
+        if len(binaries) == 1:
+            body.append("Dart Target\n", style=Style(color=theme.text_muted))
+            body.append(f"{Path(binaries[0]).name}\n\n", style=Style(color=theme.error, bold=True))
+        else:
+            body.append(f"Dart Targets ({len(binaries)})\n", style=Style(color=theme.text_muted))
+            names = [Path(b).name for b in binaries[:3]]
+            joined = ", ".join(names)
+            if len(binaries) > 3:
+                joined += "..."
+            body.append(f"{joined}\n\n", style=Style(color=theme.error, bold=True))
 
     body.append("Workspace\n", style=Style(color=theme.text_muted))
     body.append(f"{_compact_path(workspace)}\n\n", style=Style(color=theme.text_primary))
