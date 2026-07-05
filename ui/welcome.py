@@ -98,6 +98,12 @@ def _build_welcome_column(theme: CLITheme, model: str, workspace: Path) -> Rende
     body.append("Model\n", style=Style(color=theme.text_muted))
     body.append(f"{short_model}\n", style=Style(color=theme.accent_soft, bold=True))
     body.append(f"{provider}\n\n", style=Style(color=theme.text_muted, dim=True))
+    
+    binary = os.environ.get("AXON_DART_BINARY")
+    if binary:
+        body.append("Dart Target\n", style=Style(color=theme.text_muted))
+        body.append(f"{Path(binary).name}\n\n", style=Style(color=theme.error, bold=True))
+
     body.append("Workspace\n", style=Style(color=theme.text_muted))
     body.append(f"{_compact_path(workspace)}\n\n", style=Style(color=theme.text_primary))
     body.append("Bridge\n", style=Style(color=theme.text_muted))

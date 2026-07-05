@@ -127,6 +127,9 @@ def _build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("logout", help="Sign out of AXON account on this machine")
 
+    dart_p = sub.add_parser("dart", help="Start AXON Dart AI-assisted reverse engineering TUI")
+    dart_p.add_argument("binary", nargs="?", help="Path to the binary file to analyze")
+
     # Headless flags (Phase 4) — attached to root for `axon -p "..."`
     parser.add_argument(
         "-p",
@@ -227,6 +230,30 @@ def _run_logout() -> int:
 def _run_tui() -> int:
     from ui.axon_tui import run_tui
 
+    try:
+        run_tui()
+    except KeyboardInterrupt:
+        pass
+    return 0
+
+
+def _run_dart(binary: str | None) -> int:
+    from config_store import load_config, save_config
+    config = load_config()
+    disabled = list(config.get("disabled_skills", []) or [])
+    if "axon-dart" in disabled:
+        disabled.remove("axon-dart")
+        save_config({"disabled_skills": disabled})
+        
+    import os
+    if binary:
+        abs_path = os.path.abspath(binary)
+        os.environ["AXON_DART_BINARY"] = abs_path
+        print(f"[AXON DART] Loaded binary: {abs_path}")
+    else:
+        print("[AXON DART] Started. Load a binary via: axon dart <path>")
+        
+    from ui.axon_tui import run_tui
     try:
         run_tui()
     except KeyboardInterrupt:
@@ -571,6 +598,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if command == "logout":
         return _run_logout()
+
+    if command == "dart":
+        return _run_dart(getattr(args, "binary", None))
 
     if command == "tui":
         return _run_tui()
