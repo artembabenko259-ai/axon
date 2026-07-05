@@ -46,6 +46,8 @@ INCLUDE_FILES = (
     "code_mapper.py",
     "code_patcher.py",
     "code_search.py",
+    "git_transactions.py",
+    "dependency_finder.py",
     "config_store.py",
     "task_manager.py",
     "session_store.py",

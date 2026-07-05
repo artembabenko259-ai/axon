@@ -121,6 +121,8 @@ def collect_hidden_imports() -> list[str]:
         "code_patcher",
         "code_search",
         "ui.side_by_side_diff",
+        "git_transactions",
+        "dependency_finder",
         "prompt_toolkit",
         "rich",
         "rich.markdown",

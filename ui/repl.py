@@ -594,6 +594,20 @@ async def start_axon(headless: bool = False) -> None:
         session_state["status"] = DEFAULT_THEME.status_thinking
         session_state["status_style"] = DEFAULT_THEME.accent
 
+        from git_transactions import GitTransactionManager
+        from autopilot_mode import is_autopilot_active
+        from runtime_policy import load_runtime_policy
+
+        policy = load_runtime_policy()
+        use_git_tx = (is_autopilot_active() or policy.autonomy_enabled)
+        tx = GitTransactionManager(Path.cwd())
+        checkpoint = None
+
+        if use_git_tx and tx.is_git:
+            checkpoint = tx.create_checkpoint(f"before_agent_run_{uuid.uuid4().hex[:4]}")
+            if checkpoint:
+                await emit(f"[dim]  [cyan]✓[/] Transaction checkpoint created: {checkpoint[:8]}[/dim]\n")
+
         try:
             if background and not streaming_active["value"]:
                 await emit(status_text)
@@ -602,10 +616,24 @@ async def start_axon(headless: bool = False) -> None:
                 stripped,
                 file_context=file_context,
             )
+        except Exception as exc:
+            if checkpoint:
+                tx.rollback(checkpoint)
+                await emit("[bold red]❌ Critical Agent crash! Transaction rolled back to last working checkpoint.[/]\n")
+            raise exc
         finally:
             session_state["status"] = DEFAULT_THEME.status_ready
             session_state["status_style"] = DEFAULT_THEME.success
             llm_manager.set_stream_callbacks()
+
+        if checkpoint:
+            if result.ok:
+                commit_msg = f"feat: AXON auto-commit - {stripped[:60]}"
+                tx.finalize(checkpoint, commit_msg)
+                await emit(f"[dim]  [green]✓[/] Git transaction committed: {commit_msg}[/dim]\n")
+            else:
+                tx.rollback(checkpoint)
+                await emit("[bold red]❌ Agent failed to complete the task successfully. Transaction rolled back to last working checkpoint.[/]\n")
 
         full_text = result.content if result.ok else result.display_text
         await bridge.broadcast_stream_end(stream_id, full_text, source=source)

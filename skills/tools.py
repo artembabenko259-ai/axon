@@ -90,6 +90,25 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
+            "name": "find_dependencies",
+            "description": (
+                "Locate all references, imports, and usages of a specific class or function symbol across the codebase to ensure consistent refactoring."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol": {
+                        "type": "string",
+                        "description": "The exact name of the function, class, struct, or variable to find references for.",
+                    },
+                },
+                "required": ["symbol"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "write_file",
             "description": (
                 "Write text content to a file. Creates parent directories if needed. "
@@ -953,6 +972,24 @@ def search_semantic(query: str) -> str:
         return f"Error: failed to search semantic index — {exc}"
 
 
+def find_dependencies_tool(symbol: str) -> str:
+    from dependency_finder import find_symbol_references
+    try:
+        results = find_symbol_references(Path.cwd(), symbol)
+        if not results:
+            return f"No references to symbol '{symbol}' found in the codebase."
+
+        lines = [f"References to symbol '{symbol}':", ""]
+        for r in results:
+            lines.append(f"File: {r['file']}")
+            for m in r['matches']:
+                lines.append(f"  L{m['line_no']}: {m['line']}")
+            lines.append("")
+        return "\n".join(lines).strip()
+    except Exception as exc:
+        return f"Error scanning dependencies: {exc}"
+
+
 def search_symbol(query: str) -> str:
     from workspace_indexer import WorkspaceIndexer
     try:
@@ -1214,6 +1251,8 @@ def _run_tool_sync(tool_name: str, args: dict[str, Any]) -> str:
         return search_code(str(args.get("pattern", "")), str(args.get("path", ".")))
     if tool_name == "search_semantic":
         return search_semantic(str(args.get("query", "")))
+    if tool_name == "find_dependencies":
+        return find_dependencies_tool(str(args.get("symbol", "")))
     if tool_name == "search_symbol":
         return search_symbol(str(args.get("query", "")))
     if tool_name == "get_codebase_map":

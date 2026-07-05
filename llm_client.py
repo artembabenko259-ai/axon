@@ -1286,6 +1286,9 @@ class LLMManager:
             
             if self._on_stream_start:
                 await self._on_stream_start()
+
+            if self.auto_compact_enabled and should_auto_compact(self.messages):
+                await self.compact_context()
                 
             self.messages.append({"role": "user", "content": user_text})
             
