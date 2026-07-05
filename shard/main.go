@@ -182,12 +182,13 @@ func initialModel(conn *websocket.Conn) model {
 
 func (m model) getWelcomeMessage() string {
 	crab := `
-    (●)     (●)
-     \ \___/ /
-     / ◕   ◕ \
-   (│    ◡    │)
-    │ ──┬──┬── │
-    /\  /\  /\
+  ▄▛▀▜▄          ▄▛▀▜▄
+  ▐█▌ ▐█▌        ▐█▌ ▐█▌
+  ▝▜██▛▘▄▄▄██▄▄▄▝▜██▛▘
+   ▄████████████████▄
+  ▐██████████████████▌
+   ▜███▛ ▜████▛ ▜███▛
+   ▄◤ ◥▄  ▘▘▘▘  ▄◤ ◥▄
 `
 	urlStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#38bdf8")).Underline(true)
 	panelURL := urlStyle.Render("http://127.0.0.1:3000")
@@ -214,7 +215,7 @@ func (m model) getWelcomeMessage() string {
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(borderColor).
 		Padding(1, 2).
-		Foreground(lipgloss.Color("#f87171")). // Premium coral red crab
+		Foreground(lipgloss.Color("#ef4444")). // Vibrant red mascot
 		Render(crab)
 
 	mascotTextBox := lipgloss.NewStyle().
