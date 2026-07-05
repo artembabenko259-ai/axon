@@ -104,6 +104,14 @@ def _check_config_path() -> CheckResult:
     return CheckResult("config", CONFIG_PATH.is_file(), str(CONFIG_PATH))
 
 
+def _check_hardware() -> CheckResult:
+    try:
+        from system_info import get_local_model_recommendation
+        return CheckResult("hardware_cookbook", True, get_local_model_recommendation())
+    except Exception as exc:
+        return CheckResult("hardware_cookbook", False, f"failed to check specs: {exc}")
+
+
 def run_doctor(*, json_output: bool = False, check_updates: bool = False) -> int:
     checks = [
         _check_python(),
@@ -114,6 +122,7 @@ def run_doctor(*, json_output: bool = False, check_updates: bool = False) -> int
         _check_rg(),
         _check_bridge_port(),
         _check_data_dir(),
+        _check_hardware(),
     ]
 
     update_line = ""

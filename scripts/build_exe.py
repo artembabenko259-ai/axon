@@ -123,6 +123,7 @@ def collect_hidden_imports() -> list[str]:
         "ui.side_by_side_diff",
         "git_transactions",
         "dependency_finder",
+        "system_info",
         "prompt_toolkit",
         "rich",
         "rich.markdown",
