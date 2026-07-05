@@ -61,14 +61,42 @@ type command struct {
 }
 
 var autocompleteCommands = []command{
-	{"/help", "Show help and command guide"},
-	{"/plan", "Create a task board and plan steps"},
-	{"/multitask", "Run parallel sub-agents for a goal"},
-	{"/delegate", "Assign a task to a specific sub-agent"},
-	{"/commit", "Create a git commit of workspace changes"},
-	{"/artifacts", "View or open generated files"},
-	{"/clear", "Clear chat screen"},
-	{"/exit", "Exit AXON Shard"},
+	{"/help", "List available slash commands"},
+	{"/exit", "Exit AXON"},
+	{"/clear", "Clear chat context (keeps system prompt)"},
+	{"/cost", "Show session cost and token usage"},
+	{"/usage", "Alias for /cost"},
+	{"/compact", "Summarize older messages to free context window"},
+	{"/model", "Switch model — e.g. /model anthropic/claude-3.5-sonnet"},
+	{"/plan", "Plan Mode — /plan <description> to break work into steps"},
+	{"/execute", "Run the active plan step-by-step"},
+	{"/tasks", "Toggle plan task side panel — F2"},
+	{"/thinking", "Toggle AI reasoning trace in chat — F3"},
+	{"/image", "Vision — /image <path|@file> [prompt]"},
+	{"/export-skill", "Export skill to .axon/exports — /export-skill <name>"},
+	{"/session", "Toggle session timeline panel — F4"},
+	{"/create-skill", "Interactive wizard to create a new SKILL.md"},
+	{"/gen-skill", "AI-generate a skill from a description — /gen-skill \"...\""},
+	{"/review", "Review current git diff for bugs and code smells"},
+	{"/undo", "Restore last file overwritten by write_file"},
+	{"/commit", "AI-generated Conventional Commit with confirmation"},
+	{"/artifacts", "List and view project artifacts — /artifacts view <filename>"},
+	{"/docs", "Generate and serve interactive project docs at localhost:8000"},
+	{"/create-agent", "Scaffold a sub-agent in .axon/agents/"},
+	{"/delegate", "Delegate task to sub-agent — /delegate <name> <task>"},
+	{"/multitask", "Orchestrator — parallel subtasks — /multitask <goal>"},
+	{"/config", "Runtime policy — /config | /config set <key> <value>"},
+	{"/provider", "LLM provider — /provider | /provider custom <url> <key>"},
+	{"/autopilot", "Autopilot full autonomy — /autopilot on|off|status"},
+	{"/system", "Session/global system prompt — /system session|global|edit|clear"},
+	{"/sessions", "List saved chat sessions"},
+	{"/resume", "Resume session — /resume <id>"},
+	{"/save", "Save current session — /save [title]"},
+	{"/export", "Export session to Markdown — /export [path]"},
+	{"/mcp", "MCP servers — /mcp list | /mcp add <name> <command...>"},
+	{"/login", "Sign in via runaxon.xyz — opens browser for email registration"},
+	{"/logout", "Sign out of AXON account on this machine"},
+	{"/skills", "Manage custom skills / integrations — /skills list|enable|disable <name>"},
 }
 
 type messageType int
@@ -472,9 +500,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 
 		viewportHeight := m.height - 6
-		if m.showSuggestions && len(m.filteredSuggestions) > 0 {
-			viewportHeight -= (len(m.filteredSuggestions) + 2)
-		}
+		viewportHeight -= m.popupHeight()
 		if viewportHeight < 1 {
 			viewportHeight = 1
 		}
@@ -586,9 +612,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	viewportHeight := m.height - 6
-	if m.showSuggestions && len(m.filteredSuggestions) > 0 {
-		viewportHeight -= (len(m.filteredSuggestions) + 2)
-	}
+	viewportHeight -= m.popupHeight()
 	if viewportHeight < 1 {
 		viewportHeight = 1
 	}
@@ -600,15 +624,42 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+func (m model) popupHeight() int {
+	if !m.showSuggestions || len(m.filteredSuggestions) == 0 {
+		return 0
+	}
+	h := len(m.filteredSuggestions)
+	if h > 5 {
+		h = 5 + 1
+	}
+	return h + 2
+}
+
 func (m model) autocompleteView() string {
 	if !m.showSuggestions || len(m.filteredSuggestions) == 0 {
 		return ""
 	}
 
+	maxVisible := 5
+	start := 0
+	end := len(m.filteredSuggestions)
+	if end > maxVisible {
+		start = m.suggestionIdx - maxVisible/2
+		if start < 0 {
+			start = 0
+		}
+		end = start + maxVisible
+		if end > len(m.filteredSuggestions) {
+			end = len(m.filteredSuggestions)
+			start = end - maxVisible
+		}
+	}
+
 	var sb strings.Builder
 	sb.WriteString(lipgloss.NewStyle().Foreground(borderColor).Render(" ┌" + strings.Repeat("─", m.width-6) + "┐") + "\n")
 
-	for i, cmd := range m.filteredSuggestions {
+	for i := start; i < end; i++ {
+		cmd := m.filteredSuggestions[i]
 		style := lipgloss.NewStyle().Padding(0, 2)
 		if i == m.suggestionIdx {
 			style = style.
@@ -619,13 +670,20 @@ func (m model) autocompleteView() string {
 			style = style.Foreground(textColor)
 		}
 
-		cmdStr := fmt.Sprintf("%-12s  %s", cmd.Name, cmd.Description)
+		cmdStr := fmt.Sprintf("%-14s  %s", cmd.Name, cmd.Description)
 		if len(cmdStr) > m.width-10 {
 			cmdStr = cmdStr[:m.width-13] + "..."
 		}
 
 		paddedLine := style.Render(fmt.Sprintf(" %-*s", m.width-8, cmdStr))
 		sb.WriteString(paddedLine + "\n")
+	}
+
+	if len(m.filteredSuggestions) > maxVisible {
+		hint := fmt.Sprintf(" ... (%d more, use Up/Down/Tab to scroll) ...", len(m.filteredSuggestions)-maxVisible)
+		hintStyle := lipgloss.NewStyle().Foreground(mutedColor).Padding(0, 2)
+		paddedHint := hintStyle.Render(fmt.Sprintf(" %-*s", m.width-8, hint))
+		sb.WriteString(paddedHint + "\n")
 	}
 
 	sb.WriteString(lipgloss.NewStyle().Foreground(borderColor).Render(" └" + strings.Repeat("─", m.width-6) + "┘"))
