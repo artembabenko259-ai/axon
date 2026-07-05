@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
-EventKind = Literal["tool", "skill", "file", "observe", "agent", "plan", "cost"]
+EventKind = Literal["tool", "skill", "file", "observe", "agent", "plan", "cost", "artifact"]
 
 
 @dataclass
@@ -68,6 +68,9 @@ class SessionTimeline:
 
     def record_plan(self, goal: str) -> None:
         self._add("plan", goal[:60] or "plan")
+
+    def record_artifact(self, name: str, detail: str = "") -> None:
+        self._add("artifact", name, detail=detail)
 
 
 session_timeline = SessionTimeline()

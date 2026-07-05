@@ -152,6 +152,68 @@ def load_project_memory(workspace: Path | None = None) -> str:
         return ""
 
 
+def update_project_memory(category: str, key: str, value: str, workspace: Path | None = None) -> str:
+    """Save/update a key-value fact inside `.axon/memory.md` under a category section."""
+    path = project_memory_path(workspace)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    
+    content = ""
+    if path.is_file():
+        try:
+            content = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            pass
+            
+    key_clean = key.strip()
+    val_clean = value.strip()
+    cat_name = category.strip() or "General"
+    
+    sections: dict[str, list[str]] = {}
+    current_sec = "General"
+    sections[current_sec] = []
+    
+    lines = content.splitlines()
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("#") and not stripped.startswith("##"):
+            continue
+        if stripped.startswith("##"):
+            current_sec = stripped[2:].strip()
+            if current_sec not in sections:
+                sections[current_sec] = []
+        elif stripped:
+            sections[current_sec].append(line)
+            
+    if cat_name not in sections:
+        sections[cat_name] = []
+        
+    key_found = False
+    new_line = f"- **{key_clean}**: {val_clean}"
+    for i, line in enumerate(sections[cat_name]):
+        if f"**{key_clean}**" in line or line.strip().startswith(f"- **{key_clean}**"):
+            sections[cat_name][i] = new_line
+            key_found = True
+            break
+            
+    if not key_found:
+        sections[cat_name].append(new_line)
+        
+    new_md_lines = ["# Project Memory", ""]
+    for sec_name, sec_lines in sorted(sections.items()):
+        if not sec_lines:
+            continue
+        new_md_lines.append(f"## {sec_name}")
+        for sl in sec_lines:
+            new_md_lines.append(sl)
+        new_md_lines.append("")
+        
+    try:
+        path.write_text("\n".join(new_md_lines), encoding="utf-8")
+        return f"Successfully saved to project memory under '{cat_name}': {key_clean} -> {val_clean}"
+    except OSError as exc:
+        return f"Error: failed to write memory file — {exc}"
+
+
 def ensure_skills_workspace(workspace: Path | None = None) -> Path:
     """Create `.axon/skills/` with README and an example skill if missing."""
     ws = workspace or Path.cwd()

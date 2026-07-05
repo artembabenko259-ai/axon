@@ -308,6 +308,38 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
+            "name": "update_memory",
+            "description": "Store a long-term project fact or lesson learned in the project memory (.axon/memory.md) for future sessions.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category": {"type": "string", "description": "Category of information (e.g., 'setup', 'architecture', 'guideline')."},
+                    "key": {"type": "string", "description": "Short identifier key for the fact (e.g. 'npm_run_dev_issue')."},
+                    "value": {"type": "string", "description": "The detailed fact, setting, or learning to remember."}
+                },
+                "required": ["category", "key", "value"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "write_artifact",
+            "description": "Create or update a structured user-facing artifact document (e.g., plans, specifications, reports) in .axon/artifacts/.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {"type": "string", "description": "Artifact filename (e.g., 'system_architecture.md', 'plan_log.md')."},
+                    "content": {"type": "string", "description": "Full markdown content of the artifact."},
+                    "summary": {"type": "string", "description": "Brief, human-readable summary of what this artifact contains."}
+                },
+                "required": ["filename", "content", "summary"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "apply_patch",
             "description": (
                 "Apply a unified diff patch to a file. Requires user approval."
@@ -533,6 +565,10 @@ def tool_activity_detail(tool_name: str, args: dict[str, Any]) -> str:
         return "working tree status"
     if tool_name == "git_diff":
         return "unstaged changes"
+    if tool_name == "update_memory":
+        return f"{args.get('category', 'fact')}: {args.get('key', '')}"
+    if tool_name == "write_artifact":
+        return _display_path(str(args.get("filename", "")))
     if tool_name == "web_search":
         return _quote_activity(str(args.get("query", "")))
     if tool_name == "take_screenshot":
@@ -946,6 +982,32 @@ def git_diff() -> str:
         return f"Error running git diff: {exc}"
 
 
+def update_memory_tool(category: str, key: str, value: str) -> str:
+    from skills_manager import update_project_memory
+    return update_project_memory(category, key, value)
+
+
+def write_artifact_tool(filename: str, content: str, summary: str) -> str:
+    """Write user-facing artifact document to .axon/artifacts/ and record to timeline."""
+    try:
+        from ui.session_timeline import session_timeline
+        root = Path.cwd() / ".axon" / "artifacts"
+        root.mkdir(parents=True, exist_ok=True)
+        
+        clean_name = Path(filename).name
+        target = root / clean_name
+        
+        target.write_text(content, encoding="utf-8")
+        
+        rel_path = f".axon/artifacts/{clean_name}"
+        session_timeline.record_artifact(clean_name, summary)
+        
+        print(f"\n[ARTIFACT] Created/Updated: {rel_path}")
+        return f"Successfully saved artifact to {rel_path} - {summary}"
+    except Exception as exc:
+        return f"Error: failed to write artifact — {exc}"
+
+
 def apply_patch(filepath: str, patch: str) -> str:
     path = _resolve_safe_path(filepath)
     if isinstance(path, str):
@@ -1081,6 +1143,18 @@ def _run_tool_sync(tool_name: str, args: dict[str, Any]) -> str:
         return git_status()
     if tool_name == "git_diff":
         return git_diff()
+    if tool_name == "update_memory":
+        return update_memory_tool(
+            str(args.get("category", "")),
+            str(args.get("key", "")),
+            str(args.get("value", "")),
+        )
+    if tool_name == "write_artifact":
+        return write_artifact_tool(
+            str(args.get("filename", "")),
+            str(args.get("content", "")),
+            str(args.get("summary", "")),
+        )
     if tool_name == "apply_patch":
         return apply_patch(
             str(args.get("filepath", "")),

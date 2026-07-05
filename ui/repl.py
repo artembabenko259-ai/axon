@@ -986,6 +986,42 @@ async def start_axon() -> None:
         if result.usage:
             await sync_stats()
 
+    async def run_artifacts(args: str = "") -> None:
+        root = workspace / ".axon" / "artifacts"
+        if not root.is_dir():
+            await emit("[dim]No artifacts created in this project yet.[/]\n")
+            return
+
+        parts = args.split(maxsplit=1)
+        action = parts[0].strip().lower() if parts else "list"
+
+        if action == "view" and len(parts) > 1:
+            filename = parts[1].strip()
+            filename = Path(filename).name
+            target = root / filename
+            if not target.is_file():
+                await emit(f"[red]Artifact '{filename}' not found.[/]\n")
+                return
+            try:
+                content = target.read_text(encoding="utf-8", errors="replace")
+                await emit(f"\n[bold cyan]--- Artifact: {filename} ---[/]\n{content}\n")
+            except Exception as exc:
+                await emit(f"[red]Failed to read artifact: {exc}[/]\n")
+            return
+
+        files = list(root.glob("*"))
+        if not files:
+            await emit("[dim]No artifacts created in this project yet.[/]\n")
+            return
+
+        await emit("\n[bold cyan]Project Artifacts:[/]\n")
+        for f in sorted(files, key=lambda x: x.stat().st_mtime, reverse=True):
+            size = f.stat().st_size
+            import datetime
+            mtime = datetime.datetime.fromtimestamp(f.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+            await emit(f"  [green]{f.name:<30}[/] ({size} bytes, modified {mtime})\n")
+        await emit("\n[dim]Use `/artifacts view <filename>` to read an artifact's content.[/]\n")
+
     async def run_docs() -> None:
         candidates = [
             workspace / "scripts" / "docs_gen.py",
@@ -1288,6 +1324,10 @@ async def start_axon() -> None:
             await run_undo()
             return True
 
+        if cmd == "/artifacts":
+            await run_artifacts(args)
+            return True
+
         if cmd == "/commit":
             await run_commit(background=background)
             return True
@@ -1580,6 +1620,13 @@ async def start_axon() -> None:
 
             if stripped.lower() in {"execute", "go", "run"} and task_manager.has_plan():
                 await run_execute_mode()
+                if shutdown.is_set():
+                    break
+                continue
+
+            if stripped.lower().startswith("/artifacts"):
+                args = stripped[10:].strip()
+                await run_artifacts(args)
                 if shutdown.is_set():
                     break
                 continue
