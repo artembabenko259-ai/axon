@@ -128,5 +128,51 @@ async def handle_skills_command(stripped: str, *, llm_manager: Any, emit: Emit) 
         await emit(f"[green][✓] Skill '{target['name']}' has been disabled (will not be exposed to the LLM).[/]\n")
         return True
 
-    await emit("[yellow]Usage: /skills | /skills enable <name> | /skills disable <name>[/]\n")
+    if sub == "install":
+        if len(parts) < 3:
+            await emit("[yellow]Usage: /skills install <name_or_url>[/]\n")
+            return True
+        target = parts[2].strip()
+        await emit(f"[dim]Installing skill '{target}'...[/]\n")
+        
+        try:
+            content = ""
+            if target.lower() == "axon-dart":
+                content = """---
+name: axon-dart
+description: AI-assisted reverse engineering helper. Analyze binaries, decompile functions, and explain binary code.
+allowed-tools: execute_shell, read_file
+---
+
+# AXON Dart: Reverse Engineering Skill
+
+You are now equipped with AXON Dart capabilities for reverse engineering target binaries.
+
+## Workflow
+1. Analyze a binary: Check if Radare2 (r2) is installed via `r2 -v`.
+2. Run standard commands to get symbols: `r2 -q -c "afl" <binary_path>`.
+3. Disassemble a function: `r2 -q -c "pdf @ <function_name>" <binary_path>`.
+4. Analyze pseudo-code or assembly to explain logic, find vulnerabilities, and rename symbols.
+"""
+            else:
+                import urllib.request
+                import urllib.error
+                url = target
+                if not url.startswith(("http://", "https://")):
+                    url = f"https://raw.githubusercontent.com/runaxon/registry/main/skills/{target.lower()}.skill"
+                
+                req = urllib.request.Request(url, headers={"User-Agent": "AXON-CLI"})
+                with urllib.request.urlopen(req, timeout=10) as response:
+                    content = response.read().decode("utf-8")
+
+            from skills_manager import save_generated_skill_file
+            skill_path, skill_name = save_generated_skill_file(content, workspace=llm_manager.workspace)
+            
+            llm_manager.reload_skills()
+            await emit(f"[green][✓] Skill '{skill_name}' successfully installed and loaded into context![/]\n")
+        except Exception as exc:
+            await emit(f"[red]Installation failed: {exc}[/]\n")
+        return True
+
+    await emit("[yellow]Usage: /skills | /skills list | /skills enable <name> | /skills disable <name> | /skills install <name_or_url>[/]\n")
     return True
