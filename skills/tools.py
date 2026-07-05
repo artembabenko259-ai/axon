@@ -71,6 +71,25 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
+            "name": "search_semantic",
+            "description": (
+                "Search the workspace code semantic index using natural language queries to locate relevant files and code blocks."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Natural language query describing what code you want to find (e.g. 'auth logic', 'websocket port').",
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "write_file",
             "description": (
                 "Write text content to a file. Creates parent directories if needed. "
@@ -915,6 +934,25 @@ def search_code(pattern: str, path: str) -> str:
     return "\n".join(matches) if matches else f"No matches for /{pattern}/ in {target}"
 
 
+def search_semantic(query: str) -> str:
+    from code_search import CodeSearchIndex
+    try:
+        index = CodeSearchIndex(Path.cwd())
+        num = index.build()
+        results = index.search(query, limit=5)
+        if not results:
+            return "No matching code blocks found in semantic search."
+
+        lines = [f"Semantic Search Results (indexed {num} chunks):", ""]
+        for r in results:
+            lines.append(f"--- File: {r['file']}:L{r['start_line']} (score: {r['score']:.4f}) ---")
+            lines.append(r['text'])
+            lines.append("-" * 40)
+        return "\n".join(lines)
+    except Exception as exc:
+        return f"Error: failed to search semantic index — {exc}"
+
+
 def search_symbol(query: str) -> str:
     from workspace_indexer import WorkspaceIndexer
     try:
@@ -1042,6 +1080,17 @@ def apply_patch(filepath: str, patch: str) -> str:
     if not path.is_file():
         return f"Error: file not found — {path}"
 
+    if "<<<<<<< ORIGINAL" in patch:
+        from code_patcher import apply_search_replace_patch
+        backup_manager.set_workspace(Path.cwd())
+        backup_manager.backup_if_exists(path)
+        success, msg = apply_search_replace_patch(path, patch)
+        if success:
+            _READ_FILE_CACHE.pop(str(path.resolve()), None)
+            return msg
+        else:
+            return f"Error: {msg}"
+
     original = path.read_text(encoding="utf-8", errors="replace")
     lines = original.splitlines(keepends=True)
     patch_text = patch.replace("\r\n", "\n")
@@ -1120,6 +1169,14 @@ def execute_shell(command: str) -> str:
             parts.append(proc.stderr)
 
         output = "\n".join(parts).strip()
+        if proc.returncode != 0:
+            return (
+                f"❌ ERROR: Command '{cmd}' failed with exit code {proc.returncode}.\n"
+                f"--- OUTPUT ---\n{output or '(no output)'}\n"
+                f"💡 SELF-HEALING LOOP: AXON detects a compiler/execution failure. "
+                f"Please inspect the error logs, identify the bug, edit the source code using the `apply_patch` tool, "
+                f"and rerun the build/test command to verify the fix."
+            )
         if output:
             return f"{output}\n[exit code {proc.returncode}]"
         return f"(no output, exit code {proc.returncode})"
@@ -1155,6 +1212,8 @@ def _run_tool_sync(tool_name: str, args: dict[str, Any]) -> str:
         return glob_files(str(args.get("pattern", "")), str(args.get("path", ".")))
     if tool_name == "search_code":
         return search_code(str(args.get("pattern", "")), str(args.get("path", ".")))
+    if tool_name == "search_semantic":
+        return search_semantic(str(args.get("query", "")))
     if tool_name == "search_symbol":
         return search_symbol(str(args.get("query", "")))
     if tool_name == "get_codebase_map":

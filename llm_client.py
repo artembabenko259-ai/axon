@@ -241,6 +241,16 @@ class LLMManager:
         if skills_block:
             dynamic_parts.append(skills_block)
 
+        try:
+            from code_mapper import generate_code_map
+            code_map = generate_code_map(self._workspace)
+            if code_map:
+                if len(code_map) > 4000:
+                    code_map = code_map[:4000] + "\n... (remaining codebase map truncated) ..."
+                dynamic_parts.append(code_map)
+        except Exception:
+            pass
+
         return compose_system_prompt(AXON_SYSTEM_PROMPT_BASE, "\n\n".join(dynamic_parts))
 
     def _build_agent_system_prompt(self, agent_prompt: str) -> str:

@@ -379,10 +379,9 @@ async def start_axon(headless: bool = False) -> None:
         notify_approval_needed(tool_name, detail)
 
         if preview.strip():
-            from ui import tui_render
-
-            diff_block = tui_render.render_change_preview(preview, 100)
-            await emit(f"[dim]{diff_block}[/]\n")
+            from ui.side_by_side_diff import render_side_by_side_from_diff
+            diff_table = render_side_by_side_from_diff(preview, 100)
+            await emit(diff_table)
 
         def _ask() -> ApprovalDecision:
             choice = ask_permission(command_detail)
