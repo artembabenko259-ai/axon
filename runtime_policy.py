@@ -53,6 +53,12 @@ class RuntimePolicy:
     auto_save_session: bool = False
     # Model-initiated take_screenshot tool (no auto-capture after shell)
     observe_mode_enabled: bool = True
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
+    discord_bot_token: str = ""
+    discord_channel_id: str = ""
+    slack_bot_token: str = ""
+    slack_channel_id: str = ""
 
     def resolved_tool_policy(self) -> dict[str, str]:
         merged = dict(DEFAULT_TOOL_POLICY)
@@ -114,6 +120,10 @@ def load_runtime_policy() -> RuntimePolicy:
         observe_mode_enabled=bool(raw.get("observe_mode_enabled", True)),
         telegram_bot_token=str(raw.get("telegram_bot_token", "")),
         telegram_chat_id=str(raw.get("telegram_chat_id", "")),
+        discord_bot_token=str(raw.get("discord_bot_token", "")),
+        discord_channel_id=str(raw.get("discord_channel_id", "")),
+        slack_bot_token=str(raw.get("slack_bot_token", "")),
+        slack_channel_id=str(raw.get("slack_channel_id", "")),
     )
     if policy.bridge_auth_enabled:
         policy.ensure_secrets()
@@ -157,6 +167,10 @@ def policy_for_client() -> dict[str, object]:
         "policy_path": str(POLICY_PATH),
         "telegram_bot_token": policy.telegram_bot_token,
         "telegram_chat_id": policy.telegram_chat_id,
+        "discord_bot_token": policy.discord_bot_token,
+        "discord_channel_id": policy.discord_channel_id,
+        "slack_bot_token": policy.slack_bot_token,
+        "slack_channel_id": policy.slack_channel_id,
     }
 
 

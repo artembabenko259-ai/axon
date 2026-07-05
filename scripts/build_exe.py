@@ -89,6 +89,7 @@ def collect_hidden_imports() -> list[str]:
         "skills_manager",
         "task_manager",
         "axon_runtime",
+        "axon_bridges",
         "skills.tools",
         "skills.tasks",
         "skills.base",
@@ -111,6 +112,10 @@ def collect_hidden_imports() -> list[str]:
         "ui.git_commit",
         "ui.git_review",
         "ui.theme",
+        "ui.config_cmd",
+        "ui.provider_cmd",
+        "ui.autopilot_cmd",
+        "ui.skills_cmd",
         "prompt_toolkit",
         "rich",
         "rich.markdown",
@@ -212,9 +217,33 @@ def run_pyinstaller(*, clean: bool) -> Path:
     print("Running PyInstaller...")
     PyInstaller.__main__.run(cmd)
 
-    exe_path = DIST_EXE_DIR / "axon" / "axon.exe"
+    print("Running PyInstaller for uar...")
+    uar_cmd = [
+        str(ROOT / "uar.py"),
+        "--name=uar",
+        "--onefile",
+        "--console",
+        f"--distpath={DIST_EXE_DIR / 'axon'}",
+        f"--workpath={WORK_DIR}",
+        f"--specpath={SPEC_DIR}",
+        "--noconfirm",
+    ]
+    if clean:
+        uar_cmd.append("--clean")
+    uar_cmd.extend(collect_exclude_modules())
+    uar_cmd.append("--noupx")
+    PyInstaller.__main__.run(uar_cmd)
+
+    binary_name = "axon.exe" if sys.platform == "win32" else "axon"
+    uar_name = "uar.exe" if sys.platform == "win32" else "uar"
+    
+    exe_path = DIST_EXE_DIR / "axon" / binary_name
+    uar_path = DIST_EXE_DIR / "axon" / uar_name
+    
     if not exe_path.is_file():
         raise SystemExit(f"Build failed — {exe_path} was not created.")
+    if not uar_path.is_file():
+        raise SystemExit(f"Build failed — {uar_path} was not created.")
     return exe_path
 
 
@@ -248,12 +277,17 @@ def main() -> int:
     print("=" * 72)
     print("PyInstaller build complete")
     print("=" * 72)
-    print(f"  axon.exe : {exe_path}")
+    binary_name = "axon.exe" if sys.platform == "win32" else "axon"
+    print(f"  {binary_name} : {exe_path}")
     print(f"  Size     : {size_mb:.1f} MB")
     print(f"  Bundle   : {BUNDLE_DIR / '.axon'}")
     print()
-    print("Next step — compile Inno Setup installer:")
-    print('  iscc scripts\\installer.iss')
+    if sys.platform == "win32":
+        print("Next step — compile Inno Setup installer:")
+        print('  iscc scripts\\installer.iss')
+    else:
+        print("Next step — run release packaging script or test local binary:")
+        print('  ./dist/exe/axon/axon')
     print("=" * 72)
     return 0
 

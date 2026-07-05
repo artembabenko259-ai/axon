@@ -19,7 +19,8 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(dest="command")
 
-    sub.add_parser("repl", help="Rich REPL with full slash commands and WebSocket bridge")
+    repl_p = sub.add_parser("repl", help="Rich REPL with full slash commands and WebSocket bridge")
+    repl_p.add_argument("--headless", action="store_true", help="Run headlessly, serving WebSocket bridge")
     sub.add_parser("tui", help="Fullscreen terminal UI (default)")
 
     mt_p = sub.add_parser("multitask", help="Run orchestrator headless")
@@ -90,6 +91,7 @@ def _build_parser() -> argparse.ArgumentParser:
     sched_sub.add_parser("list", help="List scheduled tasks")
     sched_sub.add_parser("run", help="Run tasks due now (for Task Scheduler)")
 
+    sub.add_parser("shard", help="Bubble Tea Go-based TUI client")
     doctor = sub.add_parser("doctor", help="Check local AXON environment")
     doctor.add_argument("--json", action="store_true", help="JSON output")
     doctor.add_argument(
@@ -398,6 +400,112 @@ def _run_login(*, force: bool, open_browser: bool) -> int:
         return 1
 
 
+def _run_shard() -> int:
+    import os
+    import sys
+    import time
+    import socket
+    import subprocess
+    import shutil
+    from pathlib import Path
+
+    executable_name = "axon-shard.exe" if os.name == "nt" else "axon-shard"
+    
+    # 1. Search in the installation/root directory
+    local_path = Path(__file__).parent / executable_name
+    if local_path.exists():
+        exe_path = str(local_path)
+    else:
+        # 2. Try looking in dist/
+        dist_path = Path(__file__).parent / "dist" / "shard" / executable_name
+        if dist_path.exists():
+            exe_path = str(dist_path)
+        else:
+            # 3. Check system PATH
+            found_path = shutil.which(executable_name)
+            if found_path:
+                exe_path = found_path
+            else:
+                print("AXON: Go-based TUI client 'axon-shard' not found.")
+                print("Please build it first: cd shard && go build -o ../axon-shard.exe")
+                return 1
+
+    def is_port_open(port: int) -> bool:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(0.5)
+            return s.connect_ex(('127.0.0.1', port)) == 0
+
+    # Start backend serve daemon in the background if not already running
+    daemon = None
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(Path(__file__).parent)
+    
+    if not is_port_open(8765):
+        print("[AXON] Starting backend daemon...")
+        if getattr(sys, 'frozen', False):
+            cmd = [sys.argv[0], "repl", "--headless"]
+        else:
+            cli_path = str(Path(__file__).resolve())
+            cmd = [sys.executable, cli_path, "repl", "--headless"]
+            
+        log_file = open(str(Path(__file__).parent / "daemon.log"), "w", encoding="utf-8")
+        daemon = subprocess.Popen(
+            cmd,
+            cwd=str(Path(__file__).parent),
+            env=env,
+            stdout=log_file,
+            stderr=log_file
+        )
+        
+        # Wait up to 5 seconds for the port to open
+        start_time = time.time()
+        while time.time() - start_time < 5.0:
+            if is_port_open(8765):
+                break
+            time.sleep(0.1)
+
+    # Start web dashboard server in background if not already running
+    web_daemon = None
+    if not is_port_open(3000):
+        print("[AXON] Starting web dashboard daemon...")
+        if getattr(sys, 'frozen', False):
+            web_cmd = [sys.argv[0], "web"]
+        else:
+            cli_path = str(Path(__file__).resolve())
+            web_cmd = [sys.executable, cli_path, "web"]
+            
+        web_daemon = subprocess.Popen(
+            web_cmd,
+            cwd=str(Path(__file__).parent),
+            env=env,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+
+    try:
+        result = subprocess.run([exe_path], check=True)
+        return result.returncode
+    except subprocess.CalledProcessError as exc:
+        return exc.returncode
+    except KeyboardInterrupt:
+        return 0
+    finally:
+        if daemon is not None:
+            print("\n[AXON] Stopping backend daemon...")
+            daemon.terminate()
+            try:
+                daemon.wait(timeout=2.0)
+            except subprocess.TimeoutExpired:
+                daemon.kill()
+        if web_daemon is not None:
+            print("[AXON] Stopping web dashboard daemon...")
+            web_daemon.terminate()
+            try:
+                web_daemon.wait(timeout=2.0)
+            except subprocess.TimeoutExpired:
+                web_daemon.kill()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -442,6 +550,9 @@ def main(argv: list[str] | None = None) -> int:
             json_output=args.json,
             check_updates=getattr(args, "check_updates", False),
         )
+
+    if command == "shard":
+        return _run_shard()
 
     if command == "version":
         return _run_version()
@@ -521,7 +632,7 @@ def main(argv: list[str] | None = None) -> int:
         from ui.repl import start_axon
 
         try:
-            asyncio.run(start_axon())
+            asyncio.run(start_axon(headless=getattr(args, "headless", False)))
         except KeyboardInterrupt:
             return 0
         return 0

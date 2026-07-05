@@ -59,9 +59,12 @@ export function ConfigWidget() {
   }, [isOpen, setIsOpen]);
 
   const showApiKey =
-    draft.provider === "openrouter" || draft.provider === "custom";
+    draft.provider === "openrouter" ||
+    draft.provider === "custom" ||
+    draft.provider === "antigravity";
   const showEndpoint =
     draft.provider === "ollama" || draft.provider === "custom";
+
 
   const providerLabel =
     PROVIDERS.find((p) => p.value === config.provider)?.label ?? "—";
@@ -167,7 +170,11 @@ export function ConfigWidget() {
                     value={draft.apiKey}
                     onChange={(e) => setDraftApiKey(e.target.value)}
                     placeholder={
-                      draft.provider === "custom" ? "sk-..." : "sk-or-v1-..."
+                      draft.provider === "antigravity"
+                        ? "AIzaSy..."
+                        : draft.provider === "custom"
+                        ? "sk-..."
+                        : "sk-or-v1-..."
                     }
                     className="input-vercel mt-1.5 font-mono"
                   />

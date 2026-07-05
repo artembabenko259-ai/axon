@@ -43,22 +43,26 @@ def generate_logo_text(font: str = "slant") -> str:
 
 
 def build_gradient_logo(theme: CLITheme, font: str = "slant") -> Text:
-    """Render the AXON ASCII logo with a subtle vertical gradient."""
-    raw = generate_logo_text(font)
-    lines = [line.rstrip() for line in raw.splitlines() if line.strip()]
-    if not lines:
-        lines = [APP_NAME]
-
-    start = _hex_to_rgb(theme.text_muted)
-    end = _hex_to_rgb(theme.accent_soft)
-    total = max(len(lines) - 1, 1)
+    """Render the custom AXON shaded unicode logo with a subtle vertical gradient."""
+    logo_lines = [
+        "        ▄███▄",
+        "      ▄█▓▒▒▒▓█▄",
+        "     ██▓▒░░░▒▓██",
+        "      ▀█▓▒▒▒▓█▀",
+        "        ▀███▀",
+        "       A X O N"
+    ]
+    
+    start = (64, 64, 64)       # #404040
+    end = (212, 212, 212)      # #d4d4d4
+    total = max(len(logo_lines) - 1, 1)
 
     logo = Text()
-    for index, line in enumerate(lines):
+    for index, line in enumerate(logo_lines):
         ratio = index / total
         color = _interpolate_color(ratio, start, end)
         logo.append(line, style=Style(color=color))
-        if index < len(lines) - 1:
+        if index < len(logo_lines) - 1:
             logo.append("\n")
 
     return logo

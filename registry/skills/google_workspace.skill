@@ -1,0 +1,110 @@
+---
+name: google_workspace
+description: Доступ к сервисам Google Workspace (Google Docs, Google Sheets, Gmail).
+usage: Позволяет читать и создавать документы, изменять таблицы и отправлять/читать письма через официальный Google API Client.
+---
+
+# Интеграция с Google Workspace (GWorkspace)
+
+Этот навык предоставляет агенту возможность работать с вашими документами Google Docs, таблицами Google Sheets и электронной почтой Gmail через официальные API Google.
+
+## Требования
+Для работы навыка требуются библиотеки Google API Client:
+```bash
+pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
+```
+
+Для авторизации вам нужно создать проект в [Google Cloud Console](https://console.cloud.google.com/), включить Google Drive, Docs, Sheets и Gmail API, скачать файл `credentials.json` (OAuth 2.0 Client ID) и положить его в корень вашего проекта.
+
+## Доступные операции
+
+### 1. Gmail (Отправка писем)
+```python
+import os
+import base64
+from email.message import EmailMessage
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+
+SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+
+def get_gmail_service():
+    creds = None
+    if os.path.exists('token_gmail.json'):
+        creds = Credentials.from_authorized_user_file('token_gmail.json', SCOPES)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        with open('token_gmail.json', 'w') as token:
+            token.write(creds.to_json())
+    return build('gmail', 'v1', credentials=creds)
+
+def send_message(to, subject, body_text):
+    service = get_gmail_service()
+    message = EmailMessage()
+    message.set_content(body_text)
+    message['To'] = to
+    message['Subject'] = subject
+    
+    encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+    create_message = {'raw': encoded_message}
+    send_status = service.users().messages().send(userId="me", body=create_message).execute()
+    print(f'Message Id: {send_status["id"]}')
+
+if __name__ == "__main__":
+    # Пример вызова: python send_gmail.py "test@example.com" "Привет из AXON" "Это тестовое сообщение"
+    import sys
+    send_message(sys.argv[1], sys.argv[2], sys.argv[3])
+```
+
+### 2. Google Sheets (Чтение и Запись данных)
+```python
+import os
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+
+def get_sheets_service():
+    creds = None
+    if os.path.exists('token_sheets.json'):
+        creds = Credentials.from_authorized_user_file('token_sheets.json', SCOPES)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        with open('token_sheets.json', 'w') as token:
+            token.write(creds.to_json())
+    return build('sheets', 'v4', credentials=creds)
+
+def read_sheet(spreadsheet_id, range_name):
+    service = get_sheets_service()
+    sheet = service.spreadsheets()
+    result = sheet.values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+    rows = result.get('values', [])
+    for row in rows:
+        print(", ".join(row))
+
+def update_sheet(spreadsheet_id, range_name, values):
+    service = get_sheets_service()
+    body = {'values': values}
+    result = service.spreadsheets().values().update(
+        spreadsheetId=spreadsheet_id, range=range_name,
+        valueInputOption="RAW", body=body).execute()
+    print(f"{result.get('updatedCells')} ячеек обновлено.")
+```
+
+## Инструкции для агента AXON
+При запросе на чтение документов или таблиц Google:
+1. Предложите пользователю установить зависимости и положить `credentials.json` в рабочую папку.
+2. Сгенерируйте и запустите соответствующий Python-скрипт с помощью `execute_shell`.
+3. При первом запуске откроется окно браузера для авторизации. После этого токен сохранится в файл, и авторизация будет происходить автоматически.

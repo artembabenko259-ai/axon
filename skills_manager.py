@@ -546,6 +546,13 @@ class SkillManager:
         if not root.is_dir():
             return 0
 
+        try:
+            from config_store import load_config
+            config = load_config()
+            disabled_skills = set(config.get("disabled_skills", []) or [])
+        except Exception:
+            disabled_skills = set()
+
         for skill_dir in sorted(root.iterdir()):
             if not skill_dir.is_dir():
                 continue
@@ -555,6 +562,8 @@ class SkillManager:
             skill = parse_skill_file(skill_file)
             if skill is None:
                 continue
+            if skill.name in disabled_skills or skill.skill_id in disabled_skills or skill.tool_name in disabled_skills:
+                continue
             self._skills[skill.skill_id] = skill
             self._by_tool_name[skill.tool_name] = skill
 
@@ -563,6 +572,8 @@ class SkillManager:
                 continue
             skill = parse_skill_file(skill_file)
             if skill is None:
+                continue
+            if skill.name in disabled_skills or skill.skill_id in disabled_skills or skill.tool_name in disabled_skills:
                 continue
             self._skills[skill.skill_id] = skill
             self._by_tool_name[skill.tool_name] = skill

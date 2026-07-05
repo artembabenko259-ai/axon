@@ -16,7 +16,10 @@
     const root = document.getElementById('auto-docs-root');
     if (!root || !docs) {
       if (root) {
-        root.innerHTML = `<p class="text-muted">${t?.autoDocs?.unavailable || 'Run /docs in AXON to generate project index.'}</p>`;
+        const msg = window.location.protocol === 'file:'
+          ? 'Project index is unavailable in offline file mode. Start the local documentation server (<code>python scripts/serve_docs.py</code>) to load your project data.'
+          : (t?.autoDocs?.unavailable || 'Run /docs in AXON to generate project index.');
+        root.innerHTML = `<p class="text-muted">${msg}</p>`;
       }
       return;
     }

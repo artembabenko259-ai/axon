@@ -1,0 +1,89 @@
+---
+name: interactive_brokers
+description: Интеграция с биржевой платформой Interactive Brokers (IBKR).
+usage: Позволяет запрашивать баланс счета, текущие позиции, биржевые котировки и выставлять торговые ордера через TWS / IB Gateway.
+---
+
+# Интеграция с Interactive Brokers (IBKR)
+
+Этот навык позволяет агенту подключаться к вашему терминалу Trader Workstation (TWS) или IB Gateway для мониторинга портфеля, получения цен акций и автоматизации торговых операций.
+
+## Требования
+Для работы навыка требуется библиотека `ib_insync`:
+```bash
+pip install ib_insync
+```
+
+У вас должен быть запущен терминал TWS или IB Gateway на компьютере. В настройках терминала (`API -> Settings`) необходимо включить:
+* `Enable ActiveX and Socket Clients`
+* Порт подключения (обычно `7497` для демо-счета TWS или `7496` для реального счета).
+
+## Доступные операции
+
+### Пример мониторинга и покупки акций (ib_trade.py)
+```python
+import sys
+from ib_insync import IB, Stock, MarketOrder
+
+def get_ib_connection(host='127.0.0.1', port=7497, client_id=1):
+    ib = IB()
+    try:
+        ib.connect(host, port, clientId=client_id)
+        return ib
+    except Exception as exc:
+        print(f"Ошибка подключения к TWS/Gateway: {exc}")
+        print("Пожалуйста, убедитесь, что терминал TWS запущен и API включено.")
+        sys.exit(1)
+
+def show_portfolio():
+    ib = get_ib_connection()
+    print("--- ТЕКУЩИЙ ПОРТФЕЛЬ ---")
+    print(f"Общая чистая стоимость (NetLiquidation): {ib.accountSummary()[0].value}")
+    
+    positions = ib.positions()
+    if not positions:
+        print("Нет открытых позиций.")
+    for pos in positions:
+        print(f"Акция: {pos.contract.localSymbol} | Кол-во: {pos.position} | Средняя цена: {pos.avgCost}")
+    ib.disconnect()
+
+def show_quote(symbol):
+    ib = get_ib_connection()
+    contract = Stock(symbol, 'SMART', 'USD')
+    ib.qualifyContracts(contract)
+    ticker = ib.reqMktData(contract)
+    ib.sleep(2) # Даем время получить котировки
+    print(f"Котировка для {symbol}:")
+    print(f"  Цена покупки (Bid): {ticker.bid}")
+    print(f"  Цена продажи (Ask): {ticker.ask}")
+    print(f"  Последняя цена (Last): {ticker.last}")
+    ib.disconnect()
+
+def place_order(symbol, quantity, action="BUY"):
+    ib = get_ib_connection()
+    contract = Stock(symbol, 'SMART', 'USD')
+    ib.qualifyContracts(contract)
+    order = MarketOrder(action, quantity)
+    trade = ib.placeOrder(contract, order)
+    ib.sleep(1)
+    print(f"Ордер размещен. Статус: {trade.orderStatus.status}")
+    ib.disconnect()
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Использование: python ib_trade.py <portfolio|quote|order> [symbol] [qty] [BUY/SELL]")
+        sys.exit(1)
+        
+    action = sys.argv[1].lower()
+    if action == "portfolio":
+        show_portfolio()
+    elif action == "quote" and len(sys.argv) > 2:
+        show_quote(sys.argv[2].upper())
+    elif action == "order" and len(sys.argv) > 4:
+        place_order(sys.argv[2].upper(), int(sys.argv[3]), sys.argv[4].upper())
+```
+
+## Инструкции для агента AXON
+1. Убедитесь, что терминал Trader Workstation запущен локально на ПК.
+2. Используйте `execute_shell` для запуска скрипта `ib_trade.py` с нужными параметрами.
+3. Всегда запрашивайте подтверждение пользователя перед совершением любых реальных сделок (активируйте подтверждение в REPL или делайте паузу).

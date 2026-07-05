@@ -1,0 +1,91 @@
+---
+name: spotify
+description: Интеграция с Spotify для управления музыкой, плейлистами и получения информации о треках.
+usage: Позволяет искать песни, воспроизводить/останавливать музыку, получать текущий проигрываемый трек.
+---
+
+# Интеграция с Spotify
+
+Этот навык позволяет агенту управлять воспроизведением музыки в Spotify, искать треки, получать информацию о текущей песне и управлять плейлистами с помощью Spotify Web API.
+
+## Требования
+Для работы навыка требуется библиотека `spotipy`:
+```bash
+pip install spotipy
+```
+
+Вы должны зарегистрировать приложение на [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) и получить `CLIENT_ID`, `CLIENT_SECRET` и настроить Redirect URI (например, `http://localhost:8888/callback`).
+
+Добавьте их в ваш файл `.env` в корне проекта или экспортируйте как переменные окружения:
+```bash
+SPOTIPY_CLIENT_ID='your-spotify-client-id'
+SPOTIPY_CLIENT_SECRET='your-spotify-client-secret'
+SPOTIPY_REDIRECT_URI='your-spotify-redirect-uri'
+```
+
+## Доступные операции
+
+### Пример управления воспроизведением и поиска (spotify_control.py)
+```python
+import sys
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
+
+scope = "user-modify-playback-state user-read-playback-state user-read-currently-playing"
+
+def get_spotify_client():
+    return spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope))
+
+def play_track(track_name):
+    sp = get_spotify_client()
+    results = sp.search(q=track_name, limit=1, type="track")
+    items = results.get("tracks", {}).get("items", [])
+    if not items:
+        print(f"Песня '{track_name}' не найдена.")
+        return
+        
+    track = items[0]
+    track_uri = track["uri"]
+    
+    # Поиск доступного устройства
+    devices = sp.devices().get("devices", [])
+    if not devices:
+        print("Нет активных устройств для воспроизведения. Откройте Spotify на компьютере или телефоне.")
+        return
+        
+    device_id = devices[0]["id"]
+    sp.start_playback(device_id=device_id, uris=[track_uri])
+    print(f"Сейчас играет: {track['name']} - {track['artists'][0]['name']}")
+
+def current_track():
+    sp = get_spotify_client()
+    current = sp.currently_playing()
+    if not current or not current.get("item"):
+        print("Сейчас ничего не играет.")
+        return
+    item = current["item"]
+    print(f"Текущий трек: {item['name']} - {item['artists'][0]['name']}")
+
+def pause():
+    sp = get_spotify_client()
+    sp.pause_playback()
+    print("Воспроизведение приостановлено.")
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Использование: python spotify_control.py <play|current|pause> [название трека]")
+        sys.exit(1)
+        
+    action = sys.argv[1].lower()
+    if action == "play" and len(sys.argv) > 2:
+        play_track(sys.argv[2])
+    elif action == "current":
+        current_track()
+    elif action == "pause":
+        pause()
+```
+
+## Инструкции для агента AXON
+1. Проверьте переменные окружения `SPOTIPY_CLIENT_ID` и `SPOTIPY_CLIENT_SECRET`.
+2. Запустите Python-скрипт управления через `execute_shell`.
+3. При первом запуске скрипт попросит пользователя перейти по ссылке в терминале для авторизации и скопировать возвращенный URL обратно в терминал. После этого авторизация кэшируется.

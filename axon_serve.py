@@ -187,13 +187,20 @@ def run_serve(*, once: bool = False, tray: bool = False) -> int:
     print("AXON serve — background queue (Ctrl+C to stop)")
     print(f"Queue file: {QUEUE_PATH}")
 
-    # Start background Telegram bot listener
+    # Start background Telegram, Discord, and Slack bridges
     try:
-        from axon_telegram import start_telegram_bot
-        start_telegram_bot()
-        print("[telegram] Telegram bot integration active (if token configured).")
+        from axon_bridges import start_all_bridges
+        from runtime_policy import load_runtime_policy
+        start_all_bridges()
+        echo_active = []
+        policy = load_runtime_policy()
+        if policy.telegram_bot_token.strip(): echo_active.append("Telegram")
+        if policy.discord_bot_token.strip(): echo_active.append("Discord")
+        if policy.slack_bot_token.strip(): echo_active.append("Slack")
+        active_str = ", ".join(echo_active) if echo_active else "none configured"
+        print(f"[bridges] Active chat integrations: {active_str}")
     except Exception as exc:
-        print(f"[telegram error] Failed to initialize bot: {exc}")
+        print(f"[bridges error] Failed to initialize chat bridges: {exc}")
 
     if tray:
         import threading

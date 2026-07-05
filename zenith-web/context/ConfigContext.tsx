@@ -10,7 +10,8 @@ import {
   type ReactNode,
 } from "react";
 
-export type ProviderType = "openrouter" | "ollama" | "custom";
+export type ProviderType = "openrouter" | "ollama" | "custom" | "antigravity";
+
 
 export interface AIConfig {
   provider: ProviderType;

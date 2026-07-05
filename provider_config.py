@@ -36,7 +36,8 @@ def resolve_llm_endpoint() -> tuple[str, str]:
     """Return (base_url, api_key) for the OpenAI-compatible client."""
     provider = get_provider()
     if provider == "antigravity":
-        return "google-antigravity-sdk", "sdk"
+        from config_store import get_antigravity_api_key
+        return "google-antigravity-sdk", get_antigravity_api_key() or "sdk"
 
     if provider == "ollama":
         url = normalize_base_url(get_ollama_base_url()) or DEFAULT_OLLAMA_BASE_URL
@@ -47,6 +48,15 @@ def resolve_llm_endpoint() -> tuple[str, str]:
         key = get_custom_api_key() or "missing-key"
         return url, key
 
+    # Check if it is a dynamically registered custom named provider
+    config = load_config()
+    custom_providers = config.get("custom_providers", {}) or {}
+    if provider in custom_providers:
+        p_info = custom_providers[provider]
+        url = normalize_base_url(p_info.get("base_url") or "")
+        key = p_info.get("api_key") or "missing-key"
+        return url, key
+
     return OPENROUTER_BASE_URL, get_openrouter_api_key() or "missing-key"
 
 
@@ -54,13 +64,12 @@ def is_llm_configured() -> bool:
     """True when the active provider has enough settings to call the API."""
     provider = get_provider()
     if provider == "antigravity":
-        return True
+        from config_store import get_antigravity_api_key
+        return bool(get_antigravity_api_key())
     base_url, api_key = resolve_llm_endpoint()
     if provider == "ollama":
         return bool(base_url)
-    if provider == "custom":
-        return bool(base_url) and bool(api_key) and api_key != "missing-key"
-    return bool(api_key) and api_key != "missing-key"
+    return bool(base_url) and bool(api_key) and api_key != "missing-key"
 
 
 def provider_label() -> str:
@@ -82,11 +91,17 @@ def provider_status() -> dict[str, str]:
     provider = get_provider()
     base_url, _ = resolve_llm_endpoint()
     config = load_config()
-    return {
+    from config_store import get_antigravity_api_key
+    res = {
         "provider": provider,
         "base_url": base_url,
         "ollama_base_url": (config.get("ollama_base_url") or DEFAULT_OLLAMA_BASE_URL).strip(),
         "custom_base_url": (config.get("custom_base_url") or "").strip(),
         "has_openrouter_api_key": str(bool(get_openrouter_api_key())).lower(),
         "has_custom_api_key": str(bool(get_custom_api_key())).lower(),
+        "has_antigravity_api_key": str(bool(get_antigravity_api_key())).lower(),
     }
+    custom_providers = config.get("custom_providers", {}) or {}
+    for name, p_info in custom_providers.items():
+        res[f"has_{name}_api_key"] = str(bool(p_info.get("api_key"))).lower()
+    return res

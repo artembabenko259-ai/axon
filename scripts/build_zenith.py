@@ -31,13 +31,17 @@ def run_npm_build() -> None:
     if not npm:
         raise SystemExit("npm not found on PATH — install Node.js 20+ to build Zenith.")
 
-    print("Zenith: npm install ...")
-    subprocess.run(
-        ["npm", "install"],
-        cwd=str(ZENITH_SRC),
-        shell=sys.platform == "win32",
-        check=True,
-    )
+    node_modules = ZENITH_SRC / "node_modules"
+    if not node_modules.is_dir():
+        print("Zenith: npm install ...")
+        subprocess.run(
+            ["npm", "install"],
+            cwd=str(ZENITH_SRC),
+            shell=sys.platform == "win32",
+            check=True,
+        )
+    else:
+        print("Zenith: node_modules exists, skipping npm install...")
     print("Zenith: npm run build ...")
     subprocess.run(
         ["npm", "run", "build"],
@@ -76,6 +80,9 @@ def stage_standalone() -> None:
 
 
 def ensure_portable_node() -> None:
+    if sys.platform != "win32":
+        print("Zenith: non-Windows platform detected, skipping portable Node.js runtime staging.")
+        return
     STAGE_NODE.mkdir(parents=True, exist_ok=True)
     staged_exe = STAGE_NODE / "node.exe"
     if staged_exe.is_file():
@@ -120,7 +127,8 @@ def main() -> int:
     print("Zenith build complete")
     print("=" * 72)
     print(f"  panel : {STAGE_ZENITH}")
-    print(f"  node  : {STAGE_NODE / 'node.exe'}")
+    if sys.platform == "win32":
+        print(f"  node  : {STAGE_NODE / 'node.exe'}")
     print("=" * 72)
     return 0
 

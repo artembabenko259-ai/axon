@@ -41,6 +41,8 @@ INCLUDE_FILES = (
     "command_parser.py",
     "agent_manager.py",
     "backup_manager.py",
+    "axon_bridges.py",
+    "uar.py",
     "config_store.py",
     "task_manager.py",
     "session_store.py",
@@ -51,6 +53,7 @@ INCLUDE_FILES = (
     ".env.example",
     "axon.bat",
     "axon.cmd",
+    "uar.bat",
 )
 
 LOCALE_SOURCES = (

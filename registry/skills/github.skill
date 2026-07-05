@@ -1,0 +1,80 @@
+---
+name: github
+description: Интеграция с GitHub API для управления репозиториями, пулл-реквестами (PR) и тикетами (Issues).
+usage: Позволяет создавать тикеты, проверять статусы PR, комментировать и сливать ветки через GitHub REST API.
+---
+
+# Интеграция с GitHub
+
+Этот навык позволяет агенту взаимодействовать с вашим аккаунтом GitHub для автоматизации создания пулл-реквестов, ответов на тикеты, проверки сборки (GitHub Actions) и управления кодом.
+
+## Требования
+Для работы навыка требуется библиотека `PyGithub`:
+```bash
+pip install PyGithub
+```
+
+Вам потребуется создать Персональный токен доступа (Personal Access Token - PAT) в настройках вашего GitHub профиля (`Developer settings -> Personal access tokens`) с правами `repo` и `workflow`.
+
+Добавьте токен в `.env`:
+```bash
+GITHUB_TOKEN='your_personal_access_token'
+```
+
+## Доступные операции
+
+### Пример работы с тикетами и репозиториями (github_control.py)
+```python
+import os
+import sys
+from github import Github
+
+def get_github_client():
+    token = os.environ.get("GITHUB_TOKEN")
+    if not token:
+        print("Ошибка: Переменная окружения GITHUB_TOKEN не задана.")
+        sys.exit(1)
+    return Github(token)
+
+def list_issues(repo_name):
+    g = get_github_client()
+    repo = g.get_repo(repo_name)
+    print(f"--- Открытые тикеты в {repo_name} ---")
+    open_issues = repo.get_issues(state='open')
+    for issue in open_issues:
+        print(f"#{issue.number}: {issue.title} (Создал: {issue.user.login})")
+
+def create_issue(repo_name, title, body):
+    g = get_github_client()
+    repo = g.get_repo(repo_name)
+    issue = repo.create_issue(title=title, body=body)
+    print(f"Тикет #{issue.number} успешно создан: {issue.html_url}")
+
+def check_actions(repo_name):
+    g = get_github_client()
+    repo = g.get_repo(repo_name)
+    print(f"--- Последние запуски GitHub Actions в {repo_name} ---")
+    workflows = repo.get_workflow_runs()
+    for run in workflows[:5]:
+        print(f"ID: {run.id} | Событие: {run.event} | Статус: {run.status} | Результат: {run.conclusion}")
+
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print("Использование: python github_control.py <repo_owner/repo_name> <issues|create_issue|actions> [args...]")
+        sys.exit(1)
+        
+    repo_name = sys.argv[1]
+    action = sys.argv[2].lower()
+    
+    if action == "issues":
+        list_issues(repo_name)
+    elif action == "create_issue" and len(sys.argv) > 4:
+        create_issue(repo_name, sys.argv[3], sys.argv[4])
+    elif action == "actions":
+        check_actions(repo_name)
+```
+
+## Инструкции для агента AXON
+1. Проверьте наличие `GITHUB_TOKEN`.
+2. Используйте `execute_shell` для запуска скрипта `github_control.py`.
+3. С помощью этого модуля агент может автоматизировать рутину: например, при нахождении бага в кодовой базе предложить создать тикет на GitHub или проверить статус проваленного CI/CD билда.

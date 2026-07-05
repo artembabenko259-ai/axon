@@ -32,7 +32,10 @@ def install_root() -> Path:
 
 def user_data_dir() -> Path:
     """Writable per-user AXON data (config, history)."""
-    base = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
+    if sys.platform == "win32":
+        base = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
+    else:
+        base = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
     path = base / APP_NAME
     path.mkdir(parents=True, exist_ok=True)
     return path

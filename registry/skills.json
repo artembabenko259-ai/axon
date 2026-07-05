@@ -1,0 +1,26 @@
+{
+  "agent_browser": {
+    "filename": "agent_browser.skill",
+    "description": "Browser automation skill using Playwright"
+  },
+  "google_workspace": {
+    "filename": "google_workspace.skill",
+    "description": "Google Docs, Sheets, and Gmail integration"
+  },
+  "spotify": {
+    "filename": "spotify.skill",
+    "description": "Spotify player playback and search control"
+  },
+  "interactive_brokers": {
+    "filename": "interactive_brokers.skill",
+    "description": "Interactive Brokers TWS portfolio and trading API"
+  },
+  "github": {
+    "filename": "github.skill",
+    "description": "GitHub issues, PRs, and Actions integration"
+  },
+  "docker_manager": {
+    "filename": "docker_manager.skill",
+    "description": "Docker container logging and status manager"
+  }
+}

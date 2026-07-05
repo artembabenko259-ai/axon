@@ -41,7 +41,12 @@
     try {
       await load(lang);
     } catch {
-      await load('en');
+      try {
+        await load('en');
+      } catch (err) {
+        console.warn("Failed to load i18n via fetch. Falling back to offline translations.", err);
+        translations = global.AxonFallbackEN || null;
+      }
     }
     return translations;
   }

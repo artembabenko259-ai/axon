@@ -47,6 +47,20 @@ class ProviderConfigTests(unittest.TestCase):
                 self.assertEqual(key, "ollama")
                 self.assertTrue(is_llm_configured())
 
+    def test_antigravity_provider(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fake_config = Path(tmp) / "config.json"
+            with patch("config_store.CONFIG_PATH", fake_config):
+                save_provider_settings(
+                    provider="antigravity",
+                    antigravity_api_key="test-antigravity-key",
+                )
+                base, key = resolve_llm_endpoint()
+                self.assertEqual(base, "google-antigravity-sdk")
+                self.assertEqual(key, "test-antigravity-key")
+                self.assertTrue(is_llm_configured())
+
+
 
 if __name__ == "__main__":
     unittest.main()

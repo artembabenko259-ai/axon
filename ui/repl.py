@@ -205,7 +205,7 @@ def print_banner(model: str, workspace: Path | None = None) -> None:
     console.print()
 
 
-async def start_axon() -> None:
+async def start_axon(headless: bool = False) -> None:
     load_dotenv()
 
     workspace = Path.cwd()
@@ -285,15 +285,29 @@ async def start_axon() -> None:
         await emit(f"[dim]Session auto-saved as {current_session_id['id']}[/]\n")
 
     def get_toolbar():
+        import shutil
+        cols, _ = shutil.get_terminal_size()
+        
+        border_char = "─"
+        border_line = border_char * (cols - 1)
+        
+        left_text = "? for shortcuts · type /help for commands"
+        
         short_model = llm_manager.model.rsplit("/", 1)[-1]
-        markup = DEFAULT_THEME.toolbar_markup.format(
-            model=short_model,
-            cost=TOTAL_COST,
-            status=session_state["status"],
-            status_style=session_state["status_style"],
-        )
-        # Wrap in a simple styled string for prompt_toolkit
-        return ANSI(_rich_to_ansi(markup))
+        status = session_state["status"].lower()
+        right_text = f"{short_model} · {status}"
+        
+        # Calculate padding so right_text is right-aligned
+        pad_len = cols - len(left_text) - len(right_text) - 1
+        if pad_len < 1:
+            pad_len = 1
+            
+        return [
+            ("class:bottom-toolbar.border", border_line + "\n"),
+            ("class:bottom-toolbar.text", left_text),
+            ("class:bottom-toolbar.text", " " * pad_len),
+            ("class:bottom-toolbar.text", right_text),
+        ]
 
     kb = KeyBindings()
 
@@ -318,18 +332,22 @@ async def start_axon() -> None:
 
         asyncio.create_task(run_in_terminal(_show_history))
 
-    session = PromptSession(
-        completer=axon_completer,
-        complete_while_typing=True,
-        history=FileHistory(str(Path.home() / ".axon_history")),
-        style=PTStyle.from_dict({
-            "prompt": f"{DEFAULT_THEME.accent} bold",
-            "bottom-toolbar": f"bg:{DEFAULT_THEME.toolbar_bg} {DEFAULT_THEME.toolbar_text}",
-        }),
-        bottom_toolbar=get_toolbar,
-        key_bindings=kb,
-        refresh_interval=0.5,
-    )
+    session = None
+    if not headless:
+        session = PromptSession(
+            completer=axon_completer,
+            complete_while_typing=True,
+            history=FileHistory(str(Path.home() / ".axon_history")),
+            style=PTStyle.from_dict({
+                "prompt": f"{DEFAULT_THEME.accent} bold",
+                "bottom-toolbar": f"fg:{DEFAULT_THEME.text_muted}",
+                "bottom-toolbar.border": f"fg:{DEFAULT_THEME.border_subtle}",
+                "bottom-toolbar.text": f"fg:{DEFAULT_THEME.text_muted}",
+            }),
+            bottom_toolbar=get_toolbar,
+            key_bindings=kb,
+            refresh_interval=0.5,
+        )
 
     async def emit(renderable: Any) -> None:
         if background_render["active"]:
@@ -1097,6 +1115,11 @@ async def start_axon() -> None:
         if await handle_provider_command(stripped, emit=emit):
             return True
 
+        if cmd == "/skills":
+            from ui.skills_cmd import handle_skills_command
+            if await handle_skills_command(stripped, llm_manager=llm_manager, emit=emit):
+                return True
+
         if await handle_autopilot_command(stripped, emit=emit):
             return True
 
@@ -1550,8 +1573,9 @@ async def start_axon() -> None:
 
     heartbeat_task = asyncio.create_task(stats_heartbeat())
 
-    clear_terminal()
-    print_banner(llm_manager.model, workspace)
+    if not headless:
+        clear_terminal()
+        print_banner(llm_manager.model, workspace)
 
     runtime = load_runtime_policy()
     from autopilot_mode import is_autopilot_active, is_process_elevated
@@ -1561,40 +1585,41 @@ async def start_axon() -> None:
         autopilot_state = "ON" if is_autopilot_active() else "armed (need admin)"
         autopilot_line = f" · autopilot [cyan]{autopilot_state}[/cyan]"
 
-    console.print(
-        f"[dim]Bridge ws://127.0.0.1:8765 · PIN [cyan]{runtime.bridge_pin}[/cyan] · "
-        f"autonomy [cyan]{'on' if runtime.autonomy_enabled else 'off'}[/cyan] · "
-        f"web [cyan]{'on' if runtime.web_control_enabled else 'off'}[/cyan]"
-        f"{autopilot_line}[/dim]"
-    )
-    if runtime.autopilot_enabled and not is_process_elevated():
+    if not headless:
         console.print(
-            "[yellow]Autopilot is enabled in policy but this terminal is not elevated — "
-            "run as Administrator or use /autopilot off.[/yellow]"
+            f"[dim]Bridge ws://127.0.0.1:8765 · PIN [cyan]{runtime.bridge_pin}[/cyan] · "
+            f"autonomy [cyan]{'on' if runtime.autonomy_enabled else 'off'}[/cyan] · "
+            f"web [cyan]{'on' if runtime.web_control_enabled else 'off'}[/cyan]"
+            f"{autopilot_line}[/dim]"
         )
-    if has_bundled_zenith():
-        console.print(
-            f"[dim]Control panel: [cyan]{panel_url()}[/cyan] · "
-            f"settings: [cyan]{config_url()}[/cyan][/dim]"
-        )
-        if not is_llm_configured():
+        if runtime.autopilot_enabled and not is_process_elevated():
             console.print(
-                f"[yellow]LLM not configured — {provider_config_hint()}[/yellow]"
+                "[yellow]Autopilot is enabled in policy but this terminal is not elevated — "
+                "run as Administrator or use /autopilot off.[/yellow]"
             )
-        console.print(
-            "[dim]If the panel is not open yet, run [cyan]axon web --open[/cyan] in another terminal.[/dim]\n"
-        )
-    else:
-        console.print(
-            f"[dim]Control panel: [cyan]{panel_url()}[/cyan] · "
-            f"start with [cyan]axon web --open[/cyan][/dim]\n"
-        )
+        if has_bundled_zenith():
+            console.print(
+                f"[dim]Control panel: [cyan]{panel_url()}[/cyan] · "
+                f"settings: [cyan]{config_url()}[/cyan][/dim]"
+            )
+            if not is_llm_configured():
+                console.print(
+                    f"[yellow]LLM not configured — {provider_config_hint()}[/yellow]"
+                )
+            console.print(
+                "[dim]If the panel is not open yet, run [cyan]axon web --open[/cyan] in another terminal.[/dim]\n"
+            )
+        else:
+            console.print(
+                f"[dim]Control panel: [cyan]{panel_url()}[/cyan] · "
+                f"start with [cyan]axon web --open[/cyan][/dim]\n"
+            )
 
     async def chat_loop() -> None:
         while not shutdown.is_set():
             try:
                 with patch_stdout():
-                    user_input = await session.prompt_async("AXON ❯ ")
+                    user_input = await session.prompt_async([("class:prompt", "❯ ")])
             except KeyboardInterrupt:
                 if active_generation["task"] and not active_generation["task"].done():
                     llm_manager.request_cancel()
@@ -1670,7 +1695,11 @@ async def start_axon() -> None:
                 break
 
     try:
-        await chat_loop()
+        if headless:
+            while not shutdown.is_set():
+                await asyncio.sleep(0.5)
+        else:
+            await chat_loop()
     finally:
         heartbeat_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):

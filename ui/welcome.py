@@ -25,10 +25,7 @@ WELCOME_TIPS: tuple[tuple[str, str], ...] = (
     ("/docs", "Generate and serve project documentation"),
 )
 
-AXON_GLYPH = """\
- +------+
- |  <>  |  AXON
- +------+"""
+AXON_GLYPH = "  [◇] AXON"
 
 _PANEL_BOX = box.ASCII if os.name == "nt" else box.ROUNDED
 _RULE_CHAR = "-" if os.name == "nt" else "─"

@@ -54,7 +54,20 @@ if not exist "%ROOT%\build\bundle-staging\zenith-web\server.js" (
     goto :fail
 )
 
-REM --- Step 2: PyInstaller ---------------------------------------------------
+REM --- Step 2.5: Compile Go-based TUI client ---------------------------------
+where go >nul 2>nul
+if %errorlevel% equ 0 (
+    echo.
+    echo [2.5/6] Building Go-based TUI client ^(axon-shard.exe^) ...
+    cd "%ROOT%\shard"
+    go build -o "%ROOT%\axon-shard.exe"
+    cd "%ROOT%"
+) else (
+    echo.
+    echo [2.5/6] Go not found in PATH, skipping Go compilation.
+)
+
+REM --- Step 3: PyInstaller ---------------------------------------------------
 echo.
 echo [3/6] Building axon.exe with PyInstaller ...
 "%VENV_PY%" "%ROOT%\scripts\build_exe.py" --clean
@@ -63,6 +76,11 @@ if not exist "%ROOT%\dist\exe\axon\axon.exe" (
     echo [ERROR] dist\exe\axon\axon.exe was not created.
     goto :fail
 )
+
+if exist "%ROOT%\axon-shard.exe" (
+    copy /y "%ROOT%\axon-shard.exe" "%ROOT%\dist\exe\axon\axon-shard.exe" >nul
+)
+
 
 REM --- Step 2: Locate Inno Setup compiler ------------------------------------
 echo.

@@ -35,6 +35,13 @@
           </div>
         </div>
         <nav class="axon-nav">${nav}</nav>
+        ${window.location.protocol === 'file:' ? `
+          <div style="margin: 15px; padding: 12px; border-radius: 8px; background: rgba(220,100,0,0.08); border: 1px solid rgba(220,100,0,0.25); font-size: 11px; line-height: 1.4; color: #ffb066;">
+            <div style="font-weight: 600; margin-bottom: 4px; display: flex; items-center: center; gap: 4px;">⚠️ Offline Mode</div>
+            Using offline fallback. Start local server to load other languages/data:<br>
+            <code style="display: block; font-family: monospace; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 4px; margin-top: 6px; font-size: 10px; word-break: break-all;">python scripts/serve_docs.py</code>
+          </div>
+        ` : ''}
         <div class="axon-lang-switcher" id="lang-switcher">
           <button type="button" data-lang="en" class="${global.AxonI18n?.lang === 'en' ? 'active' : ''}">EN</button>
           <button type="button" data-lang="ru" class="${global.AxonI18n?.lang === 'ru' ? 'active' : ''}">RU</button>

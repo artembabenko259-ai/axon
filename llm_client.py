@@ -11,7 +11,7 @@ from typing import Any
 
 from openai import APIConnectionError, APIError, APITimeoutError, OpenAI
 
-from config_store import get_model, get_openrouter_api_key, save_model
+from config_store import get_model, get_openrouter_api_key, save_model, get_custom_headers
 from provider_config import is_llm_configured, provider_config_hint, resolve_llm_endpoint
 from system_prompt_store import get_global_system_prompt
 from skills.tasks import execute_task_tool, get_task_tool_schemas, is_task_tool
@@ -315,9 +315,11 @@ class LLMManager:
 
     def _build_client(self, api_key: str, base_url: str | None = None) -> OpenAI:
         url = base_url or OPENROUTER_BASE_URL
+        headers = get_custom_headers()
         return OpenAI(
             base_url=url,
             api_key=api_key or "missing-key",
+            default_headers=headers if headers else None,
         )
 
     def set_approval_callback(self, approve: ApprovalCallback | None) -> None:
@@ -1224,6 +1226,10 @@ class LLMManager:
             )
             
         try:
+            from config_store import get_antigravity_api_key
+            key = get_antigravity_api_key()
+            if key:
+                os.environ["ANTIGRAVITY_API_KEY"] = key
             config = agy.LocalAgentConfig(
                 system_instructions=system,
                 capabilities=agy.CapabilitiesConfig(
@@ -1254,6 +1260,10 @@ class LLMManager:
             )
             
         try:
+            from config_store import get_antigravity_api_key
+            key = get_antigravity_api_key()
+            if key:
+                os.environ["ANTIGRAVITY_API_KEY"] = key
             config = agy.LocalAgentConfig(
                 system_instructions=self._build_system_prompt(),
                 capabilities=agy.CapabilitiesConfig(

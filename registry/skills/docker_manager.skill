@@ -1,0 +1,82 @@
+---
+name: docker_manager
+description: Управление локальными Docker контейнерами, образами и логами.
+usage: Позволяет проверять статус контейнеров, запускать/останавливать базы данных или бэкенд-сервисы, читать логи сбоев.
+---
+
+# Управление Docker (Docker Manager)
+
+Этот навык позволяет агенту администрировать ваши локальные контейнеры Docker: отслеживать запущенные базы данных (Postgres, Redis), перезапускать упавшие сервисы и просматривать логи.
+
+## Требования
+Для работы навыка требуется библиотека `docker`:
+```bash
+pip install docker
+```
+
+На вашем компьютере должен быть установлен и запущен Docker Daemon (Docker Desktop или docker systemd-служба на Linux).
+
+## Доступные операции
+
+### Пример управления контейнерами (docker_control.py)
+```python
+import sys
+import docker
+
+def get_docker_client():
+    try:
+        return docker.from_env()
+    except Exception as exc:
+        print(f"Ошибка подключения к Docker Daemon: {exc}")
+        print("Убедитесь, что Docker запущен и у пользователя есть права доступа к docker socket.")
+        sys.exit(1)
+
+def list_containers():
+    client = get_docker_client()
+    print("--- ЗАПУЩЕННЫЕ КОНТЕЙНЕРЫ ---")
+    containers = client.containers.list(all=True)
+    if not containers:
+        print("Нет активных контейнеров.")
+    for container in containers:
+        print(f"ID: {container.short_id} | Имя: {container.name} | Статус: {container.status} | Образ: {container.image.tags}")
+
+def container_logs(name):
+    client = get_docker_client()
+    try:
+        container = client.containers.get(name)
+        logs = container.logs(tail=50).decode("utf-8", errors="replace")
+        print(f"--- Логи контейнера '{name}' (последние 50 строк) ---")
+        print(logs)
+    except docker.errors.NotFound:
+        print(f"Контейнер '{name}' не найден.")
+
+def start_stop_container(name, action="start"):
+    client = get_docker_client()
+    try:
+        container = client.containers.get(name)
+        if action == "start":
+            container.start()
+            print(f"Контейнер '{name}' запущен.")
+        elif action == "stop":
+            container.stop()
+            print(f"Контейнер '{name}' остановлен.")
+    except docker.errors.NotFound:
+        print(f"Контейнер '{name}' не найден.")
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Использование: python docker_control.py <list|logs|start|stop> [container_name]")
+        sys.exit(1)
+        
+    action = sys.argv[1].lower()
+    if action == "list":
+        list_containers()
+    elif action == "logs" and len(sys.argv) > 2:
+        container_logs(sys.argv[2])
+    elif action in {"start", "stop"} and len(sys.argv) > 2:
+        start_stop_container(sys.argv[2], action)
+```
+
+## Инструкции для агента AXON
+1. Используйте `execute_shell` для запуска `docker_control.py`.
+2. Навык крайне полезен при развертывании локальных сред: например, если при запуске тестов упала база данных Postgres, агент может проверить её статус в Docker, прочитать логи ошибки и перезапустить контейнер.

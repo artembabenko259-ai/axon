@@ -47,19 +47,21 @@ const fadeUp = {
 };
 
 export function LandingHero() {
-  const {
-    connected,
-    isStreaming,
-    stats,
-    uptimeLabel,
-    tokenSeries,
-    uptimeSeries,
-    activeModel,
-  } = useChat();
-  const { activeModelId } = useModel();
+  const chatCtx = useChat();
+  const modelCtx = useModel();
+
+  const connected = chatCtx?.connected ?? false;
+  const isStreaming = chatCtx?.isStreaming ?? false;
+  const stats = chatCtx?.stats ?? { tokens: 0, cost: 0 };
+  const activeModel = chatCtx?.activeModel ?? "";
+  const activeModelId = modelCtx?.activeModelId ?? "";
+  const uptimeLabel = chatCtx?.uptimeLabel ?? "00:00:00";
+  const tokenSeries = chatCtx?.tokenSeries ?? [];
+  const uptimeSeries = chatCtx?.uptimeSeries ?? [];
+
   const { tokensLabel, costLabel } = formatBridgeStats(stats);
 
-  const modelName = (activeModel || activeModelId).split("/").pop() ?? "—";
+  const modelName = (activeModel || activeModelId || "").split("/").pop() ?? "—";
   const orbStatus = !connected ? "idle" : isStreaming ? "streaming" : "ready";
 
   return (
