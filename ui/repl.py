@@ -376,7 +376,7 @@ async def start_axon(headless: bool = False) -> None:
 
         from axon_notifications import notify_approval_needed
 
-        notify_approval_needed()
+        notify_approval_needed(tool_name, detail)
 
         if preview.strip():
             from ui import tui_render
@@ -635,8 +635,16 @@ async def start_axon(headless: bool = False) -> None:
             await sync_stats()
         if result.ok:
             from axon_notifications import notify_agent_complete
-
-            notify_agent_complete()
+            msg = result.content or "The agent has completed the request."
+            if len(msg) > 100:
+                msg = msg[:97] + "..."
+            notify_agent_complete("success", msg)
+        else:
+            from axon_notifications import notify_agent_complete
+            msg = result.display_text or "The agent encountered an error."
+            if len(msg) > 100:
+                msg = msg[:97] + "..."
+            notify_agent_complete("error", msg)
         return result
 
     async def run_plan_mode(description: str, *, background: bool = False) -> None:
@@ -928,8 +936,11 @@ async def start_axon(headless: bool = False) -> None:
         await emit(f"[dim]Cost: ${TOTAL_COST:.4f} | Tokens: {TOTAL_TOKENS}[/dim]\n")
         await sync_stats()
         from axon_notifications import notify_agent_complete
-
-        notify_agent_complete()
+        status = "success" if not result.error else "error"
+        msg = result.synthesis or result.error or "Orchestrator completed."
+        if len(msg) > 100:
+            msg = msg[:97] + "..."
+        notify_agent_complete(status, msg)
 
     async def run_review(*, background: bool = False) -> None:
         prompt, error = build_review_prompt(workspace)
