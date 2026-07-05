@@ -1086,7 +1086,20 @@ async def execute_tool(
 
     observe_note: str | None = None
     if tool_name == "take_screenshot" and not result.startswith("Error"):
-        from ui.observe_mode import enrich_screenshot_result
+        from ui.observe_mode import enrich_screenshot_result, _resolve_screenshot_path
+        from runtime_policy import load_runtime_policy
+        from axon_telegram import send_telegram_photo
+
+        policy = load_runtime_policy()
+        if policy.telegram_bot_token and policy.telegram_chat_id:
+            img_path = _resolve_screenshot_path(result)
+            if img_path:
+                send_telegram_photo(
+                    policy.telegram_bot_token,
+                    policy.telegram_chat_id,
+                    str(img_path),
+                    caption="📸 AXON: Screen Capture"
+                )
 
         purpose = str(arguments.get("purpose", "")).strip()
         result = await enrich_screenshot_result(result, purpose=purpose)

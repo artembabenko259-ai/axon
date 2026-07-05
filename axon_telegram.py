@@ -43,6 +43,63 @@ def send_telegram_message(token: str, chat_id: str, text: str) -> None:
             print(f"[telegram error] Failed to send message: {exc}")
 
 
+
+
+def send_telegram_photo(token: str, chat_id: str, photo_path: str, caption: str | None = None) -> None:
+    if not token or not chat_id:
+        return
+    url = f"https://api.telegram.org/bot{token}/sendPhoto"
+    
+    try:
+        from pathlib import Path
+        path = Path(photo_path)
+        if not path.is_file():
+            return
+            
+        boundary = "----WebKitFormBoundaryAxonTelegramBotPhotoUpload"
+        body_parts = []
+        
+        # chat_id field
+        body_parts.append(f"--{boundary}")
+        body_parts.append('Content-Disposition: form-data; name="chat_id"')
+        body_parts.append("")
+        body_parts.append(chat_id)
+        
+        # caption field
+        if caption:
+            body_parts.append(f"--{boundary}")
+            body_parts.append('Content-Disposition: form-data; name="caption"')
+            body_parts.append("")
+            body_parts.append(caption)
+            
+        # photo field
+        body_parts.append(f"--{boundary}")
+        body_parts.append(f'Content-Disposition: form-data; name="photo"; filename="{path.name}"')
+        body_parts.append("Content-Type: image/png")
+        body_parts.append("")
+        
+        # Read file bytes
+        photo_bytes = path.read_bytes()
+        
+        # Combine
+        part1 = "\r\n".join(body_parts).encode("utf-8") + b"\r\n"
+        part2 = b"\r\n--" + boundary.encode("utf-8") + b"--\r\n"
+        payload = part1 + photo_bytes + part2
+        
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={
+                "Content-Type": f"multipart/form-data; boundary={boundary}",
+                "Content-Length": str(len(payload))
+            }
+        )
+        with urllib.request.urlopen(req, timeout=20) as response:
+            response.read()
+    except Exception as exc:
+        print(f"[telegram error] Failed to send photo: {exc}")
+
+
 def get_telegram_updates(token: str, offset: int | None = None) -> list[dict]:
     url = f"https://api.telegram.org/bot{token}/getUpdates"
     if offset is not None:
