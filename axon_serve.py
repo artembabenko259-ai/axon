@@ -187,6 +187,14 @@ def run_serve(*, once: bool = False, tray: bool = False) -> int:
     print("AXON serve — background queue (Ctrl+C to stop)")
     print(f"Queue file: {QUEUE_PATH}")
 
+    # Start background Telegram bot listener
+    try:
+        from axon_telegram import start_telegram_bot
+        start_telegram_bot()
+        print("[telegram] Telegram bot integration active (if token configured).")
+    except Exception as exc:
+        print(f"[telegram error] Failed to initialize bot: {exc}")
+
     if tray:
         import threading
         from axon_tray import run_tray

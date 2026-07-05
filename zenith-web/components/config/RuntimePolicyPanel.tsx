@@ -7,10 +7,10 @@ import { GlassCard } from "@/components/ui/GlassCard";
 
 export interface RuntimePolicy {
   autonomy_enabled: boolean;
-  openclaw_enabled?: boolean;
-  openclaw_active?: boolean;
+  autopilot_enabled?: boolean;
+  autopilot_active?: boolean;
   process_elevated?: boolean;
-  openclaw_enabled_at?: string;
+  autopilot_enabled_at?: string;
   web_control_enabled: boolean;
   terminal_control_enabled: boolean;
   require_desktop_confirmation: boolean;
@@ -18,6 +18,8 @@ export interface RuntimePolicy {
   bridge_auth_enabled: boolean;
   bridge_token: string;
   bridge_pin: string;
+  telegram_bot_token?: string;
+  telegram_chat_id?: string;
 }
 
 const DEFAULT: RuntimePolicy = {
@@ -29,6 +31,8 @@ const DEFAULT: RuntimePolicy = {
   bridge_auth_enabled: true,
   bridge_token: "",
   bridge_pin: "",
+  telegram_bot_token: "",
+  telegram_chat_id: "",
 };
 
 function Toggle({
@@ -119,17 +123,17 @@ export function RuntimePolicyPanel() {
           checked={policy.autonomy_enabled}
           onChange={(v) => setPolicy((p) => ({ ...p, autonomy_enabled: v }))}
         />
-        <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-3">
-          <p className="text-sm text-white">OpenClaw</p>
+        <div className="rounded-lg border border-white/[0.06] bg-black/40 px-3 py-3">
+          <p className="text-sm text-white">Autopilot</p>
           <p className="mt-1 text-xs leading-relaxed text-[#71717a]">
             Full autonomy when the CLI runs as Administrator. Enable with{" "}
-            <span className="font-mono text-[#a1a1aa]">/claw on</span> or{" "}
-            <span className="font-mono text-[#a1a1aa]">axon claw on</span> in an
+            <span className="font-mono text-[#a1a1aa]">/autopilot on</span> or{" "}
+            <span className="font-mono text-[#a1a1aa]">axon autopilot on</span> in an
             elevated terminal — not from the browser.
           </p>
           <p className="mt-2 font-mono text-xs text-[#a1a1aa]">
-            policy: {policy.openclaw_enabled ? "on" : "off"} · active:{" "}
-            {policy.openclaw_active ? "yes" : "no"} · admin:{" "}
+            policy: {policy.autopilot_enabled ? "on" : "off"} · active:{" "}
+            {policy.autopilot_active ? "yes" : "no"} · admin:{" "}
             {policy.process_elevated ? "yes" : "no"}
           </p>
         </div>
@@ -171,6 +175,40 @@ export function RuntimePolicyPanel() {
             setPolicy((p) => ({ ...p, bridge_auth_enabled: v }))
           }
         />
+
+        {/* Telegram Bot Section */}
+        <div className="rounded-lg border border-white/[0.06] bg-black/40 px-3 py-3 mt-4">
+          <p className="text-sm font-medium text-white mb-2">Telegram Bot Integration</p>
+          <div className="space-y-3">
+            <div>
+              <label className="label-caps block mb-1">Bot Token</label>
+              <input
+                type="password"
+                placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+                value={policy.telegram_bot_token || ""}
+                onChange={(e) =>
+                  setPolicy((p) => ({ ...p, telegram_bot_token: e.target.value }))
+                }
+                className="input-vercel w-full font-mono text-xs px-3 py-2 bg-black/60 border border-white/[0.08] rounded-md text-white placeholder-white/20 focus:outline-none focus:border-white/20"
+              />
+            </div>
+            <div>
+              <label className="label-caps block mb-1">Chat ID</label>
+              <input
+                type="text"
+                placeholder="Leave empty to auto-pair on first message"
+                value={policy.telegram_chat_id || ""}
+                onChange={(e) =>
+                  setPolicy((p) => ({ ...p, telegram_chat_id: e.target.value }))
+                }
+                className="input-vercel w-full font-mono text-xs px-3 py-2 bg-black/60 border border-white/[0.08] rounded-md text-white placeholder-white/20 focus:outline-none focus:border-white/20"
+              />
+            </div>
+            <p className="text-[10px] leading-relaxed text-[#71717a]">
+              Insert your bot token from <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline">@BotFather</a>. Start `axon serve` to activate the listener.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">

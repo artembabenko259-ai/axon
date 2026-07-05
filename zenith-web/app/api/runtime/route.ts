@@ -11,8 +11,8 @@ function runtimePolicyPath(): string {
 
 export interface RuntimePolicyPayload {
   autonomy_enabled: boolean;
-  openclaw_enabled?: boolean;
-  openclaw_enabled_at?: string;
+  autopilot_enabled?: boolean;
+  autopilot_enabled_at?: string;
   web_control_enabled: boolean;
   terminal_control_enabled: boolean;
   require_desktop_confirmation: boolean;
@@ -20,6 +20,8 @@ export interface RuntimePolicyPayload {
   bridge_auth_enabled: boolean;
   bridge_token: string;
   bridge_pin: string;
+  telegram_bot_token?: string;
+  telegram_chat_id?: string;
 }
 
 const DEFAULT_POLICY: RuntimePolicyPayload = {
@@ -31,6 +33,8 @@ const DEFAULT_POLICY: RuntimePolicyPayload = {
   bridge_auth_enabled: true,
   bridge_token: "",
   bridge_pin: "",
+  telegram_bot_token: "",
+  telegram_chat_id: "",
 };
 
 async function readPolicy(): Promise<RuntimePolicyPayload> {
@@ -62,12 +66,12 @@ export async function POST(request: NextRequest) {
     const current = await readPolicy();
     const next: RuntimePolicyPayload = {
       autonomy_enabled: body.autonomy_enabled ?? current.autonomy_enabled,
-      openclaw_enabled:
-        body.openclaw_enabled === false
+      autopilot_enabled:
+        body.autopilot_enabled === false
           ? false
-          : current.openclaw_enabled ?? false,
-      openclaw_enabled_at:
-        body.openclaw_enabled === false ? "" : current.openclaw_enabled_at ?? "",
+          : body.autopilot_enabled ?? current.autopilot_enabled ?? false,
+      autopilot_enabled_at:
+        body.autopilot_enabled === false ? "" : body.autopilot_enabled_at ?? current.autopilot_enabled_at ?? "",
       web_control_enabled:
         body.web_control_enabled ?? current.web_control_enabled,
       terminal_control_enabled:
@@ -81,6 +85,8 @@ export async function POST(request: NextRequest) {
         body.bridge_auth_enabled ?? current.bridge_auth_enabled,
       bridge_token: body.bridge_token ?? current.bridge_token,
       bridge_pin: body.bridge_pin ?? current.bridge_pin,
+      telegram_bot_token: body.telegram_bot_token !== undefined ? body.telegram_bot_token : current.telegram_bot_token,
+      telegram_chat_id: body.telegram_chat_id !== undefined ? body.telegram_chat_id : current.telegram_chat_id,
     };
 
     await writePolicy(next);

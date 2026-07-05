@@ -67,6 +67,8 @@ def _format_policy(policy: RuntimePolicy) -> str:
         f"  terminal_control_enabled      {policy.terminal_control_enabled}",
         f"  require_desktop_confirmation  {policy.require_desktop_confirmation}",
         f"  bridge_auth_enabled           {policy.bridge_auth_enabled}",
+        f"  telegram_bot_token            {policy.telegram_bot_token or '(empty)'}",
+        f"  telegram_chat_id              {policy.telegram_chat_id or '(empty)'}",
         "",
         "[dim]/config set <key> <value>  ·  /autopilot on|off  ·  /config path[/]",
     ]

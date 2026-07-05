@@ -112,6 +112,8 @@ def load_runtime_policy() -> RuntimePolicy:
         notification_volume=float(raw.get("notification_volume", 1.0)),
         auto_save_session=bool(raw.get("auto_save_session", False)),
         observe_mode_enabled=bool(raw.get("observe_mode_enabled", True)),
+        telegram_bot_token=str(raw.get("telegram_bot_token", "")),
+        telegram_chat_id=str(raw.get("telegram_chat_id", "")),
     )
     if policy.bridge_auth_enabled:
         policy.ensure_secrets()
@@ -153,6 +155,8 @@ def policy_for_client() -> dict[str, object]:
         "notification_volume": policy.notification_volume,
         "auto_save_session": policy.auto_save_session,
         "policy_path": str(POLICY_PATH),
+        "telegram_bot_token": policy.telegram_bot_token,
+        "telegram_chat_id": policy.telegram_chat_id,
     }
 
 
