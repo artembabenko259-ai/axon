@@ -72,7 +72,6 @@ var autocompleteCommands = []command{
 	{"/execute", "Run the active plan step-by-step"},
 	{"/tasks", "Toggle plan task side panel — F2"},
 	{"/thinking", "Toggle AI reasoning trace in chat — F3"},
-	{"/image", "Vision — /image <path|@file> [prompt]"},
 	{"/export-skill", "Export skill to .axon/exports — /export-skill <name>"},
 	{"/session", "Toggle session timeline panel — F4"},
 	{"/create-skill", "Interactive wizard to create a new SKILL.md"},

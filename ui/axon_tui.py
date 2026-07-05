@@ -1004,33 +1004,7 @@ class AxonTUI:
             await self._run_multitask(goal_line)
             return
 
-        if cmd == "/image":
-            from ui.image_cmd import load_image_with_vision_check, parse_image_command
 
-            image_path, prompt = parse_image_command(text)
-            if not image_path:
-                self._append_block(
-                    tui_render.render_error(
-                        "Usage: /image <path|@file> [prompt]", w
-                    )
-                )
-                return
-            error = load_image_with_vision_check(self.llm, image_path, prompt)
-            if error:
-                extra = ""
-                if "text-only" in error.lower():
-                    from ui.vision_models import vision_switch_hint
-
-                    extra = f"\nTry: {vision_switch_hint(self.llm.model)}"
-                self._append_block(tui_render.render_error(f"{error}{extra}", w))
-            else:
-                self._append_block(
-                    tui_render.render_system(
-                        f"Image loaded: {image_path}. Ask a question about it.",
-                        w,
-                    )
-                )
-            return
 
         if cmd == "/export-skill":
             from ui.skill_export import export_skill

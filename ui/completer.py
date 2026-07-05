@@ -13,7 +13,6 @@ SLASH_COMMANDS = [
     "/model",
     "/plan",
     "/execute",
-    "/image",
     "/export-skill",
     "/session",
     "/create-skill",
@@ -51,7 +50,6 @@ AXON_COMMANDS: dict[str, str] = {
     "/execute": "Run the active plan step-by-step",
     "/tasks": "Toggle plan task side panel — F2",
     "/thinking": "Toggle AI reasoning trace in chat — F3",
-    "/image": "Vision — /image <path|@file> [prompt]",
     "/export-skill": "Export skill to .axon/exports — /export-skill <name>",
     "/session": "Toggle session timeline panel — F4",
     "/create-skill": "Interactive wizard to create a new SKILL.md",
@@ -96,7 +94,6 @@ class AxonCommandCompleter(Completer):
             (
                 "/model",
                 "/plan",
-                "/image",
                 "/delegate",
                 "/gen-skill",
                 "/multitask",
@@ -184,14 +181,6 @@ class AxonCommandCompleter(Completer):
                 start_position=-len(word),
                 display="/review",
                 display_meta=AXON_COMMANDS["/review"],
-            )
-
-        if word.startswith("/ima") and "/image" not in word:
-            yield Completion(
-                "/image ",
-                start_position=-len(word),
-                display="/image ",
-                display_meta=AXON_COMMANDS["/image"],
             )
 
         if word.startswith("/pla") and "/plan" not in word:

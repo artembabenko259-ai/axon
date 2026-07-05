@@ -1335,24 +1335,7 @@ async def start_axon(headless: bool = False) -> None:
                 )
             return True
 
-        if cmd == "/image":
-            from ui.image_cmd import load_image_with_vision_check
 
-            image_path, prompt = parse_image_command(stripped)
-            if not image_path:
-                await emit("[yellow]Usage: /image <path> [prompt][/]\n")
-                return True
-            error = load_image_with_vision_check(llm_manager, image_path, prompt)
-            if error:
-                extra = ""
-                if "text-only" in error.lower():
-                    from ui.vision_models import vision_switch_hint
-
-                    extra = f"\n[dim]Try: {vision_switch_hint(llm_manager.model)}[/]\n"
-                await emit(f"[red]{error}[/]{extra}")
-            else:
-                await emit("[green][✓] Image loaded into context.[/]\n")
-            return True
 
         if cmd == "/export-skill":
             from ui.skill_export import export_skill
