@@ -142,6 +142,12 @@ class TuiBridgeHost:
         if normalized:
             await self._bridge.broadcast_model(normalized)
 
+    def _cancel_tui_agent(self) -> None:
+        tui = self._tui
+        loop = self._tui_loop
+        if tui is not None and loop and loop.is_running():
+            loop.call_soon_threadsafe(lambda: asyncio.create_task(tui._cancel_agent()))
+
     async def _run_bridge(self) -> None:
         tui = self._tui
         if tui is None:
@@ -152,6 +158,7 @@ class TuiBridgeHost:
             set_model=self._set_model,
             refresh_ui=lambda: None,
             current_model=tui.llm.model,
+            cancel_chat=self._cancel_tui_agent,
         )
         await self._bridge.start()
 

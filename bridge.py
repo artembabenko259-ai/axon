@@ -38,6 +38,8 @@ class AxonBridge:
         self._process_chat: ProcessChatHandler | None = None
         self._set_model: SetModelHandler | None = None
         self._refresh_ui: RefreshUIHandler | None = None
+        self._cancel_chat: Callable[[], None] | None = None
+        self._history: list[dict[str, Any]] = []
         self._current_model: str = ""
         self._server: Any = None
 
@@ -48,11 +50,13 @@ class AxonBridge:
         set_model: SetModelHandler,
         refresh_ui: RefreshUIHandler,
         current_model: str,
+        cancel_chat: Callable[[], None] | None = None,
     ) -> None:
         self._process_chat = process_chat
         self._set_model = set_model
         self._refresh_ui = refresh_ui
         self._current_model = current_model
+        self._cancel_chat = cancel_chat
 
     async def start(self) -> Any | None:
         try:
@@ -99,6 +103,16 @@ class AxonBridge:
                 }
             )
         )
+        # Send history to allow reconnect hot-reload!
+        if self._history:
+            await websocket.send(
+                json.dumps(
+                    {
+                        "type": "history",
+                        "history": self._history,
+                    }
+                )
+            )
         await self.broadcast_stats(TOTAL_TOKENS, TOTAL_COST)
         if self._current_model:
             await self.broadcast_model(self._current_model)
@@ -274,6 +288,11 @@ class AxonBridge:
                     resolve_approval(approval_id, decision)
                     continue
 
+                if msg_type == "abort":
+                    if self._cancel_chat is not None:
+                        self._cancel_chat()
+                    continue
+
                 if msg_type == "chat":
                     if not load_runtime_policy().web_control_enabled:
                         await websocket.send(
@@ -339,16 +358,18 @@ class AxonBridge:
         source: str = "terminal",
         message_id: str | None = None,
     ) -> None:
-        await self.broadcast(
-            {
-                "type": "chat",
-                "role": "assistant" if role in {"axon", "assistant"} else role,
-                "text": text,
-                "content": text,
-                "source": source,
-                "id": message_id,
-            }
-        )
+        payload = {
+            "type": "chat",
+            "role": "assistant" if role in {"axon", "assistant"} else role,
+            "text": text,
+            "content": text,
+            "source": source,
+            "id": message_id,
+        }
+        self._history.append(payload)
+        if len(self._history) > 100:
+            self._history = self._history[-100:]
+        await self.broadcast(payload)
 
     async def broadcast_approval_request(self, tool_name: str, detail: str) -> None:
         await self.broadcast(
@@ -436,11 +457,13 @@ class AxonBridge:
         status: str,
         detail: str = "",
     ) -> None:
-        await self.broadcast(
-            {
-                "type": "tool_event",
-                "tool": tool_name,
-                "status": status,
-                "detail": detail,
-            }
-        )
+        payload = {
+            "type": "tool_event",
+            "tool": tool_name,
+            "status": status,
+            "detail": detail,
+        }
+        self._history.append(payload)
+        if len(self._history) > 100:
+            self._history = self._history[-100:]
+        await self.broadcast(payload)

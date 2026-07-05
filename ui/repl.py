@@ -1550,6 +1550,12 @@ async def start_axon(headless: bool = False) -> None:
         else:
             await _handle()
 
+    def cancel_active_generation():
+        task = active_generation.get("task")
+        if task and not task.done():
+            task.cancel()
+            active_generation["task"] = None
+
     bridge.configure(
         process_chat=process_user_message,
         set_model=lambda model: apply_model(
@@ -1557,6 +1563,7 @@ async def start_axon(headless: bool = False) -> None:
         ),
         refresh_ui=lambda: None,
         current_model=llm_manager.model,
+        cancel_chat=cancel_active_generation,
     )
 
     ws_server = await bridge.start()
