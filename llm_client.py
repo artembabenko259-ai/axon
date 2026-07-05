@@ -216,6 +216,17 @@ class LLMManager:
     def _build_system_prompt(self) -> str:
         dynamic_parts: list[str] = []
 
+        from autopilot_mode import is_autopilot_active
+        from runtime_policy import load_runtime_policy
+        policy = load_runtime_policy()
+        if is_autopilot_active() or policy.autonomy_enabled:
+            dynamic_parts.append(
+                "AUTOPILOT ACTIVE:\n"
+                "You have full autonomy to read/write files and run shell commands without user prompts. "
+                "If compilation or tests fail, analyze the error output, modify code, and retry. "
+                "Do not stop until the goal is fully achieved and verified."
+            )
+
         global_prompt = get_global_system_prompt()
         if global_prompt:
             dynamic_parts.append(f"User Instructions (always apply):\n{global_prompt}")
@@ -889,8 +900,13 @@ class LLMManager:
         tool_steps = 0
         self._stream_loop = asyncio.get_running_loop()
 
+        from autopilot_mode import is_autopilot_active
+        from runtime_policy import load_runtime_policy
+        policy = load_runtime_policy()
+        max_rounds = 40 if (is_autopilot_active() or policy.autonomy_enabled) else MAX_TOOL_ROUNDS
+
         try:
-            for round_index in range(MAX_TOOL_ROUNDS):
+            for round_index in range(max_rounds):
                 if self._is_cancelled():
                     self._rollback_last_user_message()
                     return LLMResult(
@@ -901,7 +917,7 @@ class LLMManager:
                         tool_steps=tool_steps,
                     )
 
-                use_tools = round_index < MAX_TOOL_ROUNDS - 1
+                use_tools = round_index < max_rounds - 1
                 stream_result = await asyncio.to_thread(
                     self._call_api_stream,
                     tools=self._get_all_tool_schemas() if use_tools else None,
@@ -986,7 +1002,7 @@ class LLMManager:
             return LLMResult(
                 content="",
                 model=self.model,
-                error=f"AXON: Exceeded maximum tool rounds ({MAX_TOOL_ROUNDS}).",
+                error=f"AXON: Exceeded maximum tool rounds ({max_rounds}).",
                 usage=last_usage,
                 tool_steps=tool_steps,
             )

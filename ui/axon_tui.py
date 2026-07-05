@@ -828,12 +828,12 @@ class AxonTUI:
         self._scroll_transcript_to_end()
 
     async def _request_approval(self, tool_name: str, detail: str) -> ApprovalDecision:
-        from openclaw_mode import is_openclaw_active
+        from autopilot_mode import is_autopilot_active
         from runtime_policy import load_runtime_policy
         from ui.code_diff import split_approval_message
 
         policy = load_runtime_policy()
-        if is_openclaw_active() or policy.autonomy_enabled:
+        if is_autopilot_active() or policy.autonomy_enabled:
             return "once"
 
         self._end_live_response()
@@ -935,18 +935,18 @@ class AxonTUI:
             return
 
         if cmd == "/config":
-            from openclaw_mode import is_openclaw_active, is_process_elevated
+            from autopilot_mode import is_autopilot_active, is_process_elevated
 
             policy = load_runtime_policy()
-            claw = "ON" if is_openclaw_active() else (
-                "armed" if policy.openclaw_enabled else "off"
+            autopilot = "ON" if is_autopilot_active() else (
+                "armed" if policy.autopilot_enabled else "off"
             )
             body = (
                 f"Policy: {POLICY_PATH}\n"
                 f"parallel={policy.allow_parallel_agents}  "
                 f"auto_save={policy.auto_save_session}\n"
-                f"openclaw={claw}  elevated={'yes' if is_process_elevated() else 'no'}\n"
-                f"Use /claw on|off or REPL /config set for other keys."
+                f"autopilot={autopilot}  elevated={'yes' if is_process_elevated() else 'no'}\n"
+                f"Use /autopilot on|off or REPL /config set for other keys."
             )
             self._append_block(tui_render.render_system(body, w))
             return
@@ -955,16 +955,16 @@ class AxonTUI:
             await self._run_provider_command(text)
             return
 
-        if cmd in {"/claw", "/openclaw"}:
-            from openclaw_mode import (
-                disable_openclaw,
-                enable_openclaw,
-                openclaw_status_lines,
+        if cmd == "/autopilot":
+            from autopilot_mode import (
+                disable_autopilot,
+                enable_autopilot,
+                autopilot_status_lines,
             )
 
             verb = args.strip().lower() or "status"
             if verb == "on":
-                ok, msg = enable_openclaw()
+                ok, msg = enable_autopilot()
                 kind = "system" if ok else "error"
                 self._append_block(
                     tui_render.render_system(msg, w)
@@ -973,10 +973,10 @@ class AxonTUI:
                 )
             elif verb == "off":
                 self._append_block(
-                    tui_render.render_system(disable_openclaw(), w)
+                    tui_render.render_system(disable_autopilot(), w)
                 )
             else:
-                body = "\n".join(openclaw_status_lines())
+                body = "\n".join(autopilot_status_lines())
                 self._append_block(tui_render.render_system(body, w))
             return
 

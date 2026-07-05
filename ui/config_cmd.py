@@ -47,15 +47,15 @@ def _parse_value(raw: str) -> Any:
 
 
 def _format_policy(policy: RuntimePolicy) -> str:
-    from openclaw_mode import is_openclaw_active, is_process_elevated
+    from autopilot_mode import is_autopilot_active, is_process_elevated
 
-    claw_active = is_openclaw_active()
+    autopilot_active = is_autopilot_active()
     lines = [
         f"[bold]Runtime policy[/] [dim]{POLICY_PATH}[/]",
         "",
         f"  autonomy_enabled              {policy.autonomy_enabled}",
-        f"  openclaw_enabled              {policy.openclaw_enabled}",
-        f"  openclaw_active               {claw_active}",
+        f"  autopilot_enabled             {policy.autopilot_enabled}",
+        f"  autopilot_active              {autopilot_active}",
         f"  process_elevated              {is_process_elevated()}",
         f"  allow_parallel_agents         {policy.allow_parallel_agents}",
         f"  auto_save_session             {policy.auto_save_session}",
@@ -68,7 +68,7 @@ def _format_policy(policy: RuntimePolicy) -> str:
         f"  require_desktop_confirmation  {policy.require_desktop_confirmation}",
         f"  bridge_auth_enabled           {policy.bridge_auth_enabled}",
         "",
-        "[dim]/config set <key> <value>  ·  /claw on|off  ·  /config path[/]",
+        "[dim]/config set <key> <value>  ·  /autopilot on|off  ·  /config path[/]",
     ]
     return "\n".join(lines)
 
@@ -98,9 +98,9 @@ async def handle_config_command(stripped: str, *, emit: Emit) -> bool:
             )
             return True
         key = parts[2].strip()
-        if key in {"openclaw_enabled", "openclaw_enabled_at"}:
+        if key in {"autopilot_enabled", "autopilot_enabled_at"}:
             await emit(
-                "[yellow]Use /claw on|off to control OpenClaw (requires admin).[/]\n"
+                "[yellow]Use /autopilot on|off to control Autopilot (requires admin).[/]\n"
             )
             return True
         value_raw = parts[3].strip()

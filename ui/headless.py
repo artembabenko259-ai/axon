@@ -20,9 +20,9 @@ async def _headless_approve(
     auto_approve: bool,
 ) -> ApprovalDecision:
     policy = load_runtime_policy()
-    from openclaw_mode import is_openclaw_active
+    from autopilot_mode import is_autopilot_active
 
-    if policy.autonomy_enabled or auto_approve or is_openclaw_active():
+    if policy.autonomy_enabled or auto_approve or is_autopilot_active():
         return "once"
     print(
         f"AXON: approval required for {tool_name}: {detail}",

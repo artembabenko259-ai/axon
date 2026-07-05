@@ -1015,10 +1015,10 @@ def manage_task_tool(
 
 
 def _needs_approval(tool_name: str) -> bool:
-    from openclaw_mode import is_openclaw_active
+    from autopilot_mode import is_autopilot_active
 
     policy = load_runtime_policy()
-    if is_openclaw_active() or policy.autonomy_enabled:
+    if is_autopilot_active() or policy.autonomy_enabled:
         return False
     mode = policy.tool_mode(tool_name)
     if mode == "auto":

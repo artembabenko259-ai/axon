@@ -38,11 +38,11 @@ def _build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("tray", help="System tray icon (Windows)")
 
-    claw_p = sub.add_parser("claw", help="OpenClaw full autonomy (admin terminal)")
-    claw_sub = claw_p.add_subparsers(dest="claw_cmd")
-    claw_sub.add_parser("status", help="Show OpenClaw state")
-    claw_sub.add_parser("on", help="Enable OpenClaw (elevated process required)")
-    claw_sub.add_parser("off", help="Disable OpenClaw")
+    autopilot_p = sub.add_parser("autopilot", help="Autopilot full autonomy (admin terminal)")
+    autopilot_sub = autopilot_p.add_subparsers(dest="autopilot_cmd")
+    autopilot_sub.add_parser("status", help="Show Autopilot state")
+    autopilot_sub.add_parser("on", help="Enable Autopilot (elevated process required)")
+    autopilot_sub.add_parser("off", help="Disable Autopilot")
 
     export_p = sub.add_parser("export", help="Export a saved session to Markdown")
     export_p.add_argument("session_id", nargs="?", help="Session id (latest if omitted)")
@@ -266,10 +266,10 @@ def _run_serve(*, once: bool, tray: bool = False) -> int:
     return run_serve(once=once, tray=tray)
 
 
-def _run_claw(action: str) -> int:
-    from openclaw_mode import handle_claw_arg
+def _run_autopilot(action: str) -> int:
+    from autopilot_mode import handle_autopilot_arg
 
-    code, msg = handle_claw_arg(action)
+    code, msg = handle_autopilot_arg(action)
     print(msg)
     return code
 
@@ -475,9 +475,9 @@ def main(argv: list[str] | None = None) -> int:
     if command == "tray":
         return _run_tray()
 
-    if command == "claw":
-        claw_cmd = getattr(args, "claw_cmd", None) or "status"
-        return _run_claw(claw_cmd)
+    if command == "autopilot":
+        autopilot_cmd = getattr(args, "autopilot_cmd", None) or "status"
+        return _run_autopilot(autopilot_cmd)
 
     if command == "export":
         return _run_export(

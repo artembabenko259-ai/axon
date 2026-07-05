@@ -62,7 +62,7 @@ from ui.branding import INSTRUCTIONS, VERSION, build_gradient_logo
 from ui.explore_stats import get_turn_explore_summary
 from ui.config_cmd import handle_config_command
 from ui.provider_cmd import handle_provider_command
-from ui.openclaw_cmd import handle_claw_command
+from ui.autopilot_cmd import handle_autopilot_command
 from message_router import try_chitchat_reply
 from orchestrator import Orchestrator
 from plugins.loader import discover_plugins, list_plugin_commands
@@ -351,9 +351,9 @@ async def start_axon() -> None:
         if source == "web" and not policy.web_control_enabled:
             return "deny"
 
-        from openclaw_mode import is_openclaw_active
+        from autopilot_mode import is_autopilot_active
 
-        if is_openclaw_active() or policy.autonomy_enabled:
+        if is_autopilot_active() or policy.autonomy_enabled:
             return "once"
 
         from axon_notifications import notify_approval_needed
@@ -1061,7 +1061,7 @@ async def start_axon() -> None:
         if await handle_provider_command(stripped, emit=emit):
             return True
 
-        if await handle_claw_command(stripped, emit=emit):
+        if await handle_autopilot_command(stripped, emit=emit):
             return True
 
         if await try_plugin_command(stripped):
@@ -1514,23 +1514,23 @@ async def start_axon() -> None:
     print_banner(llm_manager.model, workspace)
 
     runtime = load_runtime_policy()
-    from openclaw_mode import is_openclaw_active, is_process_elevated
+    from autopilot_mode import is_autopilot_active, is_process_elevated
 
-    claw_line = ""
-    if runtime.openclaw_enabled or is_openclaw_active():
-        claw_state = "ON" if is_openclaw_active() else "armed (need admin)"
-        claw_line = f" · openclaw [cyan]{claw_state}[/cyan]"
+    autopilot_line = ""
+    if runtime.autopilot_enabled or is_autopilot_active():
+        autopilot_state = "ON" if is_autopilot_active() else "armed (need admin)"
+        autopilot_line = f" · autopilot [cyan]{autopilot_state}[/cyan]"
 
     console.print(
         f"[dim]Bridge ws://127.0.0.1:8765 · PIN [cyan]{runtime.bridge_pin}[/cyan] · "
         f"autonomy [cyan]{'on' if runtime.autonomy_enabled else 'off'}[/cyan] · "
         f"web [cyan]{'on' if runtime.web_control_enabled else 'off'}[/cyan]"
-        f"{claw_line}[/dim]"
+        f"{autopilot_line}[/dim]"
     )
-    if runtime.openclaw_enabled and not is_process_elevated():
+    if runtime.autopilot_enabled and not is_process_elevated():
         console.print(
-            "[yellow]OpenClaw is enabled in policy but this terminal is not elevated — "
-            "run as Administrator or use /claw off.[/yellow]"
+            "[yellow]Autopilot is enabled in policy but this terminal is not elevated — "
+            "run as Administrator or use /autopilot off.[/yellow]"
         )
     if has_bundled_zenith():
         console.print(

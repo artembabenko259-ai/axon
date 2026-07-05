@@ -27,9 +27,9 @@ class RuntimePolicy:
 
     # Full autonomy: auto-approve write_file + execute_shell
     autonomy_enabled: bool = False
-    # OpenClaw: full autonomy when elevated + /claw on (off by default)
-    openclaw_enabled: bool = False
-    openclaw_enabled_at: str = ""
+    # Autopilot: full autonomy when elevated + /autopilot on (off by default)
+    autopilot_enabled: bool = False
+    autopilot_enabled_at: str = ""
     # Allow web dashboard to send commands (requires bridge token)
     web_control_enabled: bool = True
     # Allow terminal REPL (always true in practice when CLI runs)
@@ -90,8 +90,8 @@ def load_runtime_policy() -> RuntimePolicy:
 
     policy = RuntimePolicy(
         autonomy_enabled=bool(raw.get("autonomy_enabled", False)),
-        openclaw_enabled=bool(raw.get("openclaw_enabled", False)),
-        openclaw_enabled_at=str(raw.get("openclaw_enabled_at", "")),
+        autopilot_enabled=bool(raw.get("autopilot_enabled", raw.get("openclaw_enabled", False))),
+        autopilot_enabled_at=str(raw.get("autopilot_enabled_at", raw.get("openclaw_enabled_at", ""))),
         web_control_enabled=bool(raw.get("web_control_enabled", True)),
         terminal_control_enabled=bool(raw.get("terminal_control_enabled", True)),
         require_desktop_confirmation=bool(
@@ -131,14 +131,14 @@ def save_runtime_policy(policy: RuntimePolicy) -> Path:
 def policy_for_client() -> dict[str, object]:
     """Safe subset for web UI (includes token for localhost pairing)."""
     policy = load_runtime_policy()
-    from openclaw_mode import is_openclaw_active, is_process_elevated
+    from autopilot_mode import is_autopilot_active, is_process_elevated
 
     return {
         "autonomy_enabled": policy.autonomy_enabled,
-        "openclaw_enabled": policy.openclaw_enabled,
-        "openclaw_active": is_openclaw_active(),
+        "autopilot_enabled": policy.autopilot_enabled,
+        "autopilot_active": is_autopilot_active(),
         "process_elevated": is_process_elevated(),
-        "openclaw_enabled_at": policy.openclaw_enabled_at,
+        "autopilot_enabled_at": policy.autopilot_enabled_at,
         "web_control_enabled": policy.web_control_enabled,
         "terminal_control_enabled": policy.terminal_control_enabled,
         "require_desktop_confirmation": policy.require_desktop_confirmation,
