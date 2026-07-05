@@ -13,7 +13,11 @@ from typing import Any
 
 from runtime_policy import load_runtime_policy
 from ui.session_timeline import session_timeline
-from ui.vision_models import SUGGESTED_VISION_MODELS, is_vision_model
+from ui.vision_models import (
+    SUGGESTED_VISION_MODELS,
+    is_confirmed_non_vision,
+    vision_required_message,
+)
 
 _observe_llm: Any = None
 
@@ -103,37 +107,38 @@ async def enrich_screenshot_result(tool_result: str, *, purpose: str = "") -> st
     )
 
     model = str(getattr(llm, "model", ""))
-    if is_vision_model(model):
+    text_only = is_confirmed_non_vision(model)
+
+    if not text_only:
         loader = getattr(llm, "load_image_into_context", None)
         if callable(loader):
             err = loader(str(path), vision_prompt)
-            if err:
-                return f"{tool_result}\n\n{err}"
-            return (
-                f"{tool_result}\n\n"
-                "The screenshot is now in your context — analyze what you see and continue."
-            )
-
-    analyzer = getattr(llm, "analyze_image_once_async", None)
-    if callable(analyzer):
-        try:
-            summary = await analyzer(str(path), vision_prompt)
-            if summary.strip():
-                session_timeline.record_observe(
-                    str(path.name),
-                    summary[:120],
+            if not err:
+                return (
+                    f"{tool_result}\n\n"
+                    "The screenshot is now in your context — analyze what you see and continue."
                 )
-                return f"{tool_result}\n\nScreen analysis:\n{summary.strip()}"
-        except Exception as exc:
-            hint = SUGGESTED_VISION_MODELS[1]
-            return (
-                f"{tool_result}\n\n"
-                f"Vision analysis failed: {exc}. "
-                f"Switch to a vision model with /model {hint}"
-            )
+            return f"{tool_result}\n\n{err}"
 
-    hint = SUGGESTED_VISION_MODELS[1]
-    return (
-        f"{tool_result}\n\n"
-        f"Current model cannot see images. Use /model {hint} or call take_screenshot again after switching."
-    )
+    if text_only:
+        hint = SUGGESTED_VISION_MODELS[0]
+        note = vision_required_message(model)
+        analyzer = getattr(llm, "analyze_image_once_async", None)
+        if callable(analyzer):
+            try:
+                summary = await analyzer(str(path), vision_prompt)
+                if summary.strip():
+                    session_timeline.record_observe(
+                        str(path.name),
+                        summary[:120],
+                    )
+                    return f"{tool_result}\n\nScreen analysis:\n{summary.strip()}"
+            except Exception as exc:
+                return (
+                    f"{tool_result}\n\n"
+                    f"{note}\n"
+                    f"Vision analysis failed: {exc}. Try /model {hint}"
+                )
+        return f"{tool_result}\n\n{note}"
+
+    return tool_result

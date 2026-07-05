@@ -128,11 +128,13 @@ def render_assistant_live(
     *,
     thinking: str = "",
 ) -> str:
+    """Live assistant block — thinking and answer are separate; omit empty shells."""
     parts: list[str] = []
     if thinking.strip():
         parts.append(render_thinking(thinking, width))
-    body = _wrap(text, max(width - 2, 40)) if text else "..."
-    parts.append(f"* AXON\n{body}")
+    if text.strip():
+        body = _wrap(text.strip(), max(width - 2, 40))
+        parts.append(f"* AXON\n{body}")
     return "\n\n".join(parts)
 
 
@@ -174,11 +176,104 @@ def render_turn_divider(width: int) -> str:
     return "-" * min(max(width - 2, 20), 72)
 
 
+def format_cost_usd(cost: float) -> str:
+    if cost <= 0:
+        return "$0.00"
+    if cost < 0.01:
+        return f"${cost:.6f}"
+    return f"${cost:.4f}"
+
+
+def format_token_count(count: int) -> str:
+    n = max(int(count), 0)
+    if n < 10_000:
+        return f"{n:,}"
+    if n < 1_000_000:
+        text = f"{n / 1000:.1f}k"
+        return text.replace(".0k", "k")
+    return f"{n / 1_000_000:.2f}M"
+
+
+def format_usage_header(
+    *,
+    total_tokens: int,
+    prompt_tokens: int,
+    completion_tokens: int,
+    cost: float,
+) -> str:
+    """Compact header: cost + in/out token split."""
+    cost_s = format_cost_usd(cost)
+    if total_tokens <= 0:
+        return f"{cost_s} | 0 tok"
+    if prompt_tokens or completion_tokens:
+        return (
+            f"{cost_s} | {format_token_count(total_tokens)} tok "
+            f"({format_token_count(prompt_tokens)} in · "
+            f"{format_token_count(completion_tokens)} out)"
+        )
+    return f"{cost_s} | {format_token_count(total_tokens)} tok"
+
+
+def render_turn_usage(
+    width: int,
+    *,
+    turn_prompt: int = 0,
+    turn_completion: int = 0,
+    turn_total: int = 0,
+    session_total: int = 0,
+    session_prompt: int = 0,
+    session_completion: int = 0,
+    session_cost: float = 0.0,
+) -> str:
+    """Per-turn + session usage line (shown after each assistant reply)."""
+    parts: list[str] = []
+    if turn_total > 0 or turn_prompt or turn_completion:
+        turn_cost_note = ""
+        parts.append(
+            "Turn: "
+            f"{format_token_count(turn_total or turn_prompt + turn_completion)} tok "
+            f"({format_token_count(turn_prompt)} in · "
+            f"{format_token_count(turn_completion)} out){turn_cost_note}"
+        )
+    parts.append(
+        "Session: "
+        f"{format_token_count(session_total)} tok "
+        f"({format_token_count(session_prompt)} in · "
+        f"{format_token_count(session_completion)} out) · "
+        f"{format_cost_usd(session_cost)}"
+    )
+    return _wrap(" · ".join(parts), width)
+
+
+def render_session_usage_detail(
+    width: int,
+    *,
+    total_tokens: int,
+    prompt_tokens: int,
+    completion_tokens: int,
+    cost: float,
+    model: str = "",
+) -> str:
+    lines = [
+        f"Session tokens: {total_tokens:,} total",
+        f"  input:  {prompt_tokens:,}",
+        f"  output: {completion_tokens:,}",
+        f"Session cost: {format_cost_usd(cost)}",
+    ]
+    if model:
+        lines.append(f"Model: {model}")
+    if total_tokens <= 0:
+        lines.append("(Usage appears after the first API response with billing data.)")
+    return _wrap("\n".join(lines), width)
+
+
 DIFF_PEEK_LINES = 4
 
 
 def _format_diff_line(raw: str, width: int) -> str:
     line = raw.rstrip()
+    if line.startswith("+++ ") or line.startswith("--- "):
+        return f"  {line}"
     if line.startswith("+"):
         body = line[1:]
         prefix = "+ "

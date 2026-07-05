@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 import traceback
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,7 +23,15 @@ from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.layout.processors import BeforeInput
 from prompt_toolkit.styles import Style
 
-from llm_client import LLMManager, TOTAL_COST, TOTAL_TOKENS
+from llm_client import (
+    LLMManager,
+    SESSION_COMPLETION_TOKENS,
+    SESSION_PROMPT_TOKENS,
+    TOTAL_COST,
+    TOTAL_TOKENS,
+    register_usage_listener,
+    reset_session_counters,
+)
 from orchestrator import Orchestrator, SubTask
 from plugins.loader import discover_plugins, list_plugin_commands
 from runtime_policy import POLICY_PATH, load_runtime_policy
@@ -54,14 +63,20 @@ AppStatus = Literal["ready", "thinking", "streaming", "error", "approval"]
 SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 PROMPT_SYMBOL = "> "
 BOARD_SIDE_WIDTH = 40
+_MOUSE_SGR_RE = re.compile(r"\x1b\[<[^>]*[Mm]|\[\<[^>]*[Mm]")
 
 
 def _format_session_cost(cost: float) -> str:
-    if cost <= 0:
-        return "$0.00"
-    if cost < 0.01:
-        return f"${cost:.6f}"
-    return f"${cost:.4f}"
+    return tui_render.format_cost_usd(cost)
+
+
+def _usage_header_text() -> str:
+    return tui_render.format_usage_header(
+        total_tokens=TOTAL_TOKENS,
+        prompt_tokens=SESSION_PROMPT_TOKENS,
+        completion_tokens=SESSION_COMPLETION_TOKENS,
+        cost=TOTAL_COST,
+    )
 
 
 @dataclass
@@ -93,6 +108,9 @@ AXON_STYLE = Style.from_dict(
         "completion-menu.completion.current": "bg:#27272a bold #67e8f9",
         "completion-menu.meta.completion": "bg:#18181b #52525b italic",
         "completion-menu.meta.completion.current": "bg:#27272a #71717a italic",
+        "scrollbar.background": "bg:#18181b",
+        "scrollbar.button": "bg:#3f3f46",
+        "scrollbar.arrow": "bg:#18181b bold #71717a",
     }
 )
 
@@ -117,6 +135,7 @@ class AxonTUI:
         self._agent_task: asyncio.Task | None = None
         self._live_active = False
         self._transcript_prefix = ""
+        self._transcript_canonical = ""
         self._board_open = False
         self._timeline_open = False
         self._show_thinking = True
@@ -127,13 +146,19 @@ class AxonTUI:
         self._approval_transcript_prefix = ""
 
         self._transcript_buffer = Buffer(read_only=True)
-        self._transcript_pane = ScrollablePane(
-            Window(
-                BufferControl(self._transcript_buffer, focusable=False),
-                wrap_lines=True,
-                style="class:chat",
-            ),
+        self._chat_window = Window(
+            BufferControl(self._transcript_buffer, focusable=False),
+            wrap_lines=True,
+            style="class:chat",
+        )
+        self._chat_pane = ScrollablePane(
+            self._chat_window,
             width=D(weight=1),
+            height=D(weight=1),
+            keep_cursor_visible=False,
+            keep_focused_window_visible=False,
+            show_scrollbar=True,
+            display_arrows=True,
         )
 
         self._board_window = Window(
@@ -145,9 +170,10 @@ class AxonTUI:
 
         self._main_row = VSplit(
             [
-                self._transcript_pane,
+                self._chat_pane,
                 self._board_window,
-            ]
+            ],
+            height=D(weight=1),
         )
 
         self.input_buffer = Buffer(
@@ -192,7 +218,7 @@ class AxonTUI:
             key_bindings=self._build_keybindings(),
             style=AXON_STYLE,
             full_screen=True,
-            mouse_support=True,
+            mouse_support=False,
             refresh_interval=0.08,
         )
 
@@ -201,12 +227,51 @@ class AxonTUI:
         set_tool_result_callback(self._on_tool_done)
         set_plan_render_callback(self._on_plan_board_update)
         set_multitask_runner(self._multitask_for_tool)
+        register_usage_listener(self._on_usage_counters_changed)
+
+    def _on_usage_counters_changed(self) -> None:
+        self.state.cost = TOTAL_COST
+        self.state.tokens = TOTAL_TOKENS
+        if self._bridge_host:
+            self._bridge_host.sync_stats_now()
+        try:
+            get_app().invalidate()
+        except Exception:
+            pass
+
+    def _append_turn_usage(self, result_usage) -> None:
+        w = self._render_width()
+        turn_prompt = turn_completion = turn_total = 0
+        if result_usage is not None:
+            turn_prompt = result_usage.prompt_tokens
+            turn_completion = result_usage.completion_tokens
+            turn_total = result_usage.total_tokens
+        self._append_block(
+            tui_render.render_turn_usage(
+                w,
+                turn_prompt=turn_prompt,
+                turn_completion=turn_completion,
+                turn_total=turn_total,
+                session_total=TOTAL_TOKENS,
+                session_prompt=SESSION_PROMPT_TOKENS,
+                session_completion=SESSION_COMPLETION_TOKENS,
+                session_cost=TOTAL_COST,
+            )
+        )
 
     def _width(self) -> int:
         try:
             return get_app().output.get_size().columns
         except Exception:
             return 100
+
+    def _render_width(self) -> int:
+        """Chat column width (narrows when F2/F4 side panel is open)."""
+        return self._chat_width()
+
+    @staticmethod
+    def _strip_mouse_garbage(text: str) -> str:
+        return _MOUSE_SGR_RE.sub("", text).strip()
 
     def _side_panel_open(self) -> bool:
         if self._timeline_open:
@@ -277,6 +342,11 @@ class AxonTUI:
 
     def _toggle_task_board(self) -> None:
         if not self._board.visible and not task_manager.tasks:
+            w = self._width()
+            self._append_block(
+                tui_render.render_system("No active plan. Use /plan <goal> first.", w)
+            )
+            get_app().invalidate()
             return
         self._board_open = not self._board_open
         if self._board_open:
@@ -293,6 +363,8 @@ class AxonTUI:
         self._board_open = False
         task_manager.clear()
         self._sync_board_layout()
+        if self._bridge_host:
+            self._bridge_host.broadcast_plan_now([], goal="")
         return True
 
     def _update_board(
@@ -375,42 +447,155 @@ class AxonTUI:
             )
         get_app().invalidate()
 
-    def _set_transcript_text(self, text: str) -> None:
+    def _chat_width(self) -> int:
+        w = self._width()
+        if self._side_panel_open():
+            w -= BOARD_SIDE_WIDTH
+        return max(w - 2, 24)
+
+    def _count_wrapped_lines(self, text: str, width: int) -> int:
+        if not text:
+            return 1
+        total = 0
+        for line in text.split("\n"):
+            length = len(line)
+            total += max(1, (length + width - 1) // width) if length else 1
+        return total
+
+    def _chat_visible_rows(self) -> int:
+        try:
+            rows = get_app().output.get_size().rows
+        except Exception:
+            rows = 24
+        # header + composer + input (+ completion margin)
+        return max(6, rows - 6)
+
+    def _sync_chat_scroll(self) -> None:
+        width = self._chat_width()
+        lines = self._count_wrapped_lines(self._transcript_buffer.text, width)
+        visible = self._chat_visible_rows()
+        max_scroll = max(0, lines - visible)
+        if self.state.auto_scroll:
+            self._chat_pane.vertical_scroll = max_scroll
+        else:
+            self._chat_pane.vertical_scroll = min(
+                self._chat_pane.vertical_scroll, max_scroll
+            )
+
+    def _paint_transcript(self, text: str) -> None:
+        """Update scroll pane only (canonical history unchanged)."""
         self._transcript_buffer.set_document(
             Document(text, len(text)),
             bypass_readonly=True,
         )
+        self._sync_chat_scroll()
+
+    def _set_transcript_text(self, text: str) -> None:
+        """Replace canonical transcript and repaint."""
+        self._transcript_canonical = text
+        self._paint_transcript(text)
+
+    def _redraw_transcript(self) -> None:
+        """Rebuild visible transcript after terminal resize."""
+        if self._approval_pending() and self._approval_transcript_prefix:
+            self._refresh_approval_block()
+        elif self._live_active:
+            self._refresh_live_response()
+        else:
+            self._paint_transcript(self._transcript_canonical)
 
     def _scroll_transcript_to_end(self) -> None:
-        text = self._transcript_buffer.text
-        self._set_transcript_text(text)
+        self._sync_chat_scroll()
+
+    def _scroll_transcript_lines(self, delta: int) -> None:
+        """Scroll chat history (PgUp/PgDn). Disables auto-scroll until bottom."""
+        visible = self._chat_visible_rows()
+        width = self._chat_width()
+        core = self._transcript_canonical
+        lines = self._count_wrapped_lines(core, width)
+        max_scroll = max(0, lines - visible)
+        if delta < 0:
+            self._chat_pane.vertical_scroll = max(
+                0, self._chat_pane.vertical_scroll + delta
+            )
+            self.state.auto_scroll = False
+        else:
+            self._chat_pane.vertical_scroll = min(
+                max_scroll, self._chat_pane.vertical_scroll + delta
+            )
+            if self._chat_pane.vertical_scroll >= max_scroll:
+                self.state.auto_scroll = True
+        get_app().invalidate()
 
     def _append_block(self, block: str) -> None:
         block = block.strip()
         if not block:
             return
-        current = self._transcript_buffer.text
-        self._set_transcript_text(f"{current}\n\n{block}" if current else block)
+        if self._live_active:
+            base = self._transcript_prefix.rstrip()
+            self._transcript_prefix = f"{base}\n\n{block}\n\n" if base else f"{block}\n\n"
+            self._transcript_canonical = self._transcript_prefix.rstrip()
+            self._stream_buffer.clear()
+            self._thinking_buffer.clear()
+            self._paint_transcript(self._transcript_canonical)
+        else:
+            current = self._transcript_canonical
+            self._set_transcript_text(f"{current}\n\n{block}" if current else block)
+        self._scroll_transcript_to_end()
+
+    def _sync_live_prefix(self) -> None:
+        """No-op — prefix is extended incrementally in _append_block."""
+
+    def _commit_assistant_turn(
+        self,
+        *,
+        body: str,
+        thinking: str,
+        width: int,
+        tool_steps: int,
+    ) -> None:
+        """Finalize assistant output without wiping tool/approval blocks."""
+        self._end_live_response()
+        block = tui_render.render_assistant_live(
+            body,
+            width,
+            thinking=thinking,
+        )
+        base = self._transcript_prefix.rstrip()
+        if block.strip():
+            final = f"{base}\n\n{block}" if base else block
+            self._set_transcript_text(final)
+        elif tool_steps > 0:
+            self._set_transcript_text(base)
+            if body:
+                self._append_block(tui_render.render_assistant_message(body, width))
+        elif base:
+            self._set_transcript_text(base)
         self._scroll_transcript_to_end()
 
     def _begin_live_response(self) -> None:
         self._live_active = True
         self._stream_buffer.clear()
         self._thinking_buffer.clear()
-        self._transcript_prefix = self._transcript_buffer.text
+        self._transcript_prefix = self._transcript_canonical
         if self._transcript_prefix:
             self._transcript_prefix += "\n\n"
 
     def _refresh_live_response(self) -> None:
         if not self._live_active:
             return
-        w = self._width()
-        body = "".join(self._stream_buffer)
+        from skills.text_tool_calls import strip_text_tool_calls
+
+        w = self._render_width()
+        body = strip_text_tool_calls("".join(self._stream_buffer))
         thinking = "".join(self._thinking_buffer)
         if not self._show_thinking:
             thinking = ""
         block = tui_render.render_assistant_live(body, w, thinking=thinking)
-        self._set_transcript_text(self._transcript_prefix + block)
+        if block.strip():
+            self._paint_transcript(self._transcript_prefix + block)
+        else:
+            self._paint_transcript(self._transcript_prefix.rstrip())
         self._scroll_transcript_to_end()
 
     def _end_live_response(self) -> None:
@@ -477,13 +662,22 @@ class AxonTUI:
 
         @kb.add("enter", "up", filter=input_focused & agent_busy)
         def _(event) -> None:
-            text = event.current_buffer.text.strip()
+            text = self._strip_mouse_garbage(event.current_buffer.text)
             event.current_buffer.reset()
-            event.app.create_background_task(self._steer_agent(text))
+            if text:
+                event.app.create_background_task(self._steer_agent(text))
 
         @kb.add("c-j", filter=input_focused)
         def _(event) -> None:
             _newline(event)
+
+        @kb.add("pageup")
+        def _(event) -> None:
+            self._scroll_transcript_lines(-12)
+
+        @kb.add("pagedown")
+        def _(event) -> None:
+            self._scroll_transcript_lines(12)
 
         @kb.add("f2")
         def _(event) -> None:
@@ -501,20 +695,47 @@ class AxonTUI:
 
     async def _cancel_agent(self) -> None:
         self.llm.request_cancel()
+        self.llm.set_stream_callbacks()
         if self._agent_task and not self._agent_task.done():
             self._agent_task.cancel()
         self._stop_spinner()
         self._end_live_response()
+        self._stream_buffer.clear()
+        self._thinking_buffer.clear()
+        self._paint_transcript(self._transcript_canonical)
         self._agent_busy = False
         self.state.status = "ready"
-        self._append_block(tui_render.render_system("Cancelled.", self._width()))
+        self._append_block(tui_render.render_system("Cancelled.", self._render_width()))
         get_app().invalidate()
+
+    def _spawn_agent(self, coro) -> None:
+        """Run one agent job; blocks overlap (plan/chat/tools)."""
+        if self._agent_busy:
+            self._append_block(
+                tui_render.render_error(
+                    "AXON занят — дождитесь ответа или нажмите Ctrl+C.",
+                    self._render_width(),
+                )
+            )
+            get_app().invalidate()
+            return
+
+        async def runner() -> None:
+            self._agent_busy = True
+            self._agent_task = asyncio.current_task()
+            try:
+                await coro
+            finally:
+                self._agent_busy = False
+                self._agent_task = None
+
+        get_app().create_background_task(runner())
 
     async def _steer_agent(self, text: str) -> None:
         """Enter+Up — interrupt and send a follow-up."""
         await self._cancel_agent()
         if text:
-            await self._process_message(text)
+            self._spawn_agent(self._process_message(text))
 
     def _header_fragments(self):
         short = self.state.model.rsplit("/", 1)[-1]
@@ -523,7 +744,7 @@ class AxonTUI:
             cwd = "..." + cwd[-33:]
         line = (
             f" AXON | {cwd} | {short} | "
-            f"{_format_session_cost(TOTAL_COST)} | {TOTAL_TOKENS} tok"
+            f"{_usage_header_text()}"
         )
         return [("class:header", line)]
 
@@ -555,6 +776,7 @@ class AxonTUI:
             line += f" | {hint}"
         think_hint = "F3 hide thinking" if self._show_thinking else "F3 show thinking"
         line += f" | {think_hint}"
+        line += " | PgUp/PgDn scroll"
         if not self._timeline_open:
             line += " | F4 session"
         return [("class:composer", line)]
@@ -569,7 +791,7 @@ class AxonTUI:
             "session": "Разрешено на сессию",
             "deny": "Отклонено",
         }
-        w = self._width()
+        w = self._render_width()
         self._append_block(
             tui_render.render_system(f"→ {labels.get(decision, decision)}", w)
         )
@@ -595,14 +817,14 @@ class AxonTUI:
         get_app().invalidate()
 
     def _refresh_approval_block(self) -> None:
-        w = self._width()
+        w = self._render_width()
         block = tui_render.render_approval_request(
             self._approval_summary,
             w,
             preview=self._approval_preview,
             preview_expanded=self._approval_preview_expanded,
         )
-        self._set_transcript_text(self._approval_transcript_prefix + block)
+        self._paint_transcript(self._approval_transcript_prefix + block)
         self._scroll_transcript_to_end()
 
     async def _request_approval(self, tool_name: str, detail: str) -> ApprovalDecision:
@@ -615,8 +837,11 @@ class AxonTUI:
             return "once"
 
         self._end_live_response()
+        self._stream_buffer.clear()
+        self._thinking_buffer.clear()
         self._stop_spinner()
         self.state.status = "approval"
+        self.input_buffer.reset()
 
         command_detail, preview = split_approval_message(detail)
         label = tool_display_label(tool_name)
@@ -624,8 +849,9 @@ class AxonTUI:
         self._approval_summary = summary
         self._approval_preview = preview
         self._approval_preview_expanded = False
-        prefix = self._transcript_buffer.text
-        self._approval_transcript_prefix = f"{prefix}\n\n" if prefix else ""
+        committed = self._transcript_canonical.rstrip()
+        self._approval_transcript_prefix = f"{committed}\n\n" if committed else ""
+        self._paint_transcript(committed)
         self._refresh_approval_block()
 
         loop = asyncio.get_running_loop()
@@ -640,6 +866,12 @@ class AxonTUI:
             self._approval_preview = ""
             self._approval_preview_expanded = False
             self._approval_transcript_prefix = ""
+            if self._agent_busy:
+                self._live_active = True
+                self._transcript_prefix = self._transcript_canonical
+                if self._transcript_prefix:
+                    self._transcript_prefix += "\n\n"
+                self._refresh_live_response()
             if self.state.status == "approval":
                 self.state.status = "thinking" if self._agent_busy else "ready"
             get_app().invalidate()
@@ -685,7 +917,7 @@ class AxonTUI:
             self._spinner_task.cancel()
             self._spinner_task = None
 
-    def _handle_command(self, text: str) -> None:
+    async def _handle_command(self, text: str) -> None:
         parts = text.strip().split(maxsplit=1)
         cmd = parts[0].lower()
         args = parts[1] if len(parts) > 1 else ""
@@ -720,7 +952,7 @@ class AxonTUI:
             return
 
         if cmd == "/provider" or text.lower().startswith("/provider"):
-            get_app().create_background_task(self._run_provider_command(text))
+            await self._run_provider_command(text)
             return
 
         if cmd in {"/claw", "/openclaw"}:
@@ -753,7 +985,11 @@ class AxonTUI:
             if not goal:
                 self._append_block(tui_render.render_error("Usage: /plan <goal>", w))
                 return
-            get_app().create_background_task(self._run_plan(goal))
+            await self._run_plan(goal)
+            return
+
+        if cmd == "/execute":
+            await self._run_execute()
             return
 
         if cmd == "/multitask":
@@ -765,7 +1001,7 @@ class AxonTUI:
                     tui_render.render_error("Usage: /multitask <goal>", w)
                 )
                 return
-            get_app().create_background_task(self._run_multitask(goal_line))
+            await self._run_multitask(goal_line)
             return
 
         if cmd == "/image":
@@ -781,12 +1017,12 @@ class AxonTUI:
                 return
             error = load_image_with_vision_check(self.llm, image_path, prompt)
             if error:
-                from ui.vision_models import vision_switch_hint
+                extra = ""
+                if "text-only" in error.lower():
+                    from ui.vision_models import vision_switch_hint
 
-                hint = vision_switch_hint(self.llm.model)
-                self._append_block(
-                    tui_render.render_error(f"{error}\nTry: {hint}", w)
-                )
+                    extra = f"\nTry: {vision_switch_hint(self.llm.model)}"
+                self._append_block(tui_render.render_error(f"{error}{extra}", w))
             else:
                 self._append_block(
                     tui_render.render_system(
@@ -864,6 +1100,7 @@ class AxonTUI:
             self._timeline_open = False
             task_manager.clear()
             session_timeline.clear()
+            reset_session_counters()
             session_timeline.set_cost_anchor(TOTAL_COST)
             clear_session_approvals()
             self._sync_board_layout()
@@ -871,6 +1108,7 @@ class AxonTUI:
                 {"role": "system", "content": self.llm.messages[0]["content"]}
             ]
             self.state.cost = 0.0
+            self.state.tokens = 0
             self.state.status = "ready"
             return
 
@@ -883,12 +1121,18 @@ class AxonTUI:
             self._append_block(
                 tui_render.render_system(f"Model: {self.state.model}", w)
             )
+            get_app().invalidate()
             return
 
         if cmd in {"/cost", "/usage"}:
             self._append_block(
-                tui_render.render_system(
-                    f"Session: ${TOTAL_COST:.4f} · {TOTAL_TOKENS} tokens", w
+                tui_render.render_session_usage_detail(
+                    w,
+                    total_tokens=TOTAL_TOKENS,
+                    prompt_tokens=SESSION_PROMPT_TOKENS,
+                    completion_tokens=SESSION_COMPLETION_TOKENS,
+                    cost=TOTAL_COST,
+                    model=self.state.model,
                 )
             )
             return
@@ -900,11 +1144,11 @@ class AxonTUI:
                     tui_render.render_error('Usage: /gen-skill "description"', w)
                 )
                 return
-            get_app().create_background_task(self._run_gen_skill(description))
+            await self._run_gen_skill(description)
             return
 
         if cmd == "/create-skill":
-            get_app().create_background_task(self._run_create_skill())
+            await self._run_create_skill()
             return
 
         self._append_block(
@@ -1018,7 +1262,6 @@ class AxonTUI:
                         pass
             app.invalidate()
 
-        self._agent_busy = True
         self._start_spinner("thinking")
         try:
             result = await orch.run(
@@ -1028,7 +1271,6 @@ class AxonTUI:
             )
         finally:
             self._stop_spinner()
-            self._agent_busy = False
 
         self.state.cost = TOTAL_COST
         self.state.tokens = TOTAL_TOKENS
@@ -1062,24 +1304,34 @@ class AxonTUI:
             "Plan",
             [TaskBoardItem("1", "Building plan...", "running")],
         )
-        self._agent_busy = True
         self._start_spinner("thinking")
         try:
             task_manager.goal = goal
             result = await self.llm.send_plan_async(goal)
         finally:
             self._stop_spinner()
-            self._agent_busy = False
 
         self._board_from_plan()
         self.state.cost = TOTAL_COST
         self.state.tokens = TOTAL_TOKENS
 
-        if result.ok:
+        if result.ok and task_manager.has_plan():
             self._append_block(
-                tui_render.render_assistant_message(result.content or "Plan created.", w)
+                tui_render.render_assistant_message(
+                    result.content or "Plan ready. Use /execute to run it.",
+                    w,
+                )
             )
             self.state.status = "ready"
+        elif result.ok:
+            task_manager.goal = ""
+            self._append_block(
+                tui_render.render_error(
+                    "Plan mode finished but no tasks were created. Try /plan again.",
+                    w,
+                )
+            )
+            self.state.status = "error"
         else:
             self._append_block(tui_render.render_error(result.display_text, w))
             self.state.status = "error"
@@ -1093,20 +1345,21 @@ class AxonTUI:
                 tui_render.render_error("No active plan. Use /plan first.", w)
             )
             return
-        self._agent_busy = True
         self._start_spinner("thinking")
         try:
             result = await self.llm.send_execute_async()
         finally:
             self._stop_spinner()
-            self._agent_busy = False
         self._board_from_plan()
         self.state.cost = TOTAL_COST
         self.state.tokens = TOTAL_TOKENS
         if result.ok:
-            self._append_block(
-                tui_render.render_assistant_message(result.content or "Done.", w)
-            )
+            msg = result.content or "Done."
+            if task_manager.has_plan() and not task_manager.all_done():
+                done = sum(1 for t in task_manager.tasks if t.status == "done")
+                total = len(task_manager.tasks)
+                msg += f"\n\nПлан: {done}/{total} — снова /execute для следующего шага."
+            self._append_block(tui_render.render_assistant_message(msg, w))
             self.state.status = "ready"
         else:
             self._append_block(tui_render.render_error(result.display_text, w))
@@ -1141,13 +1394,11 @@ class AxonTUI:
         self._append_block(tui_render.render_system("Generating skill with AI...", w))
         app.invalidate()
 
-        self._agent_busy = True
         self._start_spinner("thinking")
         try:
             result = await self.llm.generate_skill_file_async(description.strip())
         finally:
             self._stop_spinner()
-            self._agent_busy = False
 
         self.state.cost = TOTAL_COST
         self.state.tokens = TOTAL_TOKENS
@@ -1241,7 +1492,7 @@ class AxonTUI:
 
         try:
             if text.startswith("/"):
-                self._handle_command(text)
+                await self._handle_command(text)
                 app.invalidate()
                 return
 
@@ -1281,47 +1532,50 @@ class AxonTUI:
                 on_start=on_start,
                 on_end=on_end,
             )
-            self._agent_busy = True
             self._start_spinner("thinking")
 
-            self._agent_task = asyncio.current_task()
             result = await self.llm.send_message_async(text)
             self._stop_spinner()
             self.llm.set_stream_callbacks()
-            self._end_live_response()
-            self._agent_busy = False
-            self._agent_task = None
 
             self.state.cost = TOTAL_COST
             self.state.tokens = TOTAL_TOKENS
             self.state.model = self.llm.model
 
-            if result.ok and (result.content or self._stream_buffer):
-                body = result.content or "".join(self._stream_buffer)
-                thinking = "".join(self._thinking_buffer) if self._show_thinking else ""
-                if thinking.strip():
-                    block = tui_render.render_assistant_live(body, w, thinking=thinking)
-                else:
-                    block = tui_render.render_assistant_message(body, w)
-                self._set_transcript_text(self._transcript_prefix + block)
-                if self._bridge_host:
+            if result.ok:
+                body = (result.content or "".join(self._stream_buffer)).strip()
+                thinking_text = (
+                    "".join(self._thinking_buffer) if self._show_thinking else ""
+                )
+                self._commit_assistant_turn(
+                    body=body,
+                    thinking=thinking_text,
+                    width=w,
+                    tool_steps=result.tool_steps or 0,
+                )
+
+                if self._bridge_host and body:
                     self._bridge_host.broadcast_chat_now(
                         role="assistant",
                         text=body,
                         source="terminal",
                     )
+
                 explore = get_turn_explore_summary()
                 if explore:
                     self._append_block(tui_render.render_explore_summary(explore, w))
-                self._append_block(tui_render.render_turn_divider(w))
-                self.state.status = "ready"
-            elif result.ok:
-                self._append_block(tui_render.render_system("(empty response)", w))
+
+                if body or (result.tool_steps or 0) > 0:
+                    self._append_block(tui_render.render_turn_divider(w))
+                    self._append_turn_usage(result.usage)
+                else:
+                    self._append_block(tui_render.render_system("(empty response)", w))
                 self.state.status = "ready"
             elif "cancelled" in (result.error or "").lower():
                 self._append_block(tui_render.render_system("Stopped.", w))
                 self.state.status = "ready"
             else:
+                self._end_live_response()
                 self._append_block(tui_render.render_error(result.display_text, w))
                 self.state.status = "error"
 
@@ -1331,13 +1585,15 @@ class AxonTUI:
             app.invalidate()
         except asyncio.CancelledError:
             self._stop_spinner()
+            self.llm.set_stream_callbacks()
             self._end_live_response()
-            self._agent_busy = False
+            self._stream_buffer.clear()
+            self._thinking_buffer.clear()
             raise
         except Exception:
             self._stop_spinner()
+            self.llm.set_stream_callbacks()
             self._end_live_response()
-            self._agent_busy = False
             self._append_block(
                 tui_render.render_error(traceback.format_exc(limit=2), w)
             )
@@ -1345,9 +1601,11 @@ class AxonTUI:
             app.invalidate()
 
     def _on_accept(self, buff: Buffer) -> bool:
-        text = buff.text.strip()
+        text = self._strip_mouse_garbage(buff.text)
         if not text:
             return False
+
+        self.state.auto_scroll = True
 
         if self._approval_pending():
             lowered = text.lower()
@@ -1372,7 +1630,7 @@ class AxonTUI:
                 self._toggle_approval_diff()
                 return False
             buff.reset()
-            w = self._width()
+            w = self._render_width()
             self._append_block(
                 tui_render.render_error(
                     "Ожидается 1, 2, 3, Y или N для разрешения.", w
@@ -1381,7 +1639,7 @@ class AxonTUI:
             get_app().invalidate()
             return False
 
-        w = self._width()
+        w = self._render_width()
         if not text.startswith("/"):
             self._append_block(tui_render.render_user_message(text, w))
             if self._bridge_host:
@@ -1391,8 +1649,9 @@ class AxonTUI:
                     source="terminal",
                 )
 
+        buff.reset()
         get_app().invalidate()
-        self._agent_task = get_app().create_background_task(self._process_message(text))
+        self._spawn_agent(self._process_message(text))
         return False
 
     def run(self) -> None:
@@ -1413,9 +1672,27 @@ class AxonTUI:
 
         async def main() -> None:
             if self._bridge_host:
+                self._bridge_host.set_tui_loop(asyncio.get_running_loop())
                 asyncio.create_task(self._bridge_host.drain_web_inbox())
                 self._bridge_host.sync_stats_now()
                 self._bridge_host.broadcast_model_now(self.state.model)
+
+            async def _on_terminal_resize() -> None:
+                last_rows = 0
+                last_cols = 0
+                while True:
+                    await asyncio.sleep(0.15)
+                    try:
+                        size = get_app().output.get_size()
+                        rows, cols = size.rows, size.columns
+                    except Exception:
+                        continue
+                    if rows != last_rows or cols != last_cols:
+                        last_rows, last_cols = rows, cols
+                        self._redraw_transcript()
+                        get_app().invalidate()
+
+            asyncio.create_task(_on_terminal_resize())
             await self.app.run_async()
 
         asyncio.run(main())

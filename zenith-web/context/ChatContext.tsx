@@ -185,6 +185,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionStartedAtRef = useRef<number | null>(null);
   const statsRef = useRef(stats);
+  const pendingModelRef = useRef<string | null>(null);
 
   useEffect(() => {
     statsRef.current = stats;
@@ -228,8 +229,20 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
   const sendRaw = useCallback((payload: Record<string, unknown>) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(payload));
+      return true;
     }
+    return false;
   }, []);
+
+  const flushPendingModel = useCallback(
+    (ws: WebSocket) => {
+      const pending = pendingModelRef.current;
+      if (!pending) return;
+      pendingModelRef.current = null;
+      ws.send(JSON.stringify({ type: "set_model", model: pending }));
+    },
+    [],
+  );
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -309,6 +322,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
 
         if (data.type === "connected") {
           setConnected(true);
+          flushPendingModel(ws);
           if (data.policy?.bridge_token) {
             localStorage.setItem(BRIDGE_TOKEN_KEY, data.policy.bridge_token);
           }
@@ -437,6 +451,10 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
               ? task.status
               : "pending") as PlanTaskStatus,
           }));
+          if (!tasks.length) {
+            setPlan(null);
+            return;
+          }
           setPlan({
             goal: String(data.goal ?? ""),
             tasks,
@@ -479,6 +497,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
 
         if (data.type === "model" && data.model) {
           setActiveModel(data.model);
+          pendingModelRef.current = null;
           return;
         }
 
@@ -498,7 +517,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
         /* ignore malformed payloads */
       }
     };
-  }, [appendMessage, applyStats]);
+  }, [appendMessage, applyStats, flushPendingModel]);
 
   useEffect(() => {
     const stored = readStoredSessionStart();
@@ -563,7 +582,9 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     (model: string) => {
       const trimmed = model.trim();
       if (!trimmed) return;
-      sendRaw({ type: "set_model", model: trimmed });
+      if (!sendRaw({ type: "set_model", model: trimmed })) {
+        pendingModelRef.current = trimmed;
+      }
     },
     [sendRaw],
   );

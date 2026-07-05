@@ -23,6 +23,7 @@ from skills.tools import (
     parse_tool_arguments,
     tool_activity_detail,
 )
+from skills.text_tool_calls import extract_text_tool_calls
 from skills_manager import SkillManager, load_project_memory
 from agent_manager import load_agent_prompt
 from mcp_client import get_mcp_tool_schemas
@@ -73,7 +74,25 @@ StreamLifecycleCallback = Callable[[], Awaitable[None]]
 
 TOTAL_TOKENS: int = 0
 TOTAL_COST: float = 0.0
+SESSION_PROMPT_TOKENS: int = 0
+SESSION_COMPLETION_TOKENS: int = 0
 SESSION_STARTED_AT: float = time.time()
+
+_usage_listeners: list[Callable[[], None]] = []
+
+
+def register_usage_listener(callback: Callable[[], None]) -> None:
+    """Notify UI when session token/cost counters change."""
+    if callback not in _usage_listeners:
+        _usage_listeners.append(callback)
+
+
+def _notify_usage_listeners() -> None:
+    for callback in _usage_listeners:
+        try:
+            callback()
+        except Exception:
+            pass
 
 
 def record_token_usage(
@@ -83,19 +102,30 @@ def record_token_usage(
     prompt_tokens: int = 0,
     completion_tokens: int = 0,
 ) -> None:
-    global TOTAL_TOKENS, TOTAL_COST
-    tokens = max(int(total_tokens or 0), 0)
+    global TOTAL_TOKENS, TOTAL_COST, SESSION_PROMPT_TOKENS, SESSION_COMPLETION_TOKENS
+    prompt_i = max(int(prompt_tokens or 0), 0)
+    completion_i = max(int(completion_tokens or 0), 0)
+    if prompt_i or completion_i:
+        tokens = prompt_i + completion_i
+    else:
+        tokens = max(int(total_tokens or 0), 0)
     TOTAL_TOKENS += tokens
-    if model and (prompt_tokens or completion_tokens):
-        TOTAL_COST += estimate_cost(model, prompt_tokens, completion_tokens)
+    SESSION_PROMPT_TOKENS += prompt_i
+    SESSION_COMPLETION_TOKENS += completion_i
+    if model and (prompt_i or completion_i):
+        TOTAL_COST += estimate_cost(model, prompt_i, completion_i)
     else:
         TOTAL_COST += tokens * COST_PER_TOKEN
+    _notify_usage_listeners()
 
 
 def reset_session_counters() -> None:
-    global TOTAL_TOKENS, TOTAL_COST
+    global TOTAL_TOKENS, TOTAL_COST, SESSION_PROMPT_TOKENS, SESSION_COMPLETION_TOKENS
     TOTAL_TOKENS = 0
     TOTAL_COST = 0.0
+    SESSION_PROMPT_TOKENS = 0
+    SESSION_COMPLETION_TOKENS = 0
+    _notify_usage_listeners()
 
 
 @dataclass(frozen=True)
@@ -389,7 +419,9 @@ class LLMManager:
 
     def set_model(self, model: str) -> None:
         """Set active model and persist to shared config."""
-        cleaned = model.strip()
+        from ui.model_registry import normalize_model_id
+
+        cleaned = normalize_model_id(model.strip())
         if not cleaned:
             return
         self.model = cleaned
@@ -413,22 +445,12 @@ class LLMManager:
         prompt: str = "Analyze this image.",
     ) -> str | None:
         """Append an OpenAI-compatible vision user message. Returns error or None."""
-        raw = image_path.strip().strip("\"'")
-        if not raw:
-            return "AXON: Image path is required."
+        from ui.image_cmd import resolve_image_path
 
-        path = Path(raw).expanduser()
-        try:
-            path = path.resolve()
-        except OSError as exc:
-            return f"AXON: Invalid image path — {exc}"
-
-        if not path.is_file():
-            return f"AXON: Image not found — {path}"
-
-        if path.suffix.lower() not in SUPPORTED_IMAGE_SUFFIXES:
-            supported = ", ".join(sorted(SUPPORTED_IMAGE_SUFFIXES))
-            return f"AXON: Unsupported image type. Supported: {supported}"
+        path, resolve_error = resolve_image_path(image_path)
+        if resolve_error:
+            return resolve_error
+        assert path is not None
 
         try:
             data = path.read_bytes()
@@ -469,24 +491,20 @@ class LLMManager:
         model: str | None = None,
     ) -> str:
         """One-shot vision call; returns description text (for non-vision chat models)."""
-        from ui.vision_models import SUGGESTED_VISION_MODELS, is_vision_model
+        from ui.image_cmd import resolve_image_path
+        from ui.vision_models import SUGGESTED_VISION_MODELS, is_confirmed_non_vision
 
-        vision_model = (model or self.model).strip()
-        if not is_vision_model(vision_model):
-            vision_model = SUGGESTED_VISION_MODELS[1]
+        primary = (model or self.model).strip() or SUGGESTED_VISION_MODELS[0]
+        candidates = [primary]
+        if is_confirmed_non_vision(primary):
+            for candidate in SUGGESTED_VISION_MODELS:
+                if candidate not in candidates:
+                    candidates.append(candidate)
 
-        raw = image_path.strip().strip("\"'")
-        path = Path(raw).expanduser()
-        try:
-            path = path.resolve()
-        except OSError as exc:
-            raise ValueError(f"Invalid image path — {exc}") from exc
-
-        if not path.is_file():
-            raise ValueError(f"Image not found — {path}")
-
-        if path.suffix.lower() not in SUPPORTED_IMAGE_SUFFIXES:
-            raise ValueError(f"Unsupported image type: {path.suffix}")
+        path, resolve_error = resolve_image_path(image_path)
+        if resolve_error:
+            raise ValueError(resolve_error)
+        assert path is not None
 
         data = path.read_bytes()
         if len(data) > MAX_IMAGE_BYTES:
@@ -495,38 +513,52 @@ class LLMManager:
         encoded = base64.b64encode(data).decode("ascii")
         media_type = self._image_media_type(path)
         text = prompt.strip() or "Describe what is visible on this screen."
-
-        response = await asyncio.to_thread(
-            self._client.chat.completions.create,
-            model=vision_model,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": text},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{media_type};base64,{encoded}",
-                            },
+        payload = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": text},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{media_type};base64,{encoded}",
                         },
-                    ],
-                }
-            ],
-            max_tokens=600,
-        )
+                    },
+                ],
+            }
+        ]
 
-        usage = getattr(response, "usage", None)
-        if usage is not None:
-            record_token_usage(
-                int(getattr(usage, "total_tokens", 0) or 0),
-                model=vision_model,
-                prompt_tokens=int(getattr(usage, "prompt_tokens", 0) or 0),
-                completion_tokens=int(getattr(usage, "completion_tokens", 0) or 0),
-            )
+        last_error: Exception | None = None
+        for vision_model in candidates:
+            try:
+                response = await asyncio.to_thread(
+                    self._client.chat.completions.create,
+                    model=vision_model,
+                    messages=payload,
+                    max_tokens=600,
+                )
+            except (APIConnectionError, APITimeoutError, APIError) as exc:
+                last_error = exc
+                continue
+            except Exception as exc:
+                last_error = exc
+                continue
 
-        message = response.choices[0].message
-        return (message.content or "").strip()
+            usage = getattr(response, "usage", None)
+            if usage is not None:
+                record_token_usage(
+                    int(getattr(usage, "total_tokens", 0) or 0),
+                    model=vision_model,
+                    prompt_tokens=int(getattr(usage, "prompt_tokens", 0) or 0),
+                    completion_tokens=int(getattr(usage, "completion_tokens", 0) or 0),
+                )
+
+            message = response.choices[0].message
+            return (message.content or "").strip()
+
+        if last_error is not None:
+            raise last_error
+        return ""
 
     async def compact_context(self, keep_last: int = 6) -> tuple[bool, str]:
         if len(self.messages) <= keep_last + 1:
@@ -609,7 +641,19 @@ class LLMManager:
             "this down into 3-5 logical steps."
         )
         try:
-            return await self._agent_loop(prompt)
+            result = await self._agent_loop(prompt)
+            if not task_manager.has_plan():
+                return LLMResult(
+                    content=result.content or "",
+                    model=self.model,
+                    error=(
+                        "AXON: No plan was created. "
+                        "Ask again with /plan <goal> or tell the model to call create_plan."
+                    ),
+                    usage=result.usage,
+                    tool_steps=result.tool_steps,
+                )
+            return result
         finally:
             task_manager.plan_mode = False
 
@@ -637,7 +681,7 @@ class LLMManager:
             "Work through the plan step by step using available tools.\n"
             "After completing each step, you MUST call complete_task(task_id).\n"
             f"Start with: {next_label}\n\n"
-            f"Current plan:\n{task_manager.get_plan_markdown()}"
+            f"Current plan:\n{task_manager.get_plan_plaintext()}"
         )
         try:
             return await self._agent_loop(prompt)
@@ -866,15 +910,23 @@ class LLMManager:
                         tool_steps=tool_steps,
                     )
 
-                if stream_result.tool_calls:
+                content = stream_result.content or ""
+                tool_calls = list(stream_result.tool_calls)
+                if not tool_calls and content:
+                    cleaned, parsed_calls = extract_text_tool_calls(content)
+                    if parsed_calls:
+                        content = cleaned
+                        tool_calls = parsed_calls
+
+                if tool_calls:
                     self.messages.append(
                         {
                             "role": "assistant",
-                            "content": stream_result.content or None,
-                            "tool_calls": stream_result.tool_calls,
+                            "content": content or None,
+                            "tool_calls": tool_calls,
                         }
                     )
-                    for tool_call in stream_result.tool_calls:
+                    for tool_call in tool_calls:
                         if self._is_cancelled():
                             self._rollback_last_user_message()
                             return LLMResult(
@@ -902,7 +954,7 @@ class LLMManager:
                         )
                     continue
 
-                content = (stream_result.content or "").strip()
+                content = content.strip()
                 if content:
                     self.messages.append({"role": "assistant", "content": content})
                     return LLMResult(

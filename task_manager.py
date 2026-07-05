@@ -102,6 +102,28 @@ class TaskManager:
         lines.append(f"\n[dim]{done}/{len(self.tasks)} completed[/]")
         return "\n".join(lines)
 
+    def get_plan_plaintext(self) -> str:
+        """Plain plan for LLM prompts (no Rich markup)."""
+        if not self.tasks:
+            return "No active plan."
+
+        lines: list[str] = []
+        if self.goal:
+            lines.append(f"Goal: {self.goal}\n")
+
+        for task in self.tasks:
+            if task.status == "done":
+                mark = "[x]"
+            elif task.status == "in-progress":
+                mark = ">"
+            else:
+                mark = " "
+            lines.append(f"{mark} {task.id}. {task.name}")
+
+        done = sum(1 for task in self.tasks if task.status == "done")
+        lines.append(f"\n{done}/{len(self.tasks)} completed")
+        return "\n".join(lines)
+
     def build_plan_panel(self) -> Panel:
         return Panel(
             self.get_plan_markdown(),

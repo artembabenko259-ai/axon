@@ -22,6 +22,7 @@ class TuiBridgeHost:
     def __init__(self) -> None:
         self._bridge = AxonBridge()
         self._loop: asyncio.AbstractEventLoop | None = None
+        self._tui_loop: asyncio.AbstractEventLoop | None = None
         self._thread: threading.Thread | None = None
         self._tui: AxonTUI | None = None
         self._web_inbox: queue.Queue[str] = queue.Queue()
@@ -29,6 +30,10 @@ class TuiBridgeHost:
 
     def attach(self, tui: AxonTUI) -> None:
         self._tui = tui
+
+    def set_tui_loop(self, loop: asyncio.AbstractEventLoop) -> None:
+        """Prompt-toolkit asyncio loop (main TUI thread)."""
+        self._tui_loop = loop
 
     def enqueue_web_message(self, text: str) -> None:
         cleaned = text.strip()
@@ -101,16 +106,41 @@ class TuiBridgeHost:
             return
         self.enqueue_web_message(text)
 
-    async def _set_model(self, model: str) -> None:
-        tui = self._tui
-        if tui is None or not model.strip():
-            return
-        tui.llm.set_model(model)
-        tui.state.model = model
-        await self._bridge.broadcast_model(model)
-        from prompt_toolkit.application import get_app
+    def _apply_model_on_tui(self, model: str) -> str:
+        """Apply model on the prompt-toolkit thread; return normalized id."""
+        from ui.model_registry import normalize_model_id
 
-        get_app().invalidate()
+        tui = self._tui
+        target = normalize_model_id(model.strip())
+        if tui is None or not target:
+            return target
+
+        done = threading.Event()
+
+        def apply() -> None:
+            try:
+                tui.llm.set_model(target)
+                tui.state.model = tui.llm.model
+                from prompt_toolkit.application import get_app
+
+                get_app().invalidate()
+            finally:
+                done.set()
+
+        loop = self._tui_loop
+        if loop and loop.is_running():
+            loop.call_soon_threadsafe(apply)
+            done.wait(timeout=3.0)
+        else:
+            apply()
+        return tui.llm.model
+
+    async def _set_model(self, model: str) -> None:
+        if not model.strip():
+            return
+        normalized = self._apply_model_on_tui(model)
+        if normalized:
+            await self._bridge.broadcast_model(normalized)
 
     async def _run_bridge(self) -> None:
         tui = self._tui
@@ -157,6 +187,10 @@ class TuiBridgeHost:
                 continue
             tui = self._tui
             if tui is None:
+                continue
+            if tui._agent_busy:
+                self._web_inbox.put(text)
+                await asyncio.sleep(0.25)
                 continue
             w = tui._width()
             tui._append_block(tui_render.render_user_message(text, w))

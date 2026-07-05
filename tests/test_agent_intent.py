@@ -23,6 +23,22 @@ def test_execute_when_plan_active():
     assert detect_intent("выполни план", has_active_plan=True) == "execute"
 
 
+def test_start_plan_routes_to_execute_when_active():
+    assert detect_intent("запусти план", has_active_plan=True) == "execute"
+
+
+def test_discuss_plan_stays_chat():
+    assert detect_intent("explain the migration plan") == "chat"
+
+
+def test_slash_execute():
+    assert detect_intent("/execute") == "execute"
+
+
+def test_run_tests_stays_chat_with_active_plan():
+    assert detect_intent("run tests", has_active_plan=True) == "chat"
+
+
 def test_plain_chat():
     assert detect_intent("как дела?") == "chat"
 

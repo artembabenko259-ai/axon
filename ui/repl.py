@@ -522,12 +522,14 @@ async def start_axon() -> None:
         llm_manager.set_model(model)
         bridge._current_model = llm_manager.model
         if announce_cli:
-            message = f"\n[dim]AXON: Model set to [cyan]{model}[/cyan][/dim]"
+            message = (
+                f"\n[dim]AXON: Model set to [cyan]{llm_manager.model}[/cyan][/dim]"
+            )
             if background:
                 await safe_async_print(message)
             else:
                 console.print(message)
-        await bridge.broadcast_model(model)
+        await bridge.broadcast_model(llm_manager.model)
 
     async def run_llm(
         stripped: str,
@@ -627,14 +629,14 @@ async def start_axon() -> None:
             try:
                 result = await llm_manager.send_plan_async(description)
                 await emit("\n[bold green]✦ AXON:[/]")
-                if result.ok and result.content:
-                    await emit(Markdown(result.content))
+                if result.ok and task_manager.has_plan():
+                    if result.content:
+                        await emit(Markdown(result.content))
+                    await emit(
+                        "[dim]Type [cyan]/execute[/] or [cyan]execute[/] to start the plan.[/dim]\n"
+                    )
                 else:
                     await emit(f"[red]{result.display_text}[/]")
-                if task_manager.has_plan():
-                    await emit(
-                        "[dim]Type [cyan]execute[/] to start working through the plan.[/dim]\n"
-                    )
                 await emit(
                     f"[dim]Cost: ${TOTAL_COST:.4f} | Tokens: {TOTAL_TOKENS}[/dim]\n"
                 )
@@ -1245,10 +1247,12 @@ async def start_axon() -> None:
                 return True
             error = load_image_with_vision_check(llm_manager, image_path, prompt)
             if error:
-                from ui.vision_models import vision_switch_hint
+                extra = ""
+                if "text-only" in error.lower():
+                    from ui.vision_models import vision_switch_hint
 
-                hint = vision_switch_hint(llm_manager.model)
-                await emit(f"[red]{error}[/]\n[dim]Try: {hint}[/]\n")
+                    extra = f"\n[dim]Try: {vision_switch_hint(llm_manager.model)}[/]\n"
+                await emit(f"[red]{error}[/]{extra}")
             else:
                 await emit("[green][✓] Image loaded into context.[/]\n")
             return True
@@ -1308,6 +1312,10 @@ async def start_axon() -> None:
 
         if cmd == "/multitask":
             await run_multitask(stripped, background=background)
+            return True
+
+        if cmd == "/execute":
+            await run_execute_mode(background=background)
             return True
 
         await emit(f"[yellow]AXON: Unknown command {cmd}. Type /help.[/]\n")

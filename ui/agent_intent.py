@@ -8,7 +8,6 @@ from typing import Literal
 Intent = Literal["chat", "plan", "multitask", "execute"]
 
 _PLAN_PATTERNS = (
-    r"\bplan\b",
     r"\bплан\b",
     r"разбей на (шаги|задачи|этапы)",
     r"составь план",
@@ -18,8 +17,8 @@ _PLAN_PATTERNS = (
     r"розбий на (кроки|задачі)",
     r"roadmap",
     r"outline (the )?work",
-    r"запусти план",
-    r"start (a )?plan",
+    r"\b(create|make|build|draft)\s+(a\s+)?plan\b",
+    r"\bplan\s+(this|the|for|out)\b",
 )
 
 _MULTITASK_PATTERNS = (
@@ -39,12 +38,12 @@ _MULTITASK_PATTERNS = (
 )
 
 _EXECUTE_PATTERNS = (
-    r"^execute\b",
-    r"^go\b",
-    r"^run\b",
     r"выполни план",
+    r"запусти план",
     r"запусти выполнение",
     r"execute (the )?plan",
+    r"start (the )?plan",
+    r"run (the )?plan",
 )
 
 
@@ -54,6 +53,10 @@ def _has_parallel_intent(lower: str) -> bool:
 
 def _has_plan_intent(lower: str) -> bool:
     return any(re.search(p, lower) for p in _PLAN_PATTERNS)
+
+
+def _has_execute_intent(lower: str) -> bool:
+    return any(re.search(p, lower) for p in _EXECUTE_PATTERNS)
 
 
 def detect_intent(text: str, *, has_active_plan: bool = False) -> Intent:
@@ -67,11 +70,13 @@ def detect_intent(text: str, *, has_active_plan: bool = False) -> Intent:
             return "plan"
         if low.startswith("/multitask"):
             return "multitask"
+        if low.startswith("/execute"):
+            return "execute"
         return "chat"
 
     lower = stripped.lower()
 
-    if has_active_plan and any(re.search(p, lower) for p in _EXECUTE_PATTERNS):
+    if has_active_plan and _has_execute_intent(lower):
         return "execute"
 
     parallel = _has_parallel_intent(lower)

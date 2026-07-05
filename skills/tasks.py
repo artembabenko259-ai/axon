@@ -131,7 +131,9 @@ async def execute_task_tool(tool_name: str, arguments: dict[str, Any]) -> str:
         raw_tasks = arguments.get("tasks", [])
         if not isinstance(raw_tasks, list):
             raw_tasks = [str(raw_tasks)]
-        tasks = [str(item) for item in raw_tasks]
+        tasks = [str(item) for item in raw_tasks if str(item).strip()]
+        if not tasks:
+            return "Error: create_plan requires at least one task."
         goal = str(arguments.get("goal", "")).strip()
         created = task_manager.create_plan(tasks, goal=goal or task_manager.goal)
         await _render_plan()
@@ -139,7 +141,10 @@ async def execute_task_tool(tool_name: str, arguments: dict[str, Any]) -> str:
         return f"Plan created with {len(created)} task(s): {names}"
 
     if tool_name == "complete_task":
-        task_id = int(arguments.get("task_id", 0))
+        try:
+            task_id = int(arguments.get("task_id", 0))
+        except (TypeError, ValueError):
+            return "Error: task_id must be an integer."
         task = task_manager.complete_task(task_id)
         if task is None:
             return f"Error: task id {task_id} not found."
@@ -149,7 +154,10 @@ async def execute_task_tool(tool_name: str, arguments: dict[str, Any]) -> str:
         return f"Task {task_id} marked done: {task.name}"
 
     if tool_name == "update_task_status":
-        task_id = int(arguments.get("task_id", 0))
+        try:
+            task_id = int(arguments.get("task_id", 0))
+        except (TypeError, ValueError):
+            return "Error: task_id must be an integer."
         status = str(arguments.get("status", "pending"))
         task = task_manager.update_task_status(task_id, status)
         if task is None:

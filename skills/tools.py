@@ -745,6 +745,11 @@ def execute_shell(command: str) -> str:
     if not cmd:
         return "Error: command is required."
 
+    if sys.platform == "win32":
+        # Models often append cmd.exe '&' thinking it backgrounds the process.
+        while cmd.endswith("&"):
+            cmd = cmd[:-1].strip()
+
     for pattern, label in SHELL_DENY_PATTERNS:
         if re.search(pattern, cmd, re.IGNORECASE):
             return f"Error: blocked command pattern ({label})"
