@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -219,7 +220,8 @@ func (m model) renderMessages() string {
 		case msgUser:
 			sb.WriteString(fmt.Sprintf("\n❯ You:\n%s\n", msg.Content))
 		case msgAxonText:
-			sb.WriteString(fmt.Sprintf("\n✦ AXON:\n%s\n", msg.Content))
+			formatted := formatLatexMath(msg.Content)
+			sb.WriteString(fmt.Sprintf("\n✦ AXON:\n%s\n", formatted))
 		case msgTool:
 			dot := ""
 			statusText := ""
@@ -595,4 +597,136 @@ func main() {
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+var latexUnicode = map[string]string{
+	"\\alpha": "α", "\\beta": "β", "\\gamma": "γ", "\\delta": "δ", "\\epsilon": "ε",
+	"\\zeta": "ζ", "\\eta": "η", "\\theta": "θ", "\\iota": "ι", "\\kappa": "κ",
+	"\\lambda": "λ", "\\mu": "μ", "\\nu": "ν", "\\xi": "ξ", "\\omicron": "ο",
+	"\\pi": "π", "\\rho": "ρ", "\\sigma": "σ", "\\tau": "τ", "\\upsilon": "υ",
+	"\\phi": "φ", "\\chi": "χ", "\\psi": "ψ", "\\omega": "ω",
+	"\\Gamma": "Γ", "\\Delta": "Δ", "\\Theta": "Θ", "\\Lambda": "Λ", "\\Xi": "Ξ",
+	"\\Pi": "Π", "\\Sigma": "Σ", "\\Upsilon": "Υ", "\\Phi": "Φ", "\\Psi": "Ψ",
+	"\\Omega": "Ω",
+	"\\infty": "∞", "\\partial": "∂", "\\nabla": "∇", "\\int": "∫", "\\iint": "∬",
+	"\\iiint": "∭", "\\oint": "∮", "\\sum": "∑", "\\prod": "∏", "\\coprod": "∐",
+	"\\times": "×", "\\div": "÷", "\\pm": "±", "\\mp": "∓", "\\neq": "≠",
+	"\\approx": "≈", "\\propto": "∝", "\\equiv": "≡", "\\le": "≤", "\\ge": "≥",
+	"\\leq": "≤", "\\geq": "≥", "\\ll": "≪", "\\gg": "≫", "\\in": "∈",
+	"\\ni": "∋", "\\notin": "∉", "\\subset": "⊂", "\\supset": "⊃", "\\subseteq": "⊆",
+	"\\supseteq": "⊇", "\\cap": "∩", "\\cup": "∪", "\\land": "∧", "\\lor": "∨",
+	"\\neg": "¬", "\\forall": "∀", "\\exists": "∃", "\\hbar": "ℏ",
+	"\\cdot": "·", "\\to": "→", "\\rightarrow": "→", "\\leftarrow": "←",
+	"\\impliedby": "⇐", "\\implies": "⇒", "\\iff": "⇔",
+}
+
+var superscripts = map[rune]rune{
+	'0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+	'+': '⁺', '-': '⁻', '=': '⁼', '(': '⁽', ')': '⁾', 'n': 'ⁿ', 'x': 'ˣ', 'y': 'ʸ', 'i': 'ⁱ', 'j': 'ʲ',
+}
+
+var subscripts = map[rune]rune{
+	'0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+	'+': '₊', '-': '₋', '=': '₌', '(': '₍', ')': '₎', 'a': 'ₐ', 'e': 'ₑ', 'o': 'ₒ', 'x': 'ₓ', 'i': 'ᵢ',
+	'j': 'ⱼ', 'k': 'ₖ', 'l': 'ₗ', 'm': 'ₘ', 'n': 'ₙ', 'p': 'ₚ', 's': 'ₛ', 't': 'ₜ',
+}
+
+func cleanExpr(expr string) string {
+	for cmd, uni := range latexUnicode {
+		expr = strings.ReplaceAll(expr, cmd, uni)
+	}
+
+	reSupBracket := regexp.MustCompile(`\^\{([^}]+)\}`)
+	expr = reSupBracket.ReplaceAllStringFunc(expr, func(m string) string {
+		content := reSupBracket.FindStringSubmatch(m)[1]
+		var sb strings.Builder
+		for _, r := range content {
+			if val, ok := superscripts[r]; ok {
+				sb.WriteRune(val)
+			} else {
+				sb.WriteRune(r)
+			}
+		}
+		return sb.String()
+	})
+
+	reSupSingle := regexp.MustCompile(`\^([0-9a-zA-Z+\-()=])`)
+	expr = reSupSingle.ReplaceAllStringFunc(expr, func(m string) string {
+		content := reSupSingle.FindStringSubmatch(m)[1]
+		var sb strings.Builder
+		for _, r := range content {
+			if val, ok := superscripts[r]; ok {
+				sb.WriteRune(val)
+			} else {
+				sb.WriteRune(r)
+			}
+		}
+		return sb.String()
+	})
+
+	reSubBracket := regexp.MustCompile(`_\{([^}]+)\}`)
+	expr = reSubBracket.ReplaceAllStringFunc(expr, func(m string) string {
+		content := reSubBracket.FindStringSubmatch(m)[1]
+		var sb strings.Builder
+		for _, r := range content {
+			if val, ok := subscripts[r]; ok {
+				sb.WriteRune(val)
+			} else {
+				sb.WriteRune(r)
+			}
+		}
+		return sb.String()
+	})
+
+	reSubSingle := regexp.MustCompile(`_([0-9a-zA-Z+\-()=])`)
+	expr = reSubSingle.ReplaceAllStringFunc(expr, func(m string) string {
+		content := reSubSingle.FindStringSubmatch(m)[1]
+		var sb strings.Builder
+		for _, r := range content {
+			if val, ok := subscripts[r]; ok {
+				sb.WriteRune(val)
+			} else {
+				sb.WriteRune(r)
+			}
+		}
+		return sb.String()
+	})
+
+	reFrac := regexp.MustCompile(`\\frac\{([^}]+)\}\{([^}]+)\}`)
+	expr = reFrac.ReplaceAllString(expr, `($1)/($2)`)
+
+	reSqrt := regexp.MustCompile(`\\sqrt\{([^}]+)\}`)
+	expr = reSqrt.ReplaceAllString(expr, `√($1)`)
+
+	return strings.TrimSpace(expr)
+}
+
+func formatLatexMath(text string) string {
+	reDisplay := regexp.MustCompile(`(?s)\$\$(.*?)\$\$|\\\[(.*?)\\\]`)
+	text = reDisplay.ReplaceAllStringFunc(text, func(m string) string {
+		sub := reDisplay.FindStringSubmatch(m)
+		formulaRaw := sub[1]
+		if formulaRaw == "" && len(sub) > 2 {
+			formulaRaw = sub[2]
+		}
+		formula := cleanExpr(formulaRaw)
+		width := len(formula) + 6
+		borderTop := "┌" + strings.Repeat("─", width-2) + "┐"
+		content := fmt.Sprintf("│   %s   │", formula)
+		borderBot := "└" + strings.Repeat("─", width-2) + "┘"
+		return fmt.Sprintf("\n%s\n%s\n%s\n", borderTop, content, borderBot)
+	})
+
+	reInline := regexp.MustCompile(`\$([^$]+)\$|\\\((.*?)\\\)`)
+	text = reInline.ReplaceAllStringFunc(text, func(m string) string {
+		sub := reInline.FindStringSubmatch(m)
+		formulaRaw := sub[1]
+		if formulaRaw == "" && len(sub) > 2 {
+			formulaRaw = sub[2]
+		}
+		formula := cleanExpr(formulaRaw)
+		return fmt.Sprintf(" *%s* ", formula)
+	})
+
+	return text
 }
