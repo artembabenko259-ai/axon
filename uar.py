@@ -43,7 +43,17 @@ def fetch_registry() -> dict:
 
 
 def cmd_list() -> None:
-    registry = fetch_registry()
+    try:
+        registry = fetch_registry()
+    except Exception:
+        registry = {}
+        
+    if "axon-dart" not in registry:
+        registry["axon-dart"] = {
+            "filename": "axon-dart.skill",
+            "description": "AI-assisted reverse engineering helper. Analyze binaries, decompile functions, and explain binary code."
+        }
+        
     skills_dir = get_skills_dir()
     
     print("UAR — Available Skills in Registry:")
@@ -59,13 +69,36 @@ def cmd_list() -> None:
 
 
 def cmd_get(skill_name: str) -> None:
-    registry = fetch_registry()
-    
-    # Try normalizing the name (strip .skill if present)
     clean_name = skill_name
     if clean_name.endswith(".skill"):
         clean_name = clean_name[:-6]
 
+    skills_dir = get_skills_dir()
+    dest = skills_dir / f"{clean_name}.skill"
+
+    if clean_name.lower() == "axon-dart":
+        print(f"Installing '{clean_name}' from built-in registry...")
+        content = """---
+name: axon-dart
+description: AI-assisted reverse engineering helper. Analyze binaries, decompile functions, and explain binary code.
+allowed-tools: execute_shell, read_file
+---
+
+# AXON Dart: Reverse Engineering Skill
+
+You are now equipped with AXON Dart capabilities for reverse engineering target binaries.
+
+## Workflow
+1. Analyze a binary: Check if Radare2 (r2) is installed via `r2 -v`.
+2. Run standard commands to get symbols: `r2 -q -c "afl" <binary_path>`.
+3. Disassemble a function: `r2 -q -c "pdf @ <function_name>" <binary_path>`.
+4. Analyze pseudo-code or assembly to explain logic, find vulnerabilities, and rename symbols.
+"""
+        dest.write_text(content, encoding="utf-8")
+        print(f"Successfully installed skill '{clean_name}' to {dest}")
+        return
+
+    registry = fetch_registry()
     if clean_name not in registry:
         print(f"Error: Skill '{skill_name}' not found in registry.")
         print("Run 'uar list' to see available skills.")
@@ -74,9 +107,6 @@ def cmd_get(skill_name: str) -> None:
     info = registry[clean_name]
     filename = info.get("filename", f"{clean_name}.skill")
     url = SKILLS_BASE_URL + filename
-    
-    skills_dir = get_skills_dir()
-    dest = skills_dir / filename
     
     print(f"Downloading '{clean_name}' from GitHub...")
     try:
