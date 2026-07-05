@@ -83,6 +83,9 @@ def _build_parser() -> argparse.ArgumentParser:
     sched_add.add_argument("task", help="Prompt to run")
     sched_add.add_argument("--hour", type=int, default=9)
     sched_add.add_argument("--minute", type=int, default=0)
+    sched_add.add_argument("--cron", help="Cron pattern, e.g. '*/5 * * * *'")
+    sched_add.add_argument("--timer", type=int, help="One-shot delay in seconds")
+    sched_add.add_argument("--timer-cond", help="Timer condition: 'never', 'any', or a task ID")
     sched_add.add_argument("--cwd", metavar="DIR")
     sched_sub.add_parser("list", help="List scheduled tasks")
     sched_sub.add_parser("run", help="Run tasks due now (for Task Scheduler)")
@@ -342,9 +345,17 @@ def _run_schedule(command: str, **kwargs) -> int:
             kwargs.get("prompt", ""),
             hour=int(kwargs.get("hour", 9)),
             minute=int(kwargs.get("minute", 0)),
+            cron=kwargs.get("cron"),
+            duration_seconds=kwargs.get("timer"),
+            timer_condition=kwargs.get("timer_cond"),
             cwd=kwargs.get("cwd"),
         )
-        print(f"Scheduled {task.id} daily at {task.hour:02d}:{task.minute:02d}")
+        if task.duration_seconds is not None:
+            print(f"Scheduled {task.id}: Timer ({task.duration_seconds}s delay)")
+        elif task.cron is not None:
+            print(f"Scheduled {task.id}: Cron ({task.cron})")
+        else:
+            print(f"Scheduled {task.id} daily at {task.hour:02d}:{task.minute:02d}")
         return 0
     if command == "list":
         tasks = list_tasks()
@@ -353,7 +364,13 @@ def _run_schedule(command: str, **kwargs) -> int:
             return 0
         for t in tasks:
             flag = "on" if t.enabled else "off"
-            print(f"{t.id}  [{flag}]  {t.hour:02d}:{t.minute:02d}  {t.prompt[:50]}")
+            if t.duration_seconds is not None:
+                info = f"Timer ({t.duration_seconds}s)"
+            elif t.cron is not None:
+                info = f"Cron ({t.cron})"
+            else:
+                info = f"Daily {t.hour:02d}:{t.minute:02d}"
+            print(f"{t.id}  [{flag}]  {info:<18}  {t.prompt[:50]}")
         return 0
     if command == "run":
         return run_due()
@@ -494,6 +511,9 @@ def main(argv: list[str] | None = None) -> int:
             prompt=getattr(args, "task", ""),
             hour=getattr(args, "hour", 9),
             minute=getattr(args, "minute", 0),
+            cron=getattr(args, "cron", None),
+            timer=getattr(args, "timer", None),
+            timer_cond=getattr(args, "timer_cond", None),
             cwd=getattr(args, "cwd", None),
         )
 

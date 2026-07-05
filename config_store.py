@@ -12,7 +12,7 @@ CONFIG_PATH = user_data_dir() / "config.json"
 LEGACY_CONFIG_PATHS = (ROOT_DIR / "config.json",)
 
 DEFAULT_MODEL = "meta-llama/llama-3.1-8b-instruct"
-PROVIDERS = ("openrouter", "ollama", "custom")
+PROVIDERS = ("openrouter", "ollama", "custom", "antigravity")
 
 DEFAULT_CONFIG: dict[str, str] = {
     "openrouter_api_key": "",

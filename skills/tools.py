@@ -236,6 +236,73 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "schedule",
+            "description": (
+                "Schedule a daily cron task or a one-shot delay timer to run a prompt/task. "
+                "For daily/recurring tasks, specify 'cron' with hour and minute. "
+                "For one-shot timers, specify 'duration_seconds'."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "description": "The AXON command or prompt to run when triggered.",
+                    },
+                    "cron": {
+                        "type": "string",
+                        "description": "Optional recurring cron expression, e.g. '0 9 * * *' for daily at 9:00 AM, or '*/5 * * * *' for every 5 mins.",
+                    },
+                    "duration_seconds": {
+                        "type": "integer",
+                        "description": "Optional delay in seconds for a one-shot timer.",
+                    },
+                    "timer_condition": {
+                        "type": "string",
+                        "description": "Optional condition to cancel the timer early: 'never', 'any', or a specific task_id.",
+                    },
+                    "cwd": {
+                        "type": "string",
+                        "description": "Optional directory path to execute the command in.",
+                    },
+                },
+                "required": ["prompt"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "manage_task",
+            "description": (
+                "Manage background tasks in the queue or scheduler. "
+                "Actions: 'list' (list running/pending tasks), 'kill' (cancel/remove a task or timer), "
+                "'status' (get details of a task by ID), 'send_input' (send standard input to a running task)."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": ["list", "kill", "status", "send_input"],
+                        "description": "Action to perform on the background tasks.",
+                    },
+                    "task_id": {
+                        "type": "string",
+                        "description": "The unique ID of the target task, scheduled task, or timer.",
+                    },
+                    "input_text": {
+                        "type": "string",
+                        "description": "Input to send to the task's stdin (used when action is 'send_input').",
+                    },
+                },
+                "required": ["action"],
+            },
+        },
+    },
 ]
 
 
@@ -818,7 +885,133 @@ def _run_tool_sync(tool_name: str, args: dict[str, Any]) -> str:
             str(args.get("filepath", "")),
             str(args.get("patch", "")),
         )
+    if tool_name == "schedule":
+        # Extract optional numeric fields correctly
+        dur = args.get("duration_seconds")
+        try:
+            duration_secs = int(dur) if dur is not None else None
+        except (ValueError, TypeError):
+            duration_secs = None
+            
+        return schedule_task_tool(
+            prompt=str(args.get("prompt", "")),
+            cron=args.get("cron"),
+            duration_seconds=duration_secs,
+            timer_condition=args.get("timer_condition"),
+            cwd=args.get("cwd"),
+        )
+    if tool_name == "manage_task":
+        return manage_task_tool(
+            action=str(args.get("action", "")),
+            task_id=args.get("task_id"),
+            input_text=args.get("input_text"),
+        )
     return f"Error: unknown tool '{tool_name}'."
+
+
+def schedule_task_tool(
+    prompt: str,
+    cron: str | None = None,
+    duration_seconds: int | None = None,
+    timer_condition: str | None = None,
+    cwd: str | None = None,
+) -> str:
+    from axon_schedule import add_task
+    try:
+        task = add_task(
+            prompt,
+            cron=cron,
+            duration_seconds=duration_seconds,
+            timer_condition=timer_condition,
+            cwd=cwd,
+        )
+        if duration_seconds is not None:
+            return f"Timer scheduled successfully with ID {task.id}. Delay: {duration_seconds}s. Condition: {timer_condition or 'never'}."
+        elif cron is not None:
+            return f"Task scheduled successfully with ID {task.id}. Cron expression: '{cron}'."
+        else:
+            return f"Task scheduled successfully with ID {task.id} daily at 09:00 AM."
+    except Exception as exc:
+        return f"Error: failed to schedule task — {exc}"
+
+
+def manage_task_tool(
+    action: str,
+    task_id: str | None = None,
+    input_text: str | None = None,
+) -> str:
+    from axon_serve import list_tasks, cancel_task
+    from axon_schedule import list_tasks as list_scheduled, delete_task
+    
+    if action == "list":
+        q_tasks = list_tasks()
+        s_tasks = list_scheduled()
+        
+        lines = ["[Background Queue Tasks]"]
+        if not q_tasks:
+            lines.append("  (empty)")
+        else:
+            for t in q_tasks:
+                lines.append(f"  ID: {t.id} | Status: {t.status} | Prompt: '{t.prompt[:50]}'")
+                
+        lines.append("\n[Scheduled Tasks & Timers]")
+        if not s_tasks:
+            lines.append("  (empty)")
+        else:
+            for t in s_tasks:
+                type_str = "Cron" if t.cron else ("Timer" if t.duration_seconds is not None else "Daily")
+                info = f"cron='{t.cron}'" if t.cron else (f"delay={t.duration_seconds}s" if t.duration_seconds is not None else f"time={t.hour:02d}:{t.minute:02d}")
+                status = "triggered" if t.triggered else ("enabled" if t.enabled else "disabled")
+                lines.append(f"  ID: {t.id} | Type: {type_str} ({info}) | Status: {status} | Prompt: '{t.prompt[:50]}'")
+        return "\n".join(lines)
+        
+    if action == "kill":
+        if not task_id:
+            return "Error: task_id is required for action 'kill'."
+        cancelled_queue = cancel_task(task_id)
+        deleted_sched = delete_task(task_id)
+        if cancelled_queue or deleted_sched:
+            return f"Task/timer {task_id} successfully cancelled/removed."
+        return f"Error: task or timer with ID '{task_id}' not found or cannot be cancelled."
+        
+    if action == "status":
+        if not task_id:
+            return "Error: task_id is required for action 'status'."
+        q_tasks = list_tasks()
+        for t in q_tasks:
+            if t.id == task_id:
+                return (
+                    f"Background Task ID: {t.id}\n"
+                    f"Status: {t.status}\n"
+                    f"Created At: {t.created_at}\n"
+                    f"Finished At: {t.finished_at}\n"
+                    f"CWD: {t.cwd}\n"
+                    f"Prompt: {t.prompt}\n"
+                    f"Output:\n{t.output or '(none)'}"
+                )
+        s_tasks = list_scheduled()
+        for t in s_tasks:
+            if t.id == task_id:
+                type_str = "Cron" if t.cron else ("Timer" if t.duration_seconds is not None else "Daily")
+                info = f"cron='{t.cron}'" if t.cron else (f"delay={t.duration_seconds}s" if t.duration_seconds is not None else f"time={t.hour:02d}:{t.minute:02d}")
+                return (
+                    f"Scheduled Task/Timer ID: {t.id}\n"
+                    f"Type: {type_str}\n"
+                    f"Info: {info}\n"
+                    f"Enabled: {t.enabled}\n"
+                    f"Triggered: {t.triggered}\n"
+                    f"Created At: {t.created_at}\n"
+                    f"Last Run: {t.last_run or '(never)'}\n"
+                    f"CWD: {t.cwd}\n"
+                    f"Prompt: {t.prompt}\n"
+                    f"Timer Condition: {t.timer_condition or 'none'}"
+                )
+        return f"Error: task or timer with ID '{task_id}' not found."
+        
+    if action == "send_input":
+        return "Info: interactive stdin is not supported for background tasks in this environment."
+        
+    return f"Error: unknown action '{action}'."
 
 
 def _needs_approval(tool_name: str) -> bool:

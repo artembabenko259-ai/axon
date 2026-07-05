@@ -16,7 +16,7 @@ from config_store import (
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434/v1"
 OLLAMA_API_KEY = "ollama"
-PROVIDERS = ("openrouter", "ollama", "custom")
+PROVIDERS = ("openrouter", "ollama", "custom", "antigravity")
 
 
 def normalize_base_url(url: str) -> str:
@@ -35,6 +35,9 @@ def normalize_base_url(url: str) -> str:
 def resolve_llm_endpoint() -> tuple[str, str]:
     """Return (base_url, api_key) for the OpenAI-compatible client."""
     provider = get_provider()
+    if provider == "antigravity":
+        return "google-antigravity-sdk", "sdk"
+
     if provider == "ollama":
         url = normalize_base_url(get_ollama_base_url()) or DEFAULT_OLLAMA_BASE_URL
         return url, OLLAMA_API_KEY
@@ -50,6 +53,8 @@ def resolve_llm_endpoint() -> tuple[str, str]:
 def is_llm_configured() -> bool:
     """True when the active provider has enough settings to call the API."""
     provider = get_provider()
+    if provider == "antigravity":
+        return True
     base_url, api_key = resolve_llm_endpoint()
     if provider == "ollama":
         return bool(base_url)

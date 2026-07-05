@@ -352,6 +352,10 @@ class LLMManager:
         temperature: float = 0.2,
     ) -> LLMResult:
         """Single-shot completion without tools or chat history mutation."""
+        from config_store import get_provider
+        if get_provider() == "antigravity":
+            return await self._complete_text_antigravity(system=system, user=user)
+
         self.reload_credentials()
         try:
             response = await asyncio.to_thread(
@@ -862,6 +866,10 @@ class LLMManager:
             )
 
     async def _agent_loop(self, user_text: str) -> LLMResult:
+        from config_store import get_provider
+        if get_provider() == "antigravity":
+            return await self._agent_loop_antigravity(user_text)
+
         if not is_llm_configured():
             return LLMResult(
                 content="",
@@ -1188,6 +1196,82 @@ class LLMManager:
             "role": "assistant",
             "content": message.content or "",
         }
+
+    async def _complete_text_antigravity(self, system: str, user: str) -> LLMResult:
+        try:
+            import google.antigravity as agy
+        except ImportError:
+            return LLMResult(
+                content="",
+                model=self.model,
+                error="AXON: google-antigravity SDK is not installed. Please run: pip install google-antigravity",
+            )
+            
+        try:
+            config = agy.LocalAgentConfig(
+                system_instructions=system,
+                capabilities=agy.CapabilitiesConfig(
+                    read_file=True,
+                    write_file=False,
+                    run_command=False,
+                    web_search=False
+                )
+            )
+            async with agy.Agent(config) as agent:
+                resp = await agent.chat(user)
+                content_parts = []
+                async for token in resp:
+                    content_parts.append(token)
+                content = "".join(content_parts).strip()
+                return LLMResult(content=content, model="google-antigravity-sdk")
+        except Exception as exc:
+            return LLMResult(content="", model=self.model, error=f"AXON: Antigravity SDK error — {exc}")
+
+    async def _agent_loop_antigravity(self, user_text: str) -> LLMResult:
+        try:
+            import google.antigravity as agy
+        except ImportError:
+            return LLMResult(
+                content="",
+                model=self.model,
+                error="AXON: google-antigravity SDK is not installed. Please run: pip install google-antigravity",
+            )
+            
+        try:
+            config = agy.LocalAgentConfig(
+                system_instructions=self._build_system_prompt(),
+                capabilities=agy.CapabilitiesConfig(
+                    read_file=True,
+                    write_file=True,
+                    run_command=True,
+                    web_search=True
+                )
+            )
+            
+            if self._on_stream_start:
+                await self._on_stream_start()
+                
+            self.messages.append({"role": "user", "content": user_text})
+            
+            async with agy.Agent(config) as agent:
+                resp = await agent.chat(user_text)
+                
+                content_parts = []
+                async for token in resp:
+                    content_parts.append(token)
+                    if self._on_stream_token:
+                        await self._on_stream_token(token)
+                        
+                if self._on_stream_end:
+                    await self._on_stream_end()
+                    
+                content = "".join(content_parts).strip()
+                self.messages.append({"role": "assistant", "content": content})
+                return LLMResult(content=content, model="google-antigravity-sdk")
+        except Exception as exc:
+            if self._on_stream_end:
+                await self._on_stream_end()
+            return LLMResult(content="", model=self.model, error=f"AXON: Antigravity SDK error — {exc}")
 
     def _rollback_last_user_message(self) -> None:
         if self.messages and self.messages[-1].get("role") == "user":
