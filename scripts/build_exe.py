@@ -116,6 +116,7 @@ def collect_hidden_imports() -> list[str]:
         "ui.provider_cmd",
         "ui.autopilot_cmd",
         "ui.skills_cmd",
+        "ui.math_formatter",
         "prompt_toolkit",
         "rich",
         "rich.markdown",

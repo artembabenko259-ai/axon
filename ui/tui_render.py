@@ -133,7 +133,9 @@ def render_assistant_live(
     if thinking.strip():
         parts.append(render_thinking(thinking, width))
     if text.strip():
-        body = _wrap(text.strip(), max(width - 2, 40))
+        from ui.math_formatter import format_latex_math
+        formatted = format_latex_math(text.strip())
+        body = _wrap(formatted, max(width - 2, 40))
         parts.append(f"* AXON\n{body}")
     return "\n\n".join(parts)
 
@@ -160,7 +162,9 @@ def render_user_message(text: str, width: int) -> str:
 
 
 def render_assistant_message(text: str, width: int) -> str:
-    body = _wrap(text.strip(), max(width - 2, 40))
+    from ui.math_formatter import format_latex_math
+    formatted = format_latex_math(text.strip())
+    body = _wrap(formatted, max(width - 2, 40))
     return f"* AXON\n{body}"
 
 

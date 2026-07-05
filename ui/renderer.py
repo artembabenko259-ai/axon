@@ -181,8 +181,10 @@ class UIRenderer:
             return line
 
         if message.role == "assistant":
+            from ui.math_formatter import format_latex_math
+            formatted = format_latex_math(message.content)
             return Markdown(
-                message.content,
+                formatted,
                 style=Style(color=self.theme.text_primary),
                 code_theme="monokai",
             )
@@ -191,8 +193,10 @@ class UIRenderer:
 
     def _render_streaming_block(self) -> RenderableType:
         body = self._streaming or "▌"
+        from ui.math_formatter import format_latex_math
+        formatted = format_latex_math(body)
         return Panel(
-            Markdown(body, code_theme="monokai"),
+            Markdown(formatted, code_theme="monokai"),
             box=HORIZONTALS,
             style=Style(bgcolor=self.theme.surface),
             border_style=Style(color=self.theme.accent, dim=True),
