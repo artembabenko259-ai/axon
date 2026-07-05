@@ -182,13 +182,13 @@ func initialModel(conn *websocket.Conn) model {
 
 func (m model) getWelcomeMessage() string {
 	crab := `
-  ▄▛▀▜▄          ▄▛▀▜▄
-  ▐█▌ ▐█▌        ▐█▌ ▐█▌
-  ▝▜██▛▘▄▄▄██▄▄▄▝▜██▛▘
+  ▄███▄          ▄███▄
+  ██ ██          ██ ██
+  ▀███▀  ▄▄▄██▄▄▄  ▀███▀
    ▄████████████████▄
   ▐██████████████████▌
-   ▜███▛ ▜████▛ ▜███▛
-   ▄◤ ◥▄  ▘▘▘▘  ▄◤ ◥▄
+   ▀███▀ ▀████▀ ▀███▀
+   ▄   ▄          ▄   ▄
 `
 	urlStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#38bdf8")).Underline(true)
 	panelURL := urlStyle.Render("http://127.0.0.1:3000")
@@ -1006,7 +1006,7 @@ func (m model) renderAutopilotStatus(width int, height int) string {
 		statusColor = lipgloss.Color("#22c55e") // Green
 	}
 
-	header := lipgloss.NewStyle().Foreground(accentColor).Bold(true).Render("🤖 Autopilot Panel")
+	header := lipgloss.NewStyle().Foreground(accentColor).Bold(true).Render("Autopilot Panel")
 	statusLabel := lipgloss.NewStyle().Foreground(statusColor).Bold(true).Render(status)
 
 	body := fmt.Sprintf("\n%s\n\nStatus: %s\n\n· auto-approves runs\n· auto-writes files\n· safe approval bridge\n· F5 to collapse panels", header, statusLabel)
@@ -1014,7 +1014,7 @@ func (m model) renderAutopilotStatus(width int, height int) string {
 }
 
 func (m model) renderTelemetryStatus(width int, height int) string {
-	header := lipgloss.NewStyle().Foreground(accentColor).Bold(true).Render("📊 Telemetry Logs")
+	header := lipgloss.NewStyle().Foreground(accentColor).Bold(true).Render("Telemetry Logs")
 	costStr := fmt.Sprintf("Session Cost:   $%.4f", m.totalCost)
 	tokensStr := fmt.Sprintf("Session Tokens: %d", m.totalTokens)
 
