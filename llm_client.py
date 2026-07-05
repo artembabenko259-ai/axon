@@ -251,6 +251,32 @@ class LLMManager:
         except Exception:
             pass
 
+        try:
+            import subprocess
+            res = subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=str(self._workspace),
+                capture_output=True,
+                text=True,
+                timeout=2
+            )
+            if res.returncode == 0 and res.stdout.strip():
+                dirty_files = []
+                for line in res.stdout.splitlines():
+                    s_parts = line.strip().split(None, 1)
+                    if len(s_parts) == 2:
+                        dirty_files.append(s_parts[1])
+                if dirty_files:
+                    focus_list = "\n".join(f" - {f}" for f in dirty_files[:10])
+                    dynamic_parts.append(
+                        "ACTIVE DEVELOPMENT FOCUS (Git modified/dirty files):\n"
+                        "You are currently modifying or working on these files. "
+                        "Keep them in mind for code-related tasks:\n"
+                        f"{focus_list}"
+                    )
+        except Exception:
+            pass
+
         return compose_system_prompt(AXON_SYSTEM_PROMPT_BASE, "\n\n".join(dynamic_parts))
 
     def _build_agent_system_prompt(self, agent_prompt: str) -> str:

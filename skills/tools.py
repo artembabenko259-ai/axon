@@ -809,11 +809,22 @@ def write_file(filepath: str, content: str) -> str:
         path.write_text(content, encoding="utf-8")
         _READ_FILE_CACHE.pop(str(path.resolve()), None)
         if backup_path:
-            return (
+            msg = (
                 f"Successfully wrote {len(content)} characters to {path} "
                 f"(backup: {backup_path.name})"
             )
-        return f"Successfully wrote {len(content)} characters to {path}"
+        else:
+            msg = f"Successfully wrote {len(content)} characters to {path}"
+
+        if path.suffix == ".py":
+            syntax_res = check_syntax(str(path))
+            if "Syntax Error" in syntax_res:
+                return (
+                    f"⚠️ WARNING: File written successfully, but a SYNTAX ERROR was detected!\n"
+                    f"{syntax_res}\n"
+                    f"Please edit this file using `apply_patch` or `write_file` to fix the syntax error."
+                )
+        return msg
     except OSError as exc:
         return f"Error: could not write file — {exc}"
 
@@ -1124,6 +1135,14 @@ def apply_patch(filepath: str, patch: str) -> str:
         success, msg = apply_search_replace_patch(path, patch)
         if success:
             _READ_FILE_CACHE.pop(str(path.resolve()), None)
+            if path.suffix == ".py":
+                syntax_res = check_syntax(str(path))
+                if "Syntax Error" in syntax_res:
+                    return (
+                        f"⚠️ WARNING: Patch applied successfully, but a SYNTAX ERROR was detected!\n"
+                        f"{syntax_res}\n"
+                        f"Please edit this file using `apply_patch` to fix the syntax error."
+                    )
             return msg
         else:
             return f"Error: {msg}"
@@ -1164,6 +1183,14 @@ def apply_patch(filepath: str, patch: str) -> str:
     backup_manager.backup_if_exists(path)
     path.write_text("".join(out), encoding="utf-8")
     _READ_FILE_CACHE.pop(str(path.resolve()), None)
+    if path.suffix == ".py":
+        syntax_res = check_syntax(str(path))
+        if "Syntax Error" in syntax_res:
+            return (
+                f"⚠️ WARNING: Patch applied successfully, but a SYNTAX ERROR was detected!\n"
+                f"{syntax_res}\n"
+                f"Please edit this file using `apply_patch` to fix the syntax error."
+            )
     return f"Successfully patched {path}"
 
 
