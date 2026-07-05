@@ -144,17 +144,24 @@ def _telegram_loop() -> None:
                 text = message["text"].strip()
                 
                 if not chat_id:
-                    # Pair with first user
-                    policy.telegram_chat_id = msg_chat_id
-                    save_runtime_policy(policy)
-                    chat_id = msg_chat_id
-                    send_telegram_message(
-                        token,
-                        chat_id,
-                        "🎉 *AXON:* Telegram bot paired successfully!\nSend me prompts to execute."
-                    )
+                    pin = (policy.bridge_pin or "").strip()
+                    if text == pin:
+                        policy.telegram_chat_id = msg_chat_id
+                        save_runtime_policy(policy)
+                        chat_id = msg_chat_id
+                        send_telegram_message(
+                            token,
+                            chat_id,
+                            "🎉 *AXON:* Telegram bot paired successfully!\nYou now have remote control over this AXON session."
+                        )
+                    else:
+                        send_telegram_message(
+                            token,
+                            msg_chat_id,
+                            "🔑 *AXON Pairing Required*\nPlease send the 6-digit security PIN shown in your PC terminal to pair this chat and authorize commands."
+                        )
                     continue
-                    
+
                 if msg_chat_id != chat_id:
                     send_telegram_message(token, msg_chat_id, "⚠️ Unauthorized access.")
                     continue
