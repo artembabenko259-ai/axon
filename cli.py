@@ -446,7 +446,7 @@ def _run_shard() -> int:
             cmd = [sys.argv[0], "repl", "--headless"]
         else:
             cli_path = str(Path(__file__).resolve())
-            cmd = [sys.executable, cli_path, "repl", "--headless"]
+            cmd = [sys.executable, "-u", cli_path, "repl", "--headless"]
             
         log_file = open(str(Path(__file__).parent / "daemon.log"), "w", encoding="utf-8")
         daemon = subprocess.Popen(
@@ -457,9 +457,9 @@ def _run_shard() -> int:
             stderr=log_file
         )
         
-        # Wait up to 5 seconds for the port to open
+        # Wait up to 15 seconds for the port to open
         start_time = time.time()
-        while time.time() - start_time < 5.0:
+        while time.time() - start_time < 15.0:
             if is_port_open(8765):
                 break
             time.sleep(0.1)
