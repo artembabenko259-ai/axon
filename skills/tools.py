@@ -244,6 +244,70 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "type": "function",
         "function": {
+            "name": "read_webpage",
+            "description": "Fetch the clean text contents of a webpage URL (e.g. for reading documentation).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string", "description": "URL starting with http or https."}
+                },
+                "required": ["url"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "deep_search",
+            "description": "Perform multi-step research on a query: searches the web, reads top pages, and synthesizes a detailed report.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "The search or research query."}
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "check_syntax",
+            "description": "Verify python file syntax using AST parser to catch syntax errors immediately.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filepath": {"type": "string", "description": "Path to the python file to validate."}
+                },
+                "required": ["filepath"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "git_status",
+            "description": "Get git status summary showing modified, deleted, or untracked files.",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "git_diff",
+            "description": "Get current unstaged diff changes in the git repository.",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "apply_patch",
             "description": (
                 "Apply a unified diff patch to a file. Requires user approval."
@@ -459,6 +523,16 @@ def tool_activity_detail(tool_name: str, args: dict[str, Any]) -> str:
         return _quote_activity(str(args.get("query", "")))
     if tool_name == "get_codebase_map":
         return "entire workspace"
+    if tool_name == "read_webpage":
+        return _display_path(str(args.get("url", "")))
+    if tool_name == "deep_search":
+        return _quote_activity(str(args.get("query", "")))
+    if tool_name == "check_syntax":
+        return _display_path(str(args.get("filepath", "")))
+    if tool_name == "git_status":
+        return "working tree status"
+    if tool_name == "git_diff":
+        return "unstaged changes"
     if tool_name == "web_search":
         return _quote_activity(str(args.get("query", "")))
     if tool_name == "take_screenshot":
@@ -817,6 +891,61 @@ def get_codebase_map() -> str:
         return f"Error: failed to generate codebase map — {exc}"
 
 
+def read_webpage_tool(url: str) -> str:
+    from web_research import read_webpage
+    return read_webpage(url)
+
+
+def deep_search_tool(query: str) -> str:
+    from web_research import deep_search
+    return deep_search(query)
+
+
+def check_syntax(filepath: str) -> str:
+    """Validate python file syntax without running it."""
+    path = _resolve_safe_path(filepath)
+    if isinstance(path, str):
+        return path
+    if not path.is_file():
+        return f"Error: file not found — {path}"
+        
+    if path.suffix.lower() == ".py":
+        try:
+            import ast
+            content = path.read_text(encoding="utf-8", errors="ignore")
+            ast.parse(content, filename=str(path))
+            return "Syntax check passed: No python syntax errors found."
+        except SyntaxError as exc:
+            return f"Syntax Error in {path.name} at line {exc.lineno}, col {exc.offset}:\n{exc.text.strip() if exc.text else ''}\n-> {exc.msg}"
+        except Exception as exc:
+            return f"Error parsing file: {exc}"
+    return "Syntax check: Supported only for Python (.py) files currently."
+
+
+def git_status() -> str:
+    """Get status of files in git repository."""
+    try:
+        git = shutil.which("git")
+        if not git:
+            return "Error: git is not installed or not in PATH."
+        res = subprocess.run([git, "status", "--short"], capture_output=True, text=True, cwd=str(Path.cwd()))
+        return res.stdout.strip() if res.stdout.strip() else "Git status: working tree clean."
+    except Exception as exc:
+        return f"Error running git status: {exc}"
+
+
+def git_diff() -> str:
+    """Get unstaged differences of files in git repository."""
+    try:
+        git = shutil.which("git")
+        if not git:
+            return "Error: git is not installed or not in PATH."
+        res = subprocess.run([git, "diff"], capture_output=True, text=True, cwd=str(Path.cwd()))
+        return res.stdout.strip() if res.stdout.strip() else "Git diff: no changes."
+    except Exception as exc:
+        return f"Error running git diff: {exc}"
+
+
 def apply_patch(filepath: str, patch: str) -> str:
     path = _resolve_safe_path(filepath)
     if isinstance(path, str):
@@ -942,6 +1071,16 @@ def _run_tool_sync(tool_name: str, args: dict[str, Any]) -> str:
         return search_symbol(str(args.get("query", "")))
     if tool_name == "get_codebase_map":
         return get_codebase_map()
+    if tool_name == "read_webpage":
+        return read_webpage_tool(str(args.get("url", "")))
+    if tool_name == "deep_search":
+        return deep_search_tool(str(args.get("query", "")))
+    if tool_name == "check_syntax":
+        return check_syntax(str(args.get("filepath", "")))
+    if tool_name == "git_status":
+        return git_status()
+    if tool_name == "git_diff":
+        return git_diff()
     if tool_name == "apply_patch":
         return apply_patch(
             str(args.get("filepath", "")),
