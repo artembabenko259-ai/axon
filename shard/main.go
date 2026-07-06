@@ -221,15 +221,12 @@ func (m model) getWelcomeMessage() string {
 
 	if os.Getenv("AXON_DART_MODE") == "1" {
 		mascot = `
-         /\
-        /  \
-       / /\ \
-      / /  \ \
-     ▐ ▐ █ ▌ ▌
-      \ \  / /
-       \ \/ /
-        \  /
-         \/
+      ▄█▄
+    ▄█████▄
+   ▐██▀█▀██▌
+   ▐██▄█▄██▌
+    ▀█████▀
+      ▀█▀
 `
 		mascotColor = "#ff3333"
 	}
