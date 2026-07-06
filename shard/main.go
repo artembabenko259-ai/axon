@@ -715,7 +715,7 @@ func (m model) autocompleteView() string {
 	}
 
 	if len(m.filteredSuggestions) > maxVisible {
-		hint := fmt.Sprintf(" ... (%d more, use Up/Down/Tab to scroll) ...", len(m.filteredSuggestions)-maxVisible)
+		hint := fmt.Sprintf(" ... (item %d of %d, use Up/Down/Tab to scroll) ...", m.suggestionIdx+1, len(m.filteredSuggestions))
 		hintStyle := lipgloss.NewStyle().Foreground(mutedColor).Padding(0, 2)
 		paddedHint := hintStyle.Render(fmt.Sprintf(" %-*s", m.width-8, hint))
 		sb.WriteString(paddedHint + "\n")
