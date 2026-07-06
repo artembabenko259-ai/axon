@@ -26,6 +26,11 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "antigravity_api_key": "",
     "last_workspace": "",
     "custom_providers": {},
+    "reverse_engineering_depth": "deep",
+    "decompiler_backend": "radare2",
+    "interactive_autocompletion": True,
+    "custom_system_prompt_overrides": {},
+    "dart_reverse_symbol_filters": [],
 }
 
 

@@ -260,14 +260,132 @@ def decompile_native_file(file_path: Path, symbol_name: str | None = None) -> st
         return f"Error disassembling native file: {exc}"
 
 
+def decompile_dart_file(file_path: Path) -> str:
+    """Parses a Dart/Flutter compiled library (e.g. libapp.so or VM snapshot) and reconstructs Dart pseudo-code."""
+    try:
+        data = file_path.read_bytes()
+        if len(data) < 64:
+            return "Error: File is too small to be a valid Dart target."
+            
+        # Search for Dart snapshot magic headers or Flutter symbols
+        is_snapshot = False
+        magic_headers = [b"\xc8\xd8\xf5\xf5", b"\xc9\xd8\xf5\xf5", b"\xf5\xf5\xd8\xc8", b"\xf5\xf5\xd8\xc9"]
+        for header in magic_headers:
+            if data.find(header) != -1:
+                is_snapshot = True
+                break
+                
+        is_flutter = False
+        flutter_symbols = [b"kDartIsolate", b"kDartVm", b"DartSnapshot", b"_kDartIsolate"]
+        for sym in flutter_symbols:
+            if data.find(sym) != -1:
+                is_flutter = True
+                break
+
+        # Extract package strings and identifier-like strings
+        pkg_pattern = re.compile(rb"package:[a-zA-Z0-9_\-/]+\.dart")
+        packages = []
+        for match in pkg_pattern.finditer(data):
+            packages.append(match.group(0).decode("ascii", errors="ignore"))
+        packages = sorted(list(set(packages)))
+
+        # Extract potential classes and methods from Dart symbols
+        symbol_pattern = re.compile(rb"[a-zA-Z0-9_]{3,40}@[a-zA-Z0-9_]{3,40}")
+        symbols = []
+        for match in symbol_pattern.finditer(data):
+            symbols.append(match.group(0).decode("ascii", errors="ignore"))
+        symbols = sorted(list(set(symbols)))
+
+        # Fallback to general ASCII strings to find names
+        ascii_strings = []
+        for match in re.finditer(rb"[\x20-\x7E]{5,80}\x00", data):
+            s = match.group(0).decode("ascii", errors="ignore").strip("\x00")
+            if s and not s.startswith(".") and not s.endswith(".dll"):
+                ascii_strings.append(s)
+
+        decompiled = [
+            "// AXON Dart Reverse Engineering Engine v1.0.0",
+            f"// Target Binary: {file_path.name}",
+            f"// VM Snapshot Detected: {is_snapshot}",
+            f"// Flutter App Target: {is_flutter}",
+            "",
+            "// Extracted Dart Packages & Entrypoints:"
+        ]
+        
+        if packages:
+            for pkg in packages[:15]:
+                decompiled.append(f"import '{pkg}';")
+            if len(packages) > 15:
+                decompiled.append(f"// ... and {len(packages) - 15} more libraries.")
+        else:
+            decompiled.append("// No explicit 'package:...' paths found. Analyzing metadata symbols...")
+
+        decompiled.append("")
+        decompiled.append("// Reconstructed Dart Classes & Methods:")
+        
+        classes = {}
+        # Parse symbols of type Class@method
+        for sym in symbols:
+            if "@" in sym:
+                cls, method = sym.split("@", 1)
+                if cls not in classes:
+                    classes[cls] = []
+                if method not in classes[cls]:
+                    classes[cls].append(method)
+
+        # Fallback using ascii strings if class list is empty
+        if not classes:
+            curr_class = "DefaultController"
+            for s in ascii_strings[:100]:
+                if s.istitle() and "_" not in s and len(s) > 4:
+                    curr_class = s
+                    if curr_class not in classes:
+                        classes[curr_class] = []
+                elif s.isidentifier() and len(s) > 3:
+                    if curr_class in classes and s not in classes[curr_class]:
+                        classes[curr_class].append(s)
+
+        for cls, methods in list(classes.items())[:20]:
+            decompiled.append(f"class {cls} {{")
+            for m in methods[:10]:
+                decompiled.append(f"  void {m}();")
+            if len(methods) > 10:
+                decompiled.append(f"  // ... and {len(methods) - 10} more methods")
+            decompiled.append("}")
+            decompiled.append("")
+
+        if len(classes) > 20:
+            decompiled.append(f"// ... and {len(classes) - 20} more classes.")
+
+        return "\n".join(decompiled)
+    except Exception as exc:
+        return f"Error parsing Dart VM Snapshot: {exc}"
+
+
 def decompile_file(file_path_str: str, symbol_name: str | None = None) -> str:
-    """Decompile entry point. Dispatches to JVM, CLR, or Native handlers."""
+    """Decompile entry point. Dispatches to JVM, CLR, Dart, or Native handlers."""
     p = Path(file_path_str)
     if not p.is_file():
         return f"Error: File not found: {file_path_str}"
         
     ext = p.suffix.lower()
-    if ext in (".class", ".jar"):
+    
+    # Check for Dart / Flutter snapshots
+    is_dart = ext == ".dart"
+    try:
+        with p.open("rb") as f:
+            header = f.read(1024)
+            dart_magics = [b"\xc8\xd8\xf5\xf5", b"\xc9\xd8\xf5\xf5", b"\xf5\xf5\xd8\xc8", b"\xf5\xf5\xd8\xc9"]
+            for magic in dart_magics:
+                if magic in header:
+                    is_dart = True
+                    break
+    except Exception:
+        pass
+        
+    if is_dart:
+        return decompile_dart_file(p)
+    elif ext in (".class", ".jar"):
         return decompile_class_file(p)
     elif ext in (".exe", ".dll") and p.read_bytes().find(b"BSJB") != -1:
         return decompile_csharp_file(p)
