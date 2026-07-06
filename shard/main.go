@@ -656,6 +656,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 	}
 
+	if len(m.messages) > 300 {
+		m.messages = m.messages[len(m.messages)-300:]
+	}
+
 	return m, tea.Batch(cmds...)
 }
 
