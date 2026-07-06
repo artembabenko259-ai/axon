@@ -477,6 +477,27 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "decompile_file",
+            "description": "AXON Dart: Decompile native C/C++ binaries, Java class/jar files, or C#/.NET assembly files to C-like pseudo-code or intermediate representations.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path to the target executable, DLL, class, or JAR file.",
+                    },
+                    "symbol_name": {
+                        "type": "string",
+                        "description": "Optional name of the specific function or method to decompile (primarily for native C/C++ targets).",
+                    },
+                },
+                "required": ["file_path"],
+            },
+        },
+    },
 ]
 
 
@@ -1286,6 +1307,12 @@ def _run_tool_sync(tool_name: str, args: dict[str, Any]) -> str:
         return get_codebase_map()
     if tool_name == "read_webpage":
         return read_webpage_tool(str(args.get("url", "")))
+    if tool_name == "decompile_file":
+        from axon_decompiler import decompile_file
+        return decompile_file(
+            str(args.get("file_path", "")),
+            args.get("symbol_name")
+        )
     if tool_name == "inspect_image":
         return inspect_image_tool(str(args.get("filepath", "")))
     if tool_name == "deep_search":

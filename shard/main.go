@@ -776,6 +776,14 @@ func (m model) View() string {
 }
 
 func main() {
+	if os.Getenv("AXON_DART_MODE") == "1" {
+		bgColor = lipgloss.Color("#050a05")
+		borderColor = lipgloss.Color("#1a351a")
+		textColor = lipgloss.Color("#39ff14")
+		mutedColor = lipgloss.Color("#1f5f14")
+		accentColor = lipgloss.Color("#00ff00")
+	}
+
 	u := url.URL{Scheme: "ws", Host: "127.0.0.1:8765", Path: "/"}
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {

@@ -246,6 +246,7 @@ def _run_dart(target: str | None) -> int:
         save_config({"disabled_skills": disabled})
         
     import os
+    os.environ["AXON_DART_MODE"] = "1"
     scan_path = os.path.abspath(target or ".")
     
     binary_exts = {".exe", ".dll", ".sys", ".bin", ".elf", ".so", ".dylib"}

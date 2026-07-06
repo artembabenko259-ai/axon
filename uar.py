@@ -81,18 +81,21 @@ def cmd_get(skill_name: str) -> None:
         content = """---
 name: axon-dart
 description: AI-assisted reverse engineering helper. Analyze binaries, decompile functions, and explain binary code.
-allowed-tools: execute_shell, read_file
+allowed-tools: execute_shell, read_file, decompile_file
 ---
 
 # AXON Dart: Reverse Engineering Skill
 
 You are now equipped with AXON Dart capabilities for reverse engineering target binaries.
 
+## Available Tools
+1. `decompile_file`: Use this tool to decompile and inspect native C/C++ binaries, Java class/jar files, or C#/.NET assembly files to C-like pseudo-code.
+2. `execute_shell`: Run external disassemblers or diagnostics (e.g. Radare2 commands like `r2 -q -c "pdf @ main" <binary_path>`).
+
 ## Workflow
-1. Analyze a binary: Check if Radare2 (r2) is installed via `r2 -v`.
-2. Run standard commands to get symbols: `r2 -q -c "afl" <binary_path>`.
-3. Disassemble a function: `r2 -q -c "pdf @ <function_name>" <binary_path>`.
-4. Analyze pseudo-code or assembly to explain logic, find vulnerabilities, and rename symbols.
+1. Analyze a target: Use `decompile_file` on the target executable, JAR, or class file.
+2. If it's a native C/C++ target, you can optionally pass `symbol_name` to decompile a specific function, or use Radare2 via shell.
+3. Review the pseudo-code or intermediate instruction stream to explain logic, find bugs/vulnerabilities, and suggest improvements.
 """
         dest.write_text(content, encoding="utf-8")
         print(f"Successfully installed skill '{clean_name}' to {dest}")

@@ -49,3 +49,23 @@ class CLITheme:
 
 
 DEFAULT_THEME = CLITheme()
+
+DART_DARK_THEME = CLITheme(
+    background="#050a05",
+    surface="#0a140a",
+    border_subtle="#1a351a",
+    text_primary="#39ff14",
+    text_muted="#1f5f14",
+    accent="#00ff00",
+    accent_soft="#1f7f14",
+    user_prompt="#39ff14",
+    system="#1a5f14",
+    error="#ff3333",
+    success="#00ff00",
+    warning="#ffb703",
+    prompt_symbol="⚡",
+    status_ready="SYS_READY",
+    status_thinking="THINKING_PROT",
+    toolbar_bg="#081008",
+    toolbar_text="#1f7f14"
+)
