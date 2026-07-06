@@ -483,7 +483,7 @@ def _run_shard() -> int:
     if not is_port_open(8765):
         print("[AXON] Starting backend daemon...")
         if getattr(sys, 'frozen', False):
-            cmd = [sys.argv[0], "repl", "--headless"]
+            cmd = [sys.executable, "repl", "--headless"]
         else:
             cli_path = str(Path(__file__).resolve())
             cmd = [sys.executable, "-u", cli_path, "repl", "--headless"]
@@ -509,7 +509,7 @@ def _run_shard() -> int:
     if not is_port_open(3000):
         print("[AXON] Starting web dashboard daemon...")
         if getattr(sys, 'frozen', False):
-            web_cmd = [sys.argv[0], "web"]
+            web_cmd = [sys.executable, "web"]
         else:
             cli_path = str(Path(__file__).resolve())
             web_cmd = [sys.executable, cli_path, "web"]
