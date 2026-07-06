@@ -271,12 +271,7 @@ def _run_dart(target: str | None) -> int:
     else:
         print(f"[AXON DART] No binaries found in {scan_path}.")
         
-    from ui.axon_tui import run_tui
-    try:
-        run_tui()
-    except KeyboardInterrupt:
-        pass
-    return 0
+    return _run_shard()
 
 
 def _run_export(session_id: str | None, output: str | None) -> int:

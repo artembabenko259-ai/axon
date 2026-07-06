@@ -208,7 +208,7 @@ func initialModel(conn *websocket.Conn) model {
 }
 
 func (m model) getWelcomeMessage() string {
-	crab := `
+	mascot := `
   ▄███▄          ▄███▄
   ██ ██          ██ ██
   ▀███▀  ▄▄▄██▄▄▄  ▀███▀
@@ -217,6 +217,23 @@ func (m model) getWelcomeMessage() string {
    ▀███▀ ▀████▀ ▀███▀
    ▄   ▄          ▄   ▄
 `
+	mascotColor := "#ef4444"
+
+	if os.Getenv("AXON_DART_MODE") == "1" {
+		mascot = `
+         /\
+        /  \
+       / /\ \
+      / /  \ \
+     ▐ ▐ █ ▌ ▌
+      \ \  / /
+       \ \/ /
+        \  /
+         \/
+`
+		mascotColor = "#ff3333"
+	}
+
 	urlStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#38bdf8")).Underline(true)
 	panelURL := urlStyle.Render("http://127.0.0.1:3000")
 
@@ -238,19 +255,19 @@ func (m model) getWelcomeMessage() string {
   Ctrl+C     - Quit AXON Shard immediately
 `
 
-	crabBox := lipgloss.NewStyle().
+	mascotBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(borderColor).
 		Padding(1, 2).
-		Foreground(lipgloss.Color("#ef4444")). // Vibrant red mascot
-		Render(crab)
+		Foreground(lipgloss.Color(mascotColor)).
+		Render(mascot)
 
 	mascotTextBox := lipgloss.NewStyle().
 		Padding(2, 1).
 		Foreground(textColor).
 		Render(mascotText)
 
-	mascotBlock := lipgloss.JoinHorizontal(lipgloss.Center, crabBox, mascotTextBox)
+	mascotBlock := lipgloss.JoinHorizontal(lipgloss.Center, mascotBox, mascotTextBox)
 
 	helpBox := lipgloss.NewStyle().
 		Padding(1, 2).
@@ -777,11 +794,11 @@ func (m model) View() string {
 
 func main() {
 	if os.Getenv("AXON_DART_MODE") == "1" {
-		bgColor = lipgloss.Color("#050a05")
-		borderColor = lipgloss.Color("#1a351a")
-		textColor = lipgloss.Color("#39ff14")
-		mutedColor = lipgloss.Color("#1f5f14")
-		accentColor = lipgloss.Color("#00ff00")
+		bgColor = lipgloss.Color("#0d0202")
+		borderColor = lipgloss.Color("#3a0a0a")
+		textColor = lipgloss.Color("#ff3333")
+		mutedColor = lipgloss.Color("#801515")
+		accentColor = lipgloss.Color("#ff0000")
 	}
 
 	u := url.URL{Scheme: "ws", Host: "127.0.0.1:8765", Path: "/"}
