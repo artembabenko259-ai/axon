@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -234,7 +236,27 @@ func (m model) getWelcomeMessage() string {
 	urlStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#38bdf8")).Underline(true)
 	panelURL := urlStyle.Render("http://127.0.0.1:3000")
 
-	mascotText := fmt.Sprintf(" Welcome to AXON Shard!\n I'm your agentic companion.\n Let's build something awesome!\n\n Control Panel: %s", panelURL)
+	// Seed local random generator
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	var mascotText string
+
+	if os.Getenv("AXON_DART_MODE") == "1" {
+		variations := []string{
+			" Welcome to AXON Dart!\n Binary targets loaded.\n Let's decompile the world!\n\n Control Panel: %s",
+			" Welcome to AXON Dart!\n Finding entry points and symbols...\n Ready to decompile and analyze.\n\n Control Panel: %s",
+			" Welcome to AXON Dart!\n Memory mapping initialized.\n Let's scan for zero-days!\n\n Control Panel: %s",
+			" Welcome to AXON Dart!\n Bytecode parsing complete.\n Time to decode the logic.\n\n Control Panel: %s",
+		}
+		mascotText = fmt.Sprintf(variations[r.Intn(len(variations))], panelURL)
+	} else {
+		variations := []string{
+			" Welcome to AXON Shard!\n I'm your agentic companion.\n Let's build something awesome!\n\n Control Panel: %s",
+			" Welcome to AXON Shard!\n Seven minutes is all I can spare\n to play with you...\n\n Control Panel: %s",
+			" Welcome to AXON Shard!\n I have only 7 minutes for this task.\n Let's make every second count!\n\n Control Panel: %s",
+			" Welcome to AXON Shard!\n System online. Autopilot standby.\n Let's code something legendary!\n\n Control Panel: %s",
+		}
+		mascotText = fmt.Sprintf(variations[r.Intn(len(variations))], panelURL)
+	}
 
 	helpText := `
 * Type a message to chat, or type / for commands.
