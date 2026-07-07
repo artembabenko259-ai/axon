@@ -45,20 +45,24 @@ export function ModelMarketplace() {
 
   useEffect(() => {
     let cancelled = false;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10_000);
 
     async function load() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/models");
+        const res = await fetch("/api/models", { signal: ctrl.signal });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error ?? "Failed to load models");
         if (!cancelled) setModels(json.models ?? []);
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Unknown error");
+          const msg = err instanceof Error ? err.message : "Unknown error";
+          setError(msg.includes("aborted") ? "Marketplace timed out — check your connection." : msg);
         }
       } finally {
+        clearTimeout(timer);
         if (!cancelled) setLoading(false);
       }
     }
@@ -66,8 +70,11 @@ export function ModelMarketplace() {
     void load();
     return () => {
       cancelled = true;
+      ctrl.abort();
+      clearTimeout(timer);
     };
   }, []);
+
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();

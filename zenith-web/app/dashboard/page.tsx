@@ -14,6 +14,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { StaggerGrid, StaggerItem } from "@/components/ui/StaggerGrid";
 import { useChat, formatBridgeStats } from "@/context/ChatContext";
 import { useModel } from "@/context/ModelContext";
+import { useConfig } from "@/context/ConfigContext";
 
 function deriveOrbStatus(
   connected: boolean,
@@ -28,6 +29,7 @@ function deriveOrbStatus(
 
 export default function DashboardPage() {
   const { activeModelId, isSwitching } = useModel();
+  const { config } = useConfig();
   const {
     connected,
     isStreaming,
@@ -36,6 +38,7 @@ export default function DashboardPage() {
     tokenSeries,
     uptimeSeries,
   } = useChat();
+  const isAntigravity = config.provider === "antigravity";
   const { tokensLabel, costLabel } = formatBridgeStats(stats);
 
   const orbStatus = deriveOrbStatus(connected, isStreaming, isSwitching);
@@ -119,11 +122,13 @@ export default function DashboardPage() {
               </StaggerItem>
             </div>
 
-            <StaggerItem>
-              <motion.div layout>
-                <ModelMarketplace />
-              </motion.div>
-            </StaggerItem>
+            {!isAntigravity && (
+              <StaggerItem>
+                <motion.div layout>
+                  <ModelMarketplace />
+                </motion.div>
+              </StaggerItem>
+            )}
 
             <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr]">
               <StaggerItem>
