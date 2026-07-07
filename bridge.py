@@ -18,6 +18,9 @@ from runtime_policy import (
     verify_bridge_token,
     RuntimePolicy,
 )
+import axon_devlog as _devlog
+_log = _devlog.get_logger(__name__)
+
 
 WS_HOST = "127.0.0.1"
 WS_PORT = 8765
@@ -119,6 +122,7 @@ class AxonBridge:
 
     async def ws_handler(self, websocket: WebSocketServerProtocol) -> None:
         connected_clients.add(websocket)
+        _log.debug("WS connect  remote=%s  clients=%d", websocket.remote_address, len(connected_clients))
         policy = load_runtime_policy()
         is_authenticated = not policy.bridge_auth_enabled
 
@@ -150,8 +154,10 @@ class AxonBridge:
                     if verify_bridge_token(token):
                         is_authenticated = True
                         authenticated_clients.add(websocket)
+                        _log.info("WS auth OK  remote=%s", websocket.remote_address)
                         await self._send_session_snapshot(websocket)
                     else:
+                        _log.warning("WS auth FAILED  remote=%s", websocket.remote_address)
                         await websocket.send(
                             json.dumps(
                                 {
@@ -306,6 +312,7 @@ class AxonBridge:
                         continue
                     text = (data.get("text") or data.get("content") or "").strip()
                     if text and self._process_chat is not None:
+                        _log.info("WS chat  text=%r", text[:120])
                         asyncio.create_task(self._process_chat(text, "web"))
 
                 elif msg_type == "set_model":
@@ -316,6 +323,7 @@ class AxonBridge:
         finally:
             connected_clients.discard(websocket)
             authenticated_clients.discard(websocket)
+            _log.debug("WS disconnect  remote=%s  clients=%d", websocket.remote_address, len(connected_clients))
 
     async def broadcast(self, payload: dict[str, Any]) -> None:
         if not connected_clients:

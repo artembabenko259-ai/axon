@@ -208,9 +208,16 @@ def print_banner(model: str, workspace: Path | None = None) -> None:
 async def start_axon(headless: bool = False) -> None:
     load_dotenv()
 
+    import axon_devlog as _devlog
+    _devlog.setup()
+    _repl_log = _devlog.get_logger(__name__)
+    if _devlog.is_dev_mode():
+        _repl_log.info("start_axon  headless=%s", headless)
+
     workspace = Path.cwd()
     ensure_skills_workspace(workspace)
     backup_manager.set_workspace(workspace)
+
 
     llm_manager = LLMManager(workspace=workspace)
     bridge = AxonBridge()

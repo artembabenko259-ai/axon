@@ -21,6 +21,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     repl_p = sub.add_parser("repl", help="Rich REPL with full slash commands and WebSocket bridge")
     repl_p.add_argument("--headless", action="store_true", help="Run headlessly, serving WebSocket bridge")
+    repl_p.add_argument("--dev", action="store_true", help="Enable dev mode: verbose logs written to %%APPDATA%%\\AXON\\logs\\")
     sub.add_parser("tui", help="Fullscreen terminal UI (default)")
 
     mt_p = sub.add_parser("multitask", help="Run orchestrator headless")
@@ -91,7 +92,8 @@ def _build_parser() -> argparse.ArgumentParser:
     sched_sub.add_parser("list", help="List scheduled tasks")
     sched_sub.add_parser("run", help="Run tasks due now (for Task Scheduler)")
 
-    sub.add_parser("shard", help="Bubble Tea Go-based TUI client")
+    shard_p = sub.add_parser("shard", help="Bubble Tea Go-based TUI client")
+    shard_p.add_argument("--dev", action="store_true", help="Enable dev mode: verbose logs written to %%APPDATA%%\\AXON\\logs\\")
     doctor = sub.add_parser("doctor", help="Check local AXON environment")
     doctor.add_argument("--json", action="store_true", help="JSON output")
     doctor.add_argument(
@@ -144,6 +146,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--yes",
         action="store_true",
         help="Auto-approve dangerous tools in headless mode",
+    )
+    parser.add_argument(
+        "--dev",
+        action="store_true",
+        help="Enable dev mode: verbose DEBUG logs written to %%APPDATA%%\\AXON\\logs\\",
     )
 
     return parser
@@ -440,7 +447,7 @@ def _run_login(*, force: bool, open_browser: bool) -> int:
         return 1
 
 
-def _run_shard() -> int:
+def _run_shard(*, dev: bool = False) -> int:
     import os
     import sys
     import time
@@ -479,22 +486,31 @@ def _run_shard() -> int:
     daemon = None
     env = os.environ.copy()
     env["PYTHONPATH"] = str(Path(__file__).parent)
-    
+    if dev:
+        env["AXON_DEV"] = "1"
+
     if not is_port_open(8765):
-        print("[AXON] Starting backend daemon...")
+        if dev:
+            import axon_devlog as _dl
+            _log_path = _dl.log_path() or Path(__file__).parent / "daemon.log"
+            print(f"[AXON DEV] Starting backend daemon (logs → {_log_path})")
+            _daemon_log = open(str(_log_path), "a", encoding="utf-8")
+        else:
+            print("[AXON] Starting backend daemon...")
+            _daemon_log = open(str(Path(__file__).parent / "daemon.log"), "w", encoding="utf-8")
+
         if getattr(sys, 'frozen', False):
-            cmd = [sys.executable, "repl", "--headless"]
+            cmd = [sys.executable, "repl", "--headless"] + (["--dev"] if dev else [])
         else:
             cli_path = str(Path(__file__).resolve())
-            cmd = [sys.executable, "-u", cli_path, "repl", "--headless"]
-            
-        log_file = open(str(Path(__file__).parent / "daemon.log"), "w", encoding="utf-8")
+            cmd = [sys.executable, "-u", cli_path, "repl", "--headless"] + (["--dev"] if dev else [])
+
         daemon = subprocess.Popen(
             cmd,
             cwd=str(Path(__file__).parent),
             env=env,
-            stdout=log_file,
-            stderr=log_file
+            stdout=_daemon_log,
+            stderr=_daemon_log
         )
         
         # Wait up to 15 seconds for the port to open
@@ -507,19 +523,27 @@ def _run_shard() -> int:
     # Start web dashboard server in background if not already running
     web_daemon = None
     if not is_port_open(3000):
-        print("[AXON] Starting web dashboard daemon...")
+        if dev:
+            import axon_devlog as _dl
+            _web_log_path = _dl.log_path() or Path(__file__).parent / "web.log"
+            print(f"[AXON DEV] Starting web dashboard daemon (logs → {_web_log_path})")
+            _web_log = open(str(_web_log_path), "a", encoding="utf-8")
+        else:
+            print("[AXON] Starting web dashboard daemon...")
+            _web_log = subprocess.DEVNULL
+
         if getattr(sys, 'frozen', False):
             web_cmd = [sys.executable, "web"]
         else:
             cli_path = str(Path(__file__).resolve())
             web_cmd = [sys.executable, cli_path, "web"]
-            
+
         web_daemon = subprocess.Popen(
             web_cmd,
             cwd=str(Path(__file__).parent),
             env=env,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
+            stdout=_web_log,
+            stderr=_web_log,
         )
 
     try:
@@ -550,7 +574,16 @@ def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
 
-    # Pipe-to-axon only when no explicit subcommand (avoid blocking on closed stdin).
+    # ── dev mode: set env var + initialize logging ASAP ─────────────────────
+    dev_mode = getattr(args, "dev", False)
+    if dev_mode:
+        import os as _os
+        _os.environ["AXON_DEV"] = "1"
+    import axon_devlog as _devlog
+    _devlog.setup()
+    if _devlog.is_dev_mode() and _devlog.log_path():
+        print(f"[AXON DEV] Logging to: {_devlog.log_path()}")
+
     if args.prompt is None and args.command is None and not sys.stdin.isatty():
         piped = sys.stdin.read().strip()
         if piped:
@@ -592,7 +625,7 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     if command == "shard":
-        return _run_shard()
+        return _run_shard(dev=getattr(args, "dev", False))
 
     if command == "version":
         return _run_version()
@@ -678,6 +711,16 @@ def main(argv: list[str] | None = None) -> int:
             asyncio.run(start_axon(headless=getattr(args, "headless", False)))
         except KeyboardInterrupt:
             return 0
+        return 0
+
+    if command == "devlog":
+        import axon_devlog as _dl
+        lp = _dl.log_path()
+        if lp:
+            print(str(lp))
+        else:
+            from axon_runtime import user_data_dir
+            print(str(user_data_dir() / "logs"))
         return 0
 
     parser.error(f"unknown command: {command}")
