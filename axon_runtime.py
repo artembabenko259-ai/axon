@@ -153,3 +153,31 @@ def ensure_startup_workspace(*, explicit_cwd: Path | None = None) -> Path:
     os.chdir(workspace)
     seed_axon_tree(workspace)
     return workspace
+
+
+def _inject_system_python_paths() -> None:
+    if not is_frozen():
+        return
+    import subprocess
+    import json
+    try:
+        res = subprocess.run(
+            'python -c "import sys, json; print(json.dumps(sys.path))"',
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        if res.returncode == 0:
+            paths = json.loads(res.stdout.strip())
+            for p in paths:
+                if p:
+                    abs_p = os.path.abspath(p)
+                    if abs_p not in sys.path:
+                        sys.path.append(abs_p)
+    except Exception:
+        pass
+
+
+_inject_system_python_paths()
+
