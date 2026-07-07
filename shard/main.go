@@ -167,6 +167,12 @@ func loadBridgeToken() string {
 	return policy.BridgeToken
 }
 
+type fileActivity struct {
+	Path   string
+	Action string
+	Status string
+}
+
 type model struct {
 	conn                *websocket.Conn
 	textInput           textinput.Model
@@ -188,6 +194,7 @@ type model struct {
 	splitPanes          bool
 	expandedThinking    bool
 	tickCount           int
+	activeFiles         []fileActivity
 }
 
 func initialModel(conn *websocket.Conn) model {
@@ -211,6 +218,7 @@ func initialModel(conn *websocket.Conn) model {
 		connected:        false,
 		splitPanes:       true, // enabled by default to showcase layout
 		expandedThinking: false,
+		activeFiles:      []fileActivity{},
 	}
 }
 
@@ -490,7 +498,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			isSlash := strings.HasPrefix(input, "/")
 			cfg, err := loadAxonConfig()
 			
-			if !isSlash && err == nil && (cfg.Provider == "antigravity" || cfg.Provider == "gemini" || cfg.Provider == "openrouter" || cfg.Provider == "custom" || cfg.Provider == "ollama") {
+			if !isSlash && err == nil && (cfg.Provider == "openrouter" || cfg.Provider == "custom" || cfg.Provider == "ollama") {
 				// Record user message
 				m.messages = append(m.messages, chatMessage{
 					Type:    msgUser,
@@ -661,6 +669,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 
 	case wsToolEventMsg:
+		m = m.updateFileActivity(msg.Tool, msg.Status, msg.Detail)
 		if msg.Status == "start" {
 			m.status = "RUNNING TOOL"
 			m.messages = append(m.messages, chatMessage{
@@ -975,8 +984,12 @@ func main() {
 		}
 	}()
 
-	if _, err := p.Run(); err != nil {
+	finalModel, err := p.Run()
+	if err != nil {
 		log.Fatal(err)
+	}
+	if m, ok := finalModel.(model); ok {
+		m.saveSession()
 	}
 }
 
@@ -1159,12 +1172,93 @@ func (m model) renderAutopilotStatus(width int, height int) string {
 }
 
 func (m model) renderTelemetryStatus(width int, height int) string {
-	header := lipgloss.NewStyle().Foreground(accentColor).Bold(true).Render("Telemetry Logs")
+	header := lipgloss.NewStyle().Foreground(accentColor).Bold(true).Render("Telemetry & Activity")
 	costStr := fmt.Sprintf("Session Cost:   $%.4f", m.totalCost)
 	tokensStr := fmt.Sprintf("Session Tokens: %d", m.totalTokens)
 
-	body := fmt.Sprintf("\n%s\n\n%s\n%s\n\n· status: nominal\n· websocket: active\n· latency: <45ms", header, costStr, tokensStr)
-	return body
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("\n%s\n\n%s\n%s\n\n", header, costStr, tokensStr))
+	
+	sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("#71717a")).Bold(true).Render("Agent Activity (Files/Tools):") + "\n")
+	
+	if len(m.activeFiles) == 0 {
+		sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("#52525b")).Render("  No activity yet...") + "\n")
+	} else {
+		for _, f := range m.activeFiles {
+			indicator := "●"
+			color := lipgloss.Color("#fbbf24") // Amber for ACTIVE
+			if f.Status == "OK" {
+				indicator = "✓"
+				color = lipgloss.Color("#10b981") // Green for OK
+			} else if f.Status == "ERROR" {
+				indicator = "✗"
+				color = lipgloss.Color("#ef4444") // Red for ERROR
+			}
+			
+			actionStr := lipgloss.NewStyle().Foreground(accentColor).Bold(true).Render(f.Action)
+			pathStr := lipgloss.NewStyle().Foreground(lipgloss.Color("#e4e4e7")).Render(f.Path)
+			indicatorStr := lipgloss.NewStyle().Foreground(color).Render(indicator)
+			
+			line := fmt.Sprintf("  %s %-6s %s", indicatorStr, actionStr, pathStr)
+			if len(line) > width - 2 {
+				line = line[:width - 5] + "..."
+			}
+			sb.WriteString(line + "\n")
+		}
+	}
+	return sb.String()
+}
+
+func (m model) updateFileActivity(tool string, status string, detail string) model {
+	if detail == "" {
+		return m
+	}
+	
+	action := "TOOL"
+	switch tool {
+	case "read_file":
+		action = "READ"
+	case "write_file":
+		action = "WRITE"
+	case "grep_search":
+		action = "GREP"
+	case "search_code":
+		action = "SEARCH"
+	case "run_command":
+		action = "EXEC"
+	}
+	
+	actStatus := "OK"
+	switch status {
+	case "start":
+		actStatus = "ACTIVE"
+	case "fail":
+		actStatus = "ERROR"
+	}
+	
+	displayPath := detail
+	if strings.Contains(displayPath, "\\") || strings.Contains(displayPath, "/") {
+		displayPath = filepath.Base(displayPath)
+	}
+
+	found := false
+	for i, f := range m.activeFiles {
+		if f.Path == displayPath {
+			m.activeFiles[i].Status = actStatus
+			m.activeFiles[i].Action = action
+			found = true
+			break
+		}
+	}
+	
+	if !found {
+		// Newest at the top
+		m.activeFiles = append([]fileActivity{{Path: displayPath, Action: action, Status: actStatus}}, m.activeFiles...)
+		if len(m.activeFiles) > 6 {
+			m.activeFiles = m.activeFiles[:6]
+		}
+	}
+	return m
 }
 
 type axonConfig struct {
@@ -1382,4 +1476,99 @@ func makeDirectLLMRequest(prompt string, cfg axonConfig, p *tea.Program) {
 	}
 	
 	p.Send(wsStreamEndMsg{text: accumulatedText.String()})
+}
+
+func (m model) saveSession() {
+	userMsgs := 0
+	var firstUserText string
+	for _, msg := range m.messages {
+		if msg.Type == 0 { // msgUser
+			userMsgs++
+			if firstUserText == "" {
+				firstUserText = msg.Content
+			}
+		}
+	}
+	if userMsgs == 0 {
+		return
+	}
+
+	appData := os.Getenv("APPDATA")
+	if appData == "" {
+		appData = filepath.Join(os.Getenv("USERPROFILE"), "AppData", "Roaming")
+	}
+	sessionsDir := filepath.Join(appData, "AXON", "sessions")
+	_ = os.MkdirAll(sessionsDir, 0755)
+
+	sessionID := ""
+	const chars = "abcdef0123456789"
+	b := make([]byte, 12)
+	for i := range b {
+		b[i] = chars[rand.Intn(len(chars))]
+	}
+	sessionID = string(b)
+
+	title := firstUserText
+	if len(title) > 80 {
+		title = title[:80]
+	}
+	if title == "" {
+		title = "Untitled Shard Session"
+	}
+
+	type jsonMeta struct {
+		ID           string  `json:"id"`
+		Title        string  `json:"title"`
+		Model        string  `json:"model"`
+		UpdatedAt    string  `json:"updated_at"`
+		MessageCount int     `json:"message_count"`
+		Tokens       int     `json:"tokens"`
+	}
+
+	type jsonMsg struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	}
+
+	type sessionPayload struct {
+		Meta     jsonMeta  `json:"meta"`
+		Messages []jsonMsg `json:"messages"`
+	}
+
+	payload := sessionPayload{
+		Meta: jsonMeta{
+			ID:           sessionID,
+			Title:        title,
+			Model:        m.currentModel,
+			UpdatedAt:    time.Now().UTC().Format(time.RFC3339),
+			MessageCount: len(m.messages),
+			Tokens:       m.totalTokens,
+		},
+		Messages: []jsonMsg{},
+	}
+
+	for _, msg := range m.messages {
+		role := "assistant"
+		content := msg.Content
+		if msg.Type == 0 { // msgUser
+			role = "user"
+		} else if msg.Type == 2 { // msgTool
+			role = "system"
+			content = fmt.Sprintf("[TOOL %s (%s): %s]", msg.ToolName, msg.ToolStatus, msg.ToolDetail)
+		} else if msg.Type == 3 { // msgThinking
+			role = "assistant"
+			content = "<thinking>\n" + msg.Content + "\n</thinking>"
+		}
+		payload.Messages = append(payload.Messages, jsonMsg{
+			Role:    role,
+			Content: content,
+		})
+	}
+
+	filePath := filepath.Join(sessionsDir, sessionID+".json")
+	fileBytes, err := json.MarshalIndent(payload, "", "  ")
+	if err == nil {
+		_ = os.WriteFile(filePath, fileBytes, 0644)
+		fmt.Printf("\n[session] Chat history saved as %s.json\n", sessionID)
+	}
 }
