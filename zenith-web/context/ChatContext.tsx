@@ -659,7 +659,7 @@ export function BridgeProvider({ children }: { children: ReactNode }) {
     <BridgeContext.Provider value={value}>
       {children}
       {pendingApproval ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#050813]/80 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm">
           <div className="lunar-card w-full max-w-md p-5 shadow-2xl">
             <p className="label-mono">Approval required</p>
             <h3 className="mt-2 text-sm font-semibold text-white">Approve tool</h3>

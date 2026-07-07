@@ -37,35 +37,30 @@ function buildPaths(data: number[], width: number, height: number) {
   return { line, area };
 }
 
-function strokeToFill(stroke: string): string {
-  if (stroke.startsWith("rgb(")) {
-    return stroke.replace("rgb(", "rgba(").replace(")", ", 0.18)");
-  }
-  return "rgba(255, 255, 255, 0.12)";
-}
-
 export function Sparkline({
   data,
-  stroke = "rgba(255, 255, 255, 0.55)",
+  stroke = "var(--brand)",
   fillId,
   className = "",
 }: SparklineProps) {
   const width = 120;
   const height = 32;
   const { line, area } = buildPaths(data, width, height);
-  const fillTop = strokeToFill(stroke);
+
+  const isFlat = data.length < 2 || data.every((v) => v === 0 || v === data[0]);
 
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="none"
       className={`block h-8 w-full overflow-visible ${className}`}
+      style={{ opacity: isFlat ? 0.15 : 0.85 }}
       aria-hidden
     >
       <defs>
         <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={fillTop} />
-          <stop offset="100%" stopColor="rgba(0,0,0,0)" />
+          <stop offset="0%" stopColor={stroke} stopOpacity={0.18} />
+          <stop offset="100%" stopColor="transparent" stopOpacity={0} />
         </linearGradient>
       </defs>
       <path d={area} fill={`url(#${fillId})`} />

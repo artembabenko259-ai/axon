@@ -50,7 +50,7 @@ export function MultitaskPanel() {
     <GlassCard delay={0.18}>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Target className="h-4 w-4 text-[#5DE4FF]" />
+          <Target className="h-4 w-4 text-brand" />
           <h2 className="text-sm font-medium text-white">Orchestrator</h2>
         </div>
         {multitask ? (

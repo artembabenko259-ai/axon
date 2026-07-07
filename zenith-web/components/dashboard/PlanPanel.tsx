@@ -32,7 +32,7 @@ export function PlanPanel() {
     <GlassCard delay={0.16}>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <ClipboardList className="h-4 w-4 text-[#5DE4FF]" />
+          <ClipboardList className="h-4 w-4 text-brand" />
           <h2 className="text-sm font-medium text-white">Plan mode</h2>
         </div>
         {plan ? (

@@ -25,7 +25,7 @@ function SourceBadge({ source }: { source: "web" | "terminal" }) {
       className={cn(
         "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.18em]",
         isWeb
-          ? "border-[#5DE4FF]/25 bg-[#5DE4FF]/10 text-[#5DE4FF]"
+          ? "border-brand/25 bg-brand/10 text-brand"
           : "border-emerald-500/25 bg-emerald-500/10 text-emerald-300",
       )}
     >
@@ -52,7 +52,7 @@ export function ChatInterface() {
   };
 
   const statusLabel = connected ? "connected" : "reconnecting";
-  const statusColor = connected ? "text-[#5DE4FF]" : "text-amber-300";
+  const statusColor = connected ? "text-brand" : "text-amber-300";
 
   return (
     <div className="lunar-card flex h-full min-h-[min(640px,calc(100dvh-7rem))] flex-1 flex-col overflow-hidden">
@@ -117,21 +117,21 @@ export function ChatInterface() {
                     <span className="label-mono">{isUser ? "you" : "axon"}</span>
                     <SourceBadge source={msg.source} />
                     {streaming ? (
-                      <span className="animate-pulse font-mono text-[10px] text-[#5DE4FF]">
+                      <span className="animate-pulse font-mono text-[10px] text-brand">
                         streaming…
                       </span>
                     ) : null}
                   </div>
                   <div
                     className={cn(
-                      "rounded-2xl border px-4 py-3",
+                      "rounded-xl border px-4 py-3",
                       isUser
-                        ? "rounded-tr-sm border-[#5DE4FF]/25 bg-[#5DE4FF]/12"
-                        : "rounded-tl-sm border-white/[0.08] bg-white/[0.025]",
+                        ? "rounded-tr-none border-transparent bg-white text-black font-normal"
+                        : "rounded-tl-none border-white/5 bg-[#09090b]/80 text-slate-100",
                     )}
                   >
                     {isUser ? (
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-white">
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-black">
                         {msg.content}
                       </p>
                     ) : (

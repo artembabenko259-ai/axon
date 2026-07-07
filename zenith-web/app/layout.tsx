@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#050813",
+  themeColor: "#000000",
 };
 
 export default function RootLayout({
@@ -45,7 +45,7 @@ export default function RootLayout({
       className={`${sora.variable} ${jetbrains.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full bg-[#050813] text-[#E6F0FF]">
+      <body className="min-h-full bg-background text-foreground">
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

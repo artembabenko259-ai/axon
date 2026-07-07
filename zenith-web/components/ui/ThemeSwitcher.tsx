@@ -1,6 +1,6 @@
 "use client";
 
-import { Moon, Sun } from "lucide-react";
+import { Moon, Hexagon, Crosshair } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -21,20 +21,54 @@ export function ThemeSwitcher() {
     );
   }
 
-  const isBlack = theme === "black";
+  const themes = ["base", "shard", "dart"] as const;
+  const currentTheme = (theme as typeof themes[number]) || "base";
+
+  const toggleTheme = () => {
+    const currentIndex = themes.indexOf(currentTheme);
+    const nextIndex = (currentIndex + 1) % themes.length;
+    setTheme(themes[nextIndex]);
+  };
+
+  const getThemeDetails = (t: typeof themes[number]) => {
+    switch (t) {
+      case "shard":
+        return {
+          icon: <Hexagon className="h-3.5 w-3.5 text-[var(--brand)]" />,
+          label: "AXON Shard Theme",
+          borderClass: "hover:border-[var(--brand)]/45 hover:bg-[var(--brand)]/10",
+        };
+      case "dart":
+        return {
+          icon: <Crosshair className="h-3.5 w-3.5 text-[var(--brand)] animate-pulse" />,
+          label: "AXON Dart Theme",
+          borderClass: "hover:border-[var(--brand)]/45 hover:bg-[var(--brand)]/10",
+        };
+      case "base":
+      default:
+        return {
+          icon: <Moon className="h-3.5 w-3.5 text-[var(--brand)]" />,
+          label: "AXON Zenith Theme",
+          borderClass: "hover:border-[var(--brand)]/45 hover:bg-[var(--brand)]/10",
+        };
+    }
+  };
+
+  const details = getThemeDetails(currentTheme);
 
   return (
     <button
       type="button"
-      onClick={() => setTheme(isBlack ? "base" : "black")}
+      onClick={toggleTheme}
       className={cn(
-        "flex h-8 w-8 items-center justify-center rounded-md border border-white/[0.08] bg-[#0a0a0a] transition-colors",
-        "text-[#a1a1aa] hover:border-white/[0.15] hover:text-white",
+        "flex h-8 w-8 items-center justify-center rounded-md border border-white/[0.08] bg-black/40 transition-all duration-300",
+        "text-white/60 hover:text-white",
+        details.borderClass
       )}
-      aria-label={isBlack ? "Switch to Base theme" : "Switch to Black theme"}
-      title={isBlack ? "Base theme" : "Black theme"}
+      aria-label={details.label}
+      title={details.label}
     >
-      {isBlack ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+      {details.icon}
     </button>
   );
 }

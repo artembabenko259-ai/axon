@@ -136,7 +136,7 @@ export function ModelMarketplace() {
               className={cn(
                 "rounded-md px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest transition-colors",
                 category === cat.id
-                  ? "bg-[#5DE4FF]/15 text-[#5DE4FF]"
+                  ? "bg-[var(--brand)]/15 text-[var(--brand)]"
                   : "text-white/40 hover:bg-white/[0.04] hover:text-white/70",
               )}
             >

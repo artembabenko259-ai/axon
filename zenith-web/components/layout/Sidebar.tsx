@@ -28,18 +28,13 @@ export function Sidebar() {
 
   return (
     <aside
-      className="relative z-10 hidden w-[240px] shrink-0 flex-col border-r border-white/[0.08] lg:flex"
-      style={{
-        background:
-          "linear-gradient(180deg, rgba(8,12,24,0.85) 0%, rgba(5,8,19,0.95) 100%)",
-        backdropFilter: "blur(8px)",
-      }}
+      className="relative z-10 hidden w-[240px] shrink-0 flex-col border-r border-border-subtle bg-background-elevated/85 backdrop-blur-md lg:flex"
     >
       <Link
         href="/"
         className="flex items-center gap-3 px-6 pb-6 pt-7"
       >
-        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface">
           <Image
             src="/axon-icon.svg"
             alt="AXON"
@@ -50,7 +45,7 @@ export function Sidebar() {
         </div>
         <div className="leading-tight">
           <div className="text-sm font-bold tracking-[0.22em]">AXON</div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/45">
+          <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted">
             Zenith
           </div>
         </div>
@@ -69,8 +64,8 @@ export function Sidebar() {
                 className={cn(
                   "group flex items-center gap-3 rounded-xl border px-4 py-2.5 text-sm transition-colors",
                   active
-                    ? "border-white/15 bg-white/[0.05] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
-                    : "border-transparent text-white/65 hover:bg-white/[0.03] hover:text-white",
+                    ? "border-border bg-surface-elevated text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+                    : "border-transparent text-muted hover:bg-surface-hover hover:text-foreground",
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />

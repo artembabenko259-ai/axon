@@ -8,7 +8,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     <NextThemesProvider
       attribute="data-theme"
       defaultTheme="base"
-      themes={["base", "black"]}
+      themes={["base", "shard", "dart"]}
       enableSystem={false}
       disableTransitionOnChange={false}
     >

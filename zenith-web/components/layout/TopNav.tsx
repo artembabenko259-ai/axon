@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import { BridgeStatus } from "@/components/ui/BridgeStatus";
 import { ConfigWidget } from "@/components/config/ConfigWidget";
+import { ThemeSwitcher } from "@/components/ui/ThemeSwitcher";
 import { TAP_PRESS } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +68,7 @@ export function TopNav({ title = "Control Panel" }: TopNavProps) {
             })}
           </nav>
           <ConfigWidget />
+          <ThemeSwitcher />
           <motion.button
             type="button"
             whileTap={TAP_PRESS}
@@ -80,7 +82,7 @@ export function TopNav({ title = "Control Panel" }: TopNavProps) {
       </header>
 
       {mobileOpen ? (
-        <nav className="relative z-10 border-b border-white/[0.08] bg-[#050813]/95 p-2 backdrop-blur-md md:hidden">
+        <nav className="relative z-10 border-b border-white/[0.08] bg-background/95 p-2 backdrop-blur-md md:hidden">
           {navItems.map((item) => (
             <Link
               key={item.href}

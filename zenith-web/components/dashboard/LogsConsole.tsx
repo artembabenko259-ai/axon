@@ -116,9 +116,9 @@ export function LogsConsole() {
         <motion.span
           animate={{ opacity: [1, 0.4, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
-          className="ml-auto flex items-center gap-1.5 font-mono text-[10px] font-medium uppercase tracking-wider text-[#5DE4FF]"
+          className="ml-auto flex items-center gap-1.5 font-mono text-[10px] font-medium uppercase tracking-wider text-brand"
         >
-          <span className="h-1.5 w-1.5 rounded-full bg-[#5DE4FF] glow-cyan" />
+          <span className="h-1.5 w-1.5 rounded-full bg-brand shadow-[0_0_8px_var(--brand)]" />
           LIVE
         </motion.span>
       </div>

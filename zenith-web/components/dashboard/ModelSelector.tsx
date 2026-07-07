@@ -118,7 +118,7 @@ export function ModelSelector({ selected, onSelect }: ModelSelectorProps) {
               className={cn(
                 "group relative w-full overflow-hidden rounded-lg border px-3 py-2.5 text-left transition-colors duration-200",
                 active
-                  ? "border-[#5DE4FF]/35 bg-[#5DE4FF]/8"
+                  ? "border-brand/35 bg-brand/8"
                   : "border-white/[0.06] hover:border-white/15 hover:bg-white/[0.03]",
               )}
             >
@@ -127,7 +127,7 @@ export function ModelSelector({ selected, onSelect }: ModelSelectorProps) {
                   {model.id}
                 </span>
                 {active ? (
-                  <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#5DE4FF]">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-brand">
                     active
                   </span>
                 ) : (

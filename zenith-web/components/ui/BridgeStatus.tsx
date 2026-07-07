@@ -9,9 +9,9 @@ interface BridgeStatusProps {
 }
 
 function statusDot(connected: boolean, reconnecting?: boolean) {
-  if (connected) return "live-dot-on bg-[#5DE4FF]";
-  if (reconnecting) return "bg-[#F4C77B]";
-  return "bg-[#F47B7B]";
+  if (connected) return "live-dot-on bg-[var(--brand)]";
+  if (reconnecting) return "bg-amber-500";
+  return "bg-rose-500";
 }
 
 export function BridgeStatus({
