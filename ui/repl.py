@@ -142,10 +142,27 @@ def _rich_to_ansi(renderable: Any) -> str:
 
 
 def safe_print(renderable: Any) -> None:
-    """Emit Rich output through prompt_toolkit's native ANSI parser."""
+    """Emit Rich output through prompt_toolkit's native ANSI parser.
+
+    Falls back to plain stderr when running headless (no Windows console).
+    """
     output = _rich_to_ansi(renderable)
-    if output:
+    if not output:
+        return
+    try:
         print_formatted_text(ANSI(output))
+    except Exception:
+        # Headless / no Windows console — write plain text to stderr
+        import sys as _sys
+        plain = output.replace("\x1b[", "\x1b[")  # keep as-is, just strip tags
+        try:
+            import re as _re
+            plain = _re.sub(r"\x1b\[[0-9;]*[mGKHF]", "", output)
+        except Exception:
+            pass
+        _sys.stderr.write(plain)
+        if not plain.endswith("\n"):
+            _sys.stderr.write("\n")
 
 
 async def safe_async_print(renderable: Any) -> None:
@@ -1577,7 +1594,16 @@ async def start_axon(headless: bool = False) -> None:
             await handle_single_input(text, source, background=background)
 
         if background:
-            async with in_terminal():
+            app = get_app_or_none()
+            if app is not None and app._is_running:
+                async with in_terminal():
+                    background_render["active"] = True
+                    try:
+                        await _handle()
+                    finally:
+                        background_render["active"] = False
+            else:
+                # Headless — no prompt_toolkit app running, just execute directly
                 background_render["active"] = True
                 try:
                     await _handle()
