@@ -362,6 +362,8 @@ class LLMManager:
             base_url=url,
             api_key=api_key or "missing-key",
             default_headers=headers if headers else None,
+            timeout=20.0,
+            max_retries=2,
         )
 
     def set_approval_callback(self, approve: ApprovalCallback | None) -> None:
@@ -1272,7 +1274,10 @@ class LLMManager:
         try:
             from config_store import get_antigravity_api_key
             key = get_antigravity_api_key()
-            client = genai.Client(api_key=key if key else None)
+            client = genai.Client(
+                api_key=key if key else None,
+                http_options=types.HttpOptions(timeout=20.0)
+            )
             
             model_name = self.model or "gemini-2.5-flash"
             if "/" in model_name:
@@ -1317,7 +1322,10 @@ class LLMManager:
         
         from config_store import get_antigravity_api_key
         key = get_antigravity_api_key()
-        client = genai.Client(api_key=key if key else None)
+        client = genai.Client(
+            api_key=key if key else None,
+            http_options=types.HttpOptions(timeout=20.0)
+        )
 
         model_name = self.model or "gemini-2.5-flash"
         if "/" in model_name:
