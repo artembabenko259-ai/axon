@@ -18,6 +18,8 @@ from runtime_policy import (
     verify_bridge_token,
     RuntimePolicy,
 )
+import logging
+logging.getLogger("websockets").setLevel(logging.CRITICAL)
 import axon_devlog as _devlog
 _log = _devlog.get_logger(__name__)
 
