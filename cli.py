@@ -485,19 +485,26 @@ def _run_shard(*, dev: bool = False) -> int:
     # Start backend serve daemon in the background if not already running
     daemon = None
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(Path(__file__).parent)
+    
+    if getattr(sys, 'frozen', False):
+        cwd_path = Path(sys.executable).parent
+    else:
+        cwd_path = Path(__file__).resolve().parent
+        
+    env["PYTHONPATH"] = str(cwd_path)
     if dev:
         env["AXON_DEV"] = "1"
 
     if not is_port_open(8765):
+        from axon_runtime import user_data_dir
         if dev:
             import axon_devlog as _dl
-            _log_path = _dl.log_path() or Path(__file__).parent / "daemon.log"
+            _log_path = _dl.log_path() or user_data_dir() / "daemon.log"
             print(f"[AXON DEV] Starting backend daemon (logs → {_log_path})")
             _daemon_log = open(str(_log_path), "a", encoding="utf-8")
         else:
             print("[AXON] Starting backend daemon...")
-            _daemon_log = open(str(Path(__file__).parent / "daemon.log"), "w", encoding="utf-8")
+            _daemon_log = open(str(user_data_dir() / "daemon.log"), "w", encoding="utf-8")
 
         if getattr(sys, 'frozen', False):
             cmd = [sys.executable, "repl", "--headless"] + (["--dev"] if dev else [])
@@ -507,7 +514,7 @@ def _run_shard(*, dev: bool = False) -> int:
 
         daemon = subprocess.Popen(
             cmd,
-            cwd=str(Path(__file__).parent),
+            cwd=str(cwd_path),
             env=env,
             stdout=_daemon_log,
             stderr=_daemon_log
@@ -523,9 +530,10 @@ def _run_shard(*, dev: bool = False) -> int:
     # Start web dashboard server in background if not already running
     web_daemon = None
     if not is_port_open(3000):
+        from axon_runtime import user_data_dir
         if dev:
             import axon_devlog as _dl
-            _web_log_path = _dl.log_path() or Path(__file__).parent / "web.log"
+            _web_log_path = _dl.log_path() or user_data_dir() / "web.log"
             print(f"[AXON DEV] Starting web dashboard daemon (logs → {_web_log_path})")
             _web_log = open(str(_web_log_path), "a", encoding="utf-8")
         else:
@@ -540,7 +548,7 @@ def _run_shard(*, dev: bool = False) -> int:
 
         web_daemon = subprocess.Popen(
             web_cmd,
-            cwd=str(Path(__file__).parent),
+            cwd=str(cwd_path),
             env=env,
             stdout=_web_log,
             stderr=_web_log,
