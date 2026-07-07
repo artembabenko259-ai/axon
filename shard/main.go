@@ -381,7 +381,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		if m.showSuggestions && len(m.filteredSuggestions) > 0 {
 			switch msg.Type {
-			case tea.KeyTab, tea.KeyDown:
+			case tea.KeyTab:
+				selected := m.filteredSuggestions[m.suggestionIdx].Name
+				val := m.textInput.Value()
+				lastAtIdx := strings.LastIndex(val, "@")
+				if lastAtIdx != -1 && !strings.Contains(val[lastAtIdx:], " ") {
+					newValue := val[:lastAtIdx] + selected
+					m.textInput.SetValue(newValue)
+					m.textInput.SetCursor(len(newValue))
+				} else {
+					m.textInput.SetValue(selected + " ")
+					m.textInput.SetCursor(len(selected) + 1)
+				}
+				m.showSuggestions = false
+				return m, nil
+			case tea.KeyDown:
 				m.suggestionIdx = (m.suggestionIdx + 1) % len(m.filteredSuggestions)
 				return m, nil
 			case tea.KeyUp:
@@ -1277,6 +1291,9 @@ func makeDirectLLMRequest(prompt string, cfg axonConfig, p *tea.Program) {
 	
 	scanner := bufio.NewScanner(resp.Body)
 	var accumulatedText strings.Builder
+	var startTime time.Time
+	tokenCount := 0
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
@@ -1312,6 +1329,10 @@ func makeDirectLLMRequest(prompt string, cfg axonConfig, p *tea.Program) {
 				if len(geminiResp.Candidates) > 0 && len(geminiResp.Candidates[0].Content.Parts) > 0 {
 					txt := geminiResp.Candidates[0].Content.Parts[0].Text
 					if txt != "" {
+						if tokenCount == 0 {
+							startTime = time.Now()
+						}
+						tokenCount++
 						accumulatedText.WriteString(txt)
 						p.Send(wsStreamDeltaMsg{delta: txt})
 					}
@@ -1337,12 +1358,27 @@ func makeDirectLLMRequest(prompt string, cfg axonConfig, p *tea.Program) {
 				if len(openAiResp.Choices) > 0 {
 					txt := openAiResp.Choices[0].Delta.Content
 					if txt != "" {
+						if tokenCount == 0 {
+							startTime = time.Now()
+						}
+						tokenCount++
 						accumulatedText.WriteString(txt)
 						p.Send(wsStreamDeltaMsg{delta: txt})
 					}
 				}
 			}
 		}
+	}
+	
+	if tokenCount > 0 {
+		duration := time.Since(startTime)
+		tps := 0.0
+		if duration.Seconds() > 0 {
+			tps = float64(tokenCount) / duration.Seconds()
+		}
+		cost := float64(tokenCount) * 0.000002
+		statsString := fmt.Sprintf("\n\n*[Speed: %.1f t/s | Tokens: %d | Cost: ~$%.5f]*", tps, tokenCount, cost)
+		accumulatedText.WriteString(statsString)
 	}
 	
 	p.Send(wsStreamEndMsg{text: accumulatedText.String()})
