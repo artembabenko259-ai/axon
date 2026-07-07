@@ -1274,10 +1274,7 @@ class LLMManager:
         try:
             from config_store import get_antigravity_api_key
             key = get_antigravity_api_key()
-            client = genai.Client(
-                api_key=key if key else None,
-                http_options=types.HttpOptions(timeout=20.0)
-            )
+            client = genai.Client(api_key=key if key else None)
             
             model_name = self.model or "gemini-2.5-flash"
             if "/" in model_name:
@@ -1322,10 +1319,7 @@ class LLMManager:
         
         from config_store import get_antigravity_api_key
         key = get_antigravity_api_key()
-        client = genai.Client(
-            api_key=key if key else None,
-            http_options=types.HttpOptions(timeout=20.0)
-        )
+        client = genai.Client(api_key=key if key else None)
 
         model_name = self.model or "gemini-2.5-flash"
         if "/" in model_name:
@@ -1470,6 +1464,8 @@ class LLMManager:
             )
 
         except Exception as exc:
+            import traceback
+            traceback.print_exc()
             if self._on_stream_end:
                 await self._on_stream_end()
             return LLMResult(content="", model=self.model, error=f"AXON: Gemini API error — {exc}")
