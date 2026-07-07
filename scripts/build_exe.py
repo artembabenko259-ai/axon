@@ -134,6 +134,9 @@ def collect_hidden_imports() -> list[str]:
         "pyfiglet",
         "pyfiglet.fonts",
         "dotenv",
+        "google.genai",
+        "google.genai.types",
+        "pydantic",
     ]
     args: list[str] = []
     for module in modules:
@@ -219,6 +222,7 @@ def run_pyinstaller(*, clean: bool) -> Path:
     cmd.extend(collect_add_data_args())
     cmd.extend(collect_hidden_imports())
     cmd.extend(collect_pyfiglet_data())
+    cmd.extend(["--collect-all", "google", "--collect-all", "pydantic"])
     cmd.extend(collect_exclude_modules())
     cmd.append("--noupx")
 
