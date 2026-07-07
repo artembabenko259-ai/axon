@@ -1,6 +1,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QFile>
 #include "llmclient.h"
 
 int main(int argc, char *argv[])
