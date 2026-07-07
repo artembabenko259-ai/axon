@@ -498,6 +498,101 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "define_subagent",
+            "description": "Defines a new type of subagent with a specialized system prompt, description, and role.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Unique identifier/name for the subagent type (e.g. 'DatabaseOptimizer', 'SecurityAuditor').",
+                    },
+                    "system_prompt": {
+                        "type": "string",
+                        "description": "Detailed system prompt instructions for this subagent.",
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Brief description of what this subagent specializes in.",
+                    },
+                },
+                "required": ["name", "system_prompt", "description"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "invoke_subagent",
+            "description": "Spawns a subagent to run a specific task in the background.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the subagent type to invoke (either a newly defined name or a standard agent name).",
+                    },
+                    "prompt": {
+                        "type": "string",
+                        "description": "Actionable task description or prompt for the subagent.",
+                    },
+                    "workspace_mode": {
+                        "type": "string",
+                        "enum": ["inherit", "branch", "share"],
+                        "description": "Workspace isolation mode. 'inherit' uses the parent's directory directly; 'branch' copies project files to a clean isolated directory; 'share' adds a git worktree.",
+                    },
+                },
+                "required": ["name", "prompt"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "send_message",
+            "description": "Send a message to an active subagent (e.g. to reply or give further instructions).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "recipient_id": {
+                        "type": "string",
+                        "description": "The target subagent conversation ID (returned by invoke_subagent).",
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Text message content to send.",
+                    },
+                },
+                "required": ["recipient_id", "message"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "manage_subagents",
+            "description": "List or terminate active background subagents.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": ["list", "kill", "kill_all"],
+                        "description": "Action to perform.",
+                    },
+                    "conversation_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of subagent conversation IDs to terminate (required for 'kill').",
+                    },
+                },
+                "required": ["action"],
+            },
+        },
+    },
 ]
 
 
@@ -1492,6 +1587,70 @@ async def execute_tool(
     policy = load_runtime_policy()
     if policy.tool_mode(tool_name) == "deny":
         return f"Error: tool '{tool_name}' is denied by runtime policy."
+
+    if tool_name == "define_subagent":
+        from subagent_manager import subagent_manager
+        name = str(arguments.get("name", ""))
+        system_prompt = str(arguments.get("system_prompt", ""))
+        description = str(arguments.get("description", ""))
+        if not name or not system_prompt:
+            return "Error: name and system_prompt are required."
+        res = subagent_manager.define_subagent(name, system_prompt, description)
+        return f"Successfully defined subagent '{res}'."
+
+    if tool_name == "invoke_subagent":
+        from subagent_manager import subagent_manager
+        from ui.observe_mode import _observe_llm as parent_llm
+        name = str(arguments.get("name", ""))
+        prompt = str(arguments.get("prompt", ""))
+        workspace_mode = str(arguments.get("workspace_mode", "inherit"))
+        if not name or not prompt:
+            return "Error: name and prompt are required."
+        conv_id = subagent_manager.invoke_subagent(
+            name, prompt, workspace_mode=workspace_mode, parent_llm=parent_llm
+        )
+        return f"Successfully invoked subagent '{name}'. Conversation ID: {conv_id}."
+
+    if tool_name == "send_message":
+        from subagent_manager import subagent_manager
+        recipient_id = str(arguments.get("recipient_id", ""))
+        message = str(arguments.get("message", ""))
+        if not recipient_id or not message:
+            return "Error: recipient_id and message are required."
+        ok = await subagent_manager.send_message(recipient_id, message)
+        if ok:
+            return "Message sent successfully."
+        else:
+            return f"Error: recipient '{recipient_id}' not found or not active."
+
+    if tool_name == "manage_subagents":
+        from subagent_manager import subagent_manager
+        action = str(arguments.get("action", "")).strip().lower()
+        if action == "list":
+            sub_list = subagent_manager.list_subagents()
+            if not sub_list:
+                return "No active subagents."
+            import json
+            return json.dumps(sub_list, indent=2)
+        elif action == "kill":
+            ids = arguments.get("conversation_ids", [])
+            if not ids:
+                return "Error: conversation_ids is required for 'kill'."
+            killed = []
+            for cid in ids:
+                if subagent_manager.kill_subagent(str(cid)):
+                    killed.append(cid)
+            return f"Successfully terminated subagents: {killed}"
+        elif action == "kill_all":
+            all_subs = subagent_manager.list_subagents()
+            killed = []
+            for sub in all_subs:
+                cid = sub["conversation_id"]
+                if subagent_manager.kill_subagent(cid):
+                    killed.append(cid)
+            return f"Successfully terminated all subagents: {killed}"
+        else:
+            return f"Error: unknown action '{action}'."
 
     if tool_name == "take_screenshot":
         from ui.observe_mode import observe_enabled
