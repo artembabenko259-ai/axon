@@ -21,6 +21,9 @@ set(SOURCES
 set(QML_FILES
     main.qml
     NavigationButton.qml
+    GraphView.qml
+    GraphNode.qml
+    ConnectionLine.qml
 )
 
 qt_add_executable(axon-workstation

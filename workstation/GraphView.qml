@@ -4,34 +4,13 @@ import QtQuick.Layouts
 
 Rectangle {
     id: graphView
-    color: "#09090b" // Dark background matching Obsidian Graph View
+    color: "#09090b" // Slate-950 off-black
     clip: true
-
-    property var nodes: [
-        { id: "main", label: "AXON Core", type: "agent", x: 450, y: 300 },
-        { id: "gmail", label: "Gmail Linker", type: "agent", x: 250, y: 150 },
-        { id: "telegram", label: "Telegram Bot", type: "agent", x: 650, y: 150 },
-        { id: "todo", label: "TODO.md", type: "file", x: 150, y: 350 },
-        { id: "readme", label: "README.md", type: "file", x: 750, y: 350 },
-        { id: "git", label: "Git AutoCommit", type: "action", x: 300, y: 450 },
-        { id: "log", label: "session_log.json", type: "file", x: 600, y: 450 }
-    ]
-
-    property var links: [
-        { from: "main", to: "gmail" },
-        { from: "main", to: "telegram" },
-        { from: "main", to: "todo" },
-        { from: "main", to: "readme" },
-        { from: "main", to: "git" },
-        { from: "main", to: "log" },
-        { from: "gmail", to: "todo" },
-        { from: "telegram", to: "log" }
-    ]
 
     property string selectedNodeLabel: "None"
     property string selectedNodeType: "None"
 
-    // Zoom and pan container
+    // Flickable Viewport Board
     Flickable {
         id: flickable
         anchors.fill: parent
@@ -39,7 +18,6 @@ Rectangle {
         contentHeight: board.height
         boundsBehavior: Flickable.StopAtBounds
 
-        // Initialize viewport scroll in center
         Component.onCompleted: {
             flickable.contentX = (board.width - flickable.width) / 2
             flickable.contentY = (board.height - flickable.height) / 2
@@ -51,213 +29,282 @@ Rectangle {
             height: 2000
             scale: zoomSlider.value
 
-            Behavior on scale { NumberAnimation { duration: 150 } }
+            Behavior on scale { NumberAnimation { duration: 100 } }
 
-            // Custom connection line renderer
+            // Static Dot Grid Background (Drawn once, does not redraw on drag!)
             Canvas {
-                id: linkCanvas
+                id: gridCanvas
                 anchors.fill: parent
                 z: 0
+                Component.onCompleted: requestPaint()
 
                 onPaint: {
                     var ctx = getContext("2d")
                     ctx.reset()
                     
-                    // Draw grid background (subtle)
-                    ctx.strokeStyle = "#141419"
-                    ctx.lineWidth = 1
-                    var gridSize = 40
-                    for (var x = 0; x < width; x += gridSize) {
-                        ctx.beginPath()
-                        ctx.moveTo(x, 0)
-                        ctx.lineTo(x, height)
-                        ctx.stroke()
-                    }
-                    for (var y = 0; y < height; y += gridSize) {
-                        ctx.beginPath()
-                        ctx.moveTo(0, y)
-                        ctx.lineTo(width, y)
-                        ctx.stroke()
-                    }
-
-                    // Draw connections
-                    ctx.strokeStyle = "#272733"
-                    ctx.lineWidth = 1.5
-                    
-                    for (var i = 0; i < graphView.links.length; i++) {
-                        var link = graphView.links[i]
-                        var fromNode = findNode(link.from)
-                        var toNode = findNode(link.to)
-
-                        if (fromNode && toNode) {
+                    // Subtle Dot Grid (Obsidian / Linear style)
+                    ctx.fillStyle = "#1b1b22"
+                    var dotSpacing = 24
+                    for (var x = 0; x < width; x += dotSpacing) {
+                        for (var y = 0; y < height; y += dotSpacing) {
                             ctx.beginPath()
-                            // Coordinates centered on nodes
-                            ctx.moveTo(fromNode.x + fromNode.width / 2, fromNode.y + fromNode.height / 2)
-                            ctx.lineTo(toNode.x + toNode.width / 2, toNode.y + toNode.height / 2)
-                            ctx.stroke()
+                            ctx.arc(x, y, 0.75, 0, 2 * Math.PI)
+                            ctx.fill()
                         }
                     }
                 }
             }
 
-            // Generate nodes from JS array
-            Repeater {
-                model: graphView.nodes
-                delegate: GraphNode {
-                    label: modelData.label
-                    type: modelData.type
-                    x: modelData.x
-                    y: modelData.y
-                    z: 10
-                    isSelected: graphView.selectedNodeLabel === modelData.label
+            // Connection Lines (GPU accelerated via direct property bindings)
+            ConnectionLine { fromNode: mainNode; toNode: gmailNode }
+            ConnectionLine { fromNode: mainNode; toNode: telegramNode }
+            ConnectionLine { fromNode: mainNode; toNode: todoNode }
+            ConnectionLine { fromNode: mainNode; toNode: readmeNode }
+            ConnectionLine { fromNode: mainNode; toNode: commitNode }
+            ConnectionLine { fromNode: mainNode; toNode: sessionNode }
+            ConnectionLine { fromNode: gmailNode; toNode: todoNode }
+            ConnectionLine { fromNode: telegramNode; toNode: sessionNode }
 
-                    onMoved: {
-                        modelData.x = x
-                        modelData.y = y
-                        linkCanvas.requestPaint()
-                    }
+            // Draggable Nodes (Static declarations with GPU-bound coordinates)
+            GraphNode {
+                id: mainNode
+                label: "AXON CORE"
+                type: "agent"
+                x: 950; y: 950
+                isSelected: graphView.selectedNodeLabel === label
+                onClicked: { graphView.selectedNodeLabel = label; graphView.selectedNodeType = type }
+            }
 
-                    onClicked: {
-                        graphView.selectedNodeLabel = modelData.label
-                        graphView.selectedNodeType = modelData.type
-                    }
-                }
+            GraphNode {
+                id: gmailNode
+                label: "GMAIL BOT"
+                type: "agent"
+                x: 750; y: 800
+                isSelected: graphView.selectedNodeLabel === label
+                onClicked: { graphView.selectedNodeLabel = label; graphView.selectedNodeType = type }
+            }
+
+            GraphNode {
+                id: telegramNode
+                label: "TELEGRAM CHAT"
+                type: "agent"
+                x: 1150; y: 800
+                isSelected: graphView.selectedNodeLabel === label
+                onClicked: { graphView.selectedNodeLabel = label; graphView.selectedNodeType = type }
+            }
+
+            GraphNode {
+                id: todoNode
+                label: "workspace/todo.md"
+                type: "file"
+                x: 650; y: 1000
+                isSelected: graphView.selectedNodeLabel === label
+                onClicked: { graphView.selectedNodeLabel = label; graphView.selectedNodeType = type }
+            }
+
+            GraphNode {
+                id: readmeNode
+                label: "workspace/readme.md"
+                type: "file"
+                x: 1250; y: 1000
+                isSelected: graphView.selectedNodeLabel === label
+                onClicked: { graphView.selectedNodeLabel = label; graphView.selectedNodeType = type }
+            }
+
+            GraphNode {
+                id: commitNode
+                label: "git:commit-helper"
+                type: "action"
+                x: 800; y: 1150
+                isSelected: graphView.selectedNodeLabel === label
+                onClicked: { graphView.selectedNodeLabel = label; graphView.selectedNodeType = type }
+            }
+
+            GraphNode {
+                id: sessionNode
+                label: "logs/session.json"
+                type: "file"
+                x: 1100; y: 1150
+                isSelected: graphView.selectedNodeLabel === label
+                onClicked: { graphView.selectedNodeLabel = label; graphView.selectedNodeType = type }
             }
         }
     }
 
-    // Helper functions to resolve node coordinates
-    function findNode(id) {
-        for (var i = 0; i < board.children.length; i++) {
-            var child = board.children[i]
-            // We search children that are instances of GraphNode (Repeater items)
-            if (child.label !== undefined && graphView.nodes[i] !== undefined && graphView.nodes[i].id === id) {
-                return child
-            }
-        }
-        // Fallback search by index
-        for (var idx = 0; idx < graphView.nodes.length; idx++) {
-            if (graphView.nodes[idx].id === id) {
-                var repeaterItem = board.children[idx + 1] // +1 due to Canvas being the first child
-                if (repeaterItem && repeaterItem.label !== undefined) return repeaterItem
-            }
-        }
-        return null
-    }
-
-    // Floating Zoom Controls (Obsidian Style)
+    // Minimalistic floating zoom controls
     Rectangle {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
-        anchors.margins: 25
-        width: 220
-        height: 45
-        color: "#0f0f13"
-        border.color: "#1d1d22"
+        anchors.margins: 30
+        width: 180
+        height: 36
+        color: "#0a0a0d"
+        border.color: "#18181b"
         border.width: 1
-        radius: 8
+        radius: 6
         z: 100
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 15
-            anchors.rightMargin: 15
-            spacing: 10
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            spacing: 8
 
             Text {
-                text: "🔍"
-                font.pixelSize: 14
+                text: "ZOOM"
+                color: "#52525b"
+                font.family: "Inter"
+                font.pixelSize: 9
+                font.bold: true
+                font.letterSpacing: 1.0
             }
 
             Slider {
                 id: zoomSlider
                 Layout.fillWidth: true
-                from: 0.3
-                to: 1.8
+                from: 0.4
+                to: 1.5
                 value: 1.0
+
+                background: Rectangle {
+                    implicitWidth: 100
+                    implicitHeight: 2
+                    width: parent.availableWidth
+                    height: implicitHeight
+                    radius: 1
+                    color: "#18181b"
+
+                    Rectangle {
+                        width: zoomSlider.visualPosition * parent.width
+                        height: parent.height
+                        color: "#27272a"
+                        radius: 1
+                    }
+                }
+
+                handle: Rectangle {
+                    x: zoomSlider.leftPadding + zoomSlider.visualPosition * (zoomSlider.availableWidth - width)
+                    y: zoomSlider.topPadding + zoomSlider.availableHeight / 2 - height / 2
+                    implicitWidth: 10
+                    implicitHeight: 10
+                    radius: 5
+                    color: zoomSlider.pressed ? "#ffffff" : "#d4d4d8"
+                    border.color: "#18181b"
+                    border.width: 1
+                }
             }
         }
     }
 
-    // Side Info Panel for Selected Node
+    // Side Info Panel (Obsidian-Style, ultra-minimal)
     Rectangle {
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.margins: 20
-        width: 280
-        color: "#0b0b0e"
-        border.color: "#1c1c22"
+        anchors.margins: 30
+        width: 260
+        color: "#09090b"
+        border.color: "#18181b"
         border.width: 1
-        radius: 8
+        radius: 6
         z: 100
         visible: graphView.selectedNodeLabel !== "None"
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 20
-            spacing: 15
+            anchors.margins: 18
+            spacing: 12
 
             RowLayout {
                 Layout.fillWidth: true
                 Text {
-                    text: "Node inspector"
-                    color: "#ffffff"
+                    text: "INSPECTOR"
+                    color: "#71717a"
+                    font.family: "Inter"
+                    font.pixelSize: 9
                     font.bold: true
-                    font.pixelSize: 14
+                    font.letterSpacing: 1.0
                 }
                 Item { Layout.fillWidth: true }
-                Button {
-                    text: "×"
+                MouseArea {
+                    width: 16
+                    height: 16
+                    cursorShape: Qt.PointingHandCursor
+                    Text {
+                        anchors.centerIn: parent
+                        text: "×"
+                        color: "#52525b"
+                        font.pixelSize: 16
+                    }
                     onClicked: graphView.selectedNodeLabel = "None"
-                    contentItem: Text { text: "×"; color: "#8a8a98"; font.pixelSize: 18 }
-                    background: null
                 }
             }
 
             Rectangle {
                 Layout.fillWidth: true
                 height: 1
-                color: "#1c1c22"
+                color: "#18181b"
             }
 
             Text {
                 text: graphView.selectedNodeLabel
                 color: "#ffffff"
-                font.pixelSize: 18
+                font.family: "Inter"
+                font.pixelSize: 14
                 font.bold: true
                 wrapMode: Text.Wrap
                 Layout.fillWidth: true
             }
 
             Text {
-                text: "Type: " + graphView.selectedNodeType.toUpperCase()
-                color: "#8a8a98"
-                font.pixelSize: 11
+                text: "TYPE: " + graphView.selectedNodeType.toUpperCase()
+                color: {
+                    if (graphView.selectedNodeType === "agent") return "#818cf8"
+                    if (graphView.selectedNodeType === "file") return "#34d399"
+                    return "#fb7185"
+                }
+                font.family: "Inter"
+                font.pixelSize: 9
+                font.bold: true
+                font.letterSpacing: 0.5
             }
 
             Text {
-                text: "Connected to other nodes in the workspace graph. Drag nodes to reshape, double click to view related notes, logs, or agent task logs."
-                color: "#5e5e6e"
-                font.pixelSize: 12
+                text: "Click and drag graph nodes to rearrange coordinates. Double-click files to open their local markdown/code context inside the workstation editor workspace."
+                color: "#52525b"
+                font.family: "Inter"
+                font.pixelSize: 11
+                lineHeight: 1.3
                 wrapMode: Text.Wrap
                 Layout.fillWidth: true
             }
 
             Item { Layout.fillHeight: true } // Spacer
 
-            Button {
+            Rectangle {
                 Layout.fillWidth: true
-                text: "Open Related File"
-                contentItem: Text {
-                    text: "Open File Context"
-                    color: "#ffffff"
+                height: 32
+                color: "#18181b"
+                radius: 4
+                border.color: "#27272a"
+                border.width: 1
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "OPEN FILE CONTEXT"
+                    color: "#d4d4d8"
+                    font.family: "Inter"
+                    font.pixelSize: 9
                     font.bold: true
-                    horizontalAlignment: Text.AlignHCenter
+                    font.letterSpacing: 0.5
                 }
-                background: Rectangle {
-                    color: "#272733"
-                    radius: 4
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+                    onEntered: parent.color = "#27272a"
+                    onExited: parent.color = "#18181b"
                 }
             }
         }

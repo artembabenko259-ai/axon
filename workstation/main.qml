@@ -71,21 +71,21 @@ ApplicationWindow {
 
                 // Chat Tab Button
                 NavigationButton {
-                    iconText: "💬"
+                    iconName: "chat"
                     active: window.activeTab === "chat"
                     onClicked: window.activeTab = "chat"
                 }
 
                 // Notes / Editor Tab
                 NavigationButton {
-                    iconText: "📝"
+                    iconName: "notes"
                     active: window.activeTab === "notes"
                     onClicked: window.activeTab = "notes"
                 }
 
                 // Subagent Graph Tab
                 NavigationButton {
-                    iconText: "🕸️"
+                    iconName: "graph"
                     active: window.activeTab === "graph"
                     onClicked: window.activeTab = "graph"
                 }
@@ -208,28 +208,32 @@ ApplicationWindow {
                                 }
                             }
 
-                            // Send Button
-                            Button {
-                                text: "Send"
-                                font.bold: true
-                                font.pixelSize: 12
-                                contentItem: Text {
+                            // Custom Send Button (no QML Button style warnings)
+                            Rectangle {
+                                implicitWidth: 60
+                                implicitHeight: 32
+                                color: sendMouse.containsMouse ? "#4f46e5" : "#6366f1"
+                                radius: 4
+                                
+                                Text {
+                                    anchors.centerIn: parent
                                     text: "Send"
                                     color: "#ffffff"
+                                    font.family: "Segoe UI"
+                                    font.pixelSize: 12
                                     font.bold: true
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
                                 }
-                                background: Rectangle {
-                                    implicitWidth: 60
-                                    implicitHeight: 32
-                                    color: parent.hovered ? "#4f46e5" : "#6366f1"
-                                    radius: 4
-                                }
-                                onClicked: {
-                                    if (inputField.text.trim() !== "") {
-                                        llm.sendPrompt(inputField.text);
-                                        inputField.text = "";
+                                
+                                MouseArea {
+                                    id: sendMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (inputField.text.trim() !== "") {
+                                            llm.sendPrompt(inputField.text);
+                                            inputField.text = "";
+                                        }
                                     }
                                 }
                             }
@@ -249,13 +253,9 @@ ApplicationWindow {
             }
 
             // Tab 2: Subagent Graph Visualization
-            Rectangle {
-                color: "transparent"
-                Text {
-                    anchors.centerIn: parent
-                    text: "Interactive Subagent Graph View"
-                    color: "#8a8a98"
-                }
+            GraphView {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
             }
         }
     }
