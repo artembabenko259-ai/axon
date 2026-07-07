@@ -21,10 +21,10 @@ int main(int argc, char *argv[])
     LlmClient llm;
     engine.rootContext()->setContextProperty("llm", &llm);
 
-    const QUrl url(QStringLiteral("qrc:/main.qml"));
+    const QUrl url(QStringLiteral("qrc:/qt/qml/Workstation/main.qml"));
     
     // In case resources are loaded from local file path during dev:
-    const QUrl localUrl = QUrl::fromLocalFile(app.applicationDirPath() + "/main.qml");
+    const QUrl localUrl = QUrl::fromLocalFile(app.applicationDirPath() + "/Workstation/main.qml");
 
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url, localUrl](QObject *obj, const QUrl &objUrl) {
@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
     }, Qt::QueuedConnection);
 
     // Try loading compiled QRC first, fallback to local file
-    engine.load(localUrl.isValid() && QFile::exists(localUrl.toLocalFile()) ? localUrl : QUrl(QStringLiteral("qrc:/main.qml")));
+    engine.load(localUrl.isValid() && QFile::exists(localUrl.toLocalFile()) ? localUrl : url);
 
     return app.exec();
 }

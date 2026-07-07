@@ -17,7 +17,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gorilla/websocket"
+	"net/http"
+	"bytes"
+	"bufio"
 )
+
+var globalProgram *tea.Program
 
 type wsMsg struct {
 	Type    string  `json:"type"`
@@ -468,25 +473,45 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
-			// Send to websocket
-			chatMsg := wsMsg{
-				Type: "chat",
-				Text: attachedText.String(),
+			isSlash := strings.HasPrefix(input, "/")
+			cfg, err := loadAxonConfig()
+			
+			if !isSlash && err == nil && (cfg.Provider == "antigravity" || cfg.Provider == "gemini" || cfg.Provider == "openrouter" || cfg.Provider == "custom" || cfg.Provider == "ollama") {
+				// Record user message
+				m.messages = append(m.messages, chatMessage{
+					Type:    msgUser,
+					Content: input,
+				})
+				m.viewport.SetContent(m.renderMessages())
+				m.viewport.GotoBottom()
+				
+				m.textInput.SetValue("")
+				m.status = "THINKING"
+				m.showSuggestions = false
+				
+				// Make direct HTTP request to API in background goroutine
+				go makeDirectLLMRequest(attachedText.String(), cfg, globalProgram)
+			} else {
+				// Send to websocket (fallback to python daemon for slash commands / agent tasks)
+				chatMsg := wsMsg{
+					Type: "chat",
+					Text: attachedText.String(),
+				}
+				data, _ := json.Marshal(chatMsg)
+				_ = m.conn.WriteMessage(websocket.TextMessage, data)
+
+				// Record user message
+				m.messages = append(m.messages, chatMessage{
+					Type:    msgUser,
+					Content: input,
+				})
+				m.viewport.SetContent(m.renderMessages())
+				m.viewport.GotoBottom()
+
+				m.textInput.SetValue("")
+				m.status = "THINKING"
+				m.showSuggestions = false
 			}
-			data, _ := json.Marshal(chatMsg)
-			_ = m.conn.WriteMessage(websocket.TextMessage, data)
-
-			// Record user message
-			m.messages = append(m.messages, chatMessage{
-				Type:    msgUser,
-				Content: input,
-			})
-			m.viewport.SetContent(m.renderMessages())
-			m.viewport.GotoBottom()
-
-			m.textInput.SetValue("")
-			m.status = "THINKING"
-			m.showSuggestions = false
 
 		default:
 			m.textInput, cmd = m.textInput.Update(msg)
@@ -832,6 +857,7 @@ func main() {
 	defer conn.Close()
 
 	p := tea.NewProgram(initialModel(conn), tea.WithAltScreen())
+	globalProgram = p
 
 	go func() {
 		for {
@@ -1125,4 +1151,199 @@ func (m model) renderTelemetryStatus(width int, height int) string {
 
 	body := fmt.Sprintf("\n%s\n\n%s\n%s\n\n· status: nominal\n· websocket: active\n· latency: <45ms", header, costStr, tokensStr)
 	return body
+}
+
+type axonConfig struct {
+	Provider          string `json:"provider"`
+	Model             string `json:"model"`
+	AntigravityApiKey string `json:"antigravity_api_key"`
+	OpenRouterApiKey  string `json:"openrouter_api_key"`
+	CustomApiKey      string `json:"custom_api_key"`
+	CustomBaseUrl     string `json:"custom_base_url"`
+	OllamaBaseUrl     string `json:"ollama_base_url"`
+}
+
+func loadAxonConfig() (axonConfig, error) {
+	appData := os.Getenv("APPDATA")
+	configPath := filepath.Join(appData, "AXON", "config.json")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return axonConfig{}, err
+	}
+	var cfg axonConfig
+	err = json.Unmarshal(data, &cfg)
+	return cfg, err
+}
+
+func makeDirectLLMRequest(prompt string, cfg axonConfig, p *tea.Program) {
+	p.Send(wsStreamStartMsg{})
+	
+	var req *http.Request
+	var err error
+	
+	if cfg.Provider == "antigravity" || cfg.Provider == "gemini" {
+		modelName := cfg.Model
+		if strings.Contains(modelName, "/") {
+			parts := strings.Split(modelName, "/")
+			modelName = parts[len(parts)-1]
+		}
+		if modelName == "" {
+			modelName = "gemini-2.5-flash"
+		}
+		
+		urlStr := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:streamGenerateContent?key=%s", modelName, cfg.AntigravityApiKey)
+		
+		bodyMap := map[string]interface{}{
+			"contents": []interface{}{
+				map[string]interface{}{
+					"parts": []interface{}{
+						map[string]interface{}{
+							"text": prompt,
+						},
+					},
+				},
+			},
+		}
+		bodyBytes, _ := json.Marshal(bodyMap)
+		req, err = http.NewRequest("POST", urlStr, bytes.NewBuffer(bodyBytes))
+		if err != nil {
+			p.Send(wsErrorMsg{err: err.Error()})
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+	} else if cfg.Provider == "openrouter" {
+		urlStr := "https://openrouter.ai/api/v1/chat/completions"
+		bodyMap := map[string]interface{}{
+			"model": cfg.Model,
+			"stream": true,
+			"messages": []interface{}{
+				map[string]interface{}{
+					"role": "user",
+					"content": prompt,
+				},
+			},
+		}
+		bodyBytes, _ := json.Marshal(bodyMap)
+		req, err = http.NewRequest("POST", urlStr, bytes.NewBuffer(bodyBytes))
+		if err != nil {
+			p.Send(wsErrorMsg{err: err.Error()})
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer " + cfg.OpenRouterApiKey)
+	} else {
+		baseUrl := cfg.OllamaBaseUrl
+		if cfg.Provider == "custom" {
+			baseUrl = cfg.CustomBaseUrl
+		}
+		if baseUrl == "" {
+			baseUrl = "http://127.0.0.1:11434/v1"
+		}
+		urlStr := fmt.Sprintf("%s/chat/completions", strings.TrimSuffix(baseUrl, "/"))
+		bodyMap := map[string]interface{}{
+			"model": cfg.Model,
+			"stream": true,
+			"messages": []interface{}{
+				map[string]interface{}{
+					"role": "user",
+					"content": prompt,
+				},
+			},
+		}
+		bodyBytes, _ := json.Marshal(bodyMap)
+		req, err = http.NewRequest("POST", urlStr, bytes.NewBuffer(bodyBytes))
+		if err != nil {
+			p.Send(wsErrorMsg{err: err.Error()})
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		if cfg.Provider == "custom" && cfg.CustomApiKey != "" {
+			req.Header.Set("Authorization", "Bearer " + cfg.CustomApiKey)
+		}
+	}
+	
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		p.Send(wsErrorMsg{err: err.Error()})
+		return
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		p.Send(wsErrorMsg{err: fmt.Sprintf("API returned status %d", resp.StatusCode)})
+		return
+	}
+	
+	scanner := bufio.NewScanner(resp.Body)
+	var accumulatedText strings.Builder
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		
+		if cfg.Provider == "antigravity" || cfg.Provider == "gemini" {
+			cleanJson := line
+			if strings.HasPrefix(cleanJson, "[") {
+				cleanJson = cleanJson[1:]
+			}
+			if strings.HasPrefix(cleanJson, ",") {
+				cleanJson = cleanJson[1:]
+			}
+			if strings.HasSuffix(cleanJson, "]") {
+				cleanJson = cleanJson[:len(cleanJson)-1]
+			}
+			cleanJson = strings.TrimSpace(cleanJson)
+			if cleanJson == "" {
+				continue
+			}
+			
+			var geminiResp struct {
+				Candidates []struct {
+					Content struct {
+						Parts []struct {
+							Text string `json:"text"`
+						} `json:"parts"`
+					} `json:"content"`
+				} `json:"candidates"`
+			}
+			if err := json.Unmarshal([]byte(cleanJson), &geminiResp); err == nil {
+				if len(geminiResp.Candidates) > 0 && len(geminiResp.Candidates[0].Content.Parts) > 0 {
+					txt := geminiResp.Candidates[0].Content.Parts[0].Text
+					if txt != "" {
+						accumulatedText.WriteString(txt)
+						p.Send(wsStreamDeltaMsg{delta: txt})
+					}
+				}
+			}
+		} else {
+			if !strings.HasPrefix(line, "data:") {
+				continue
+			}
+			dataContent := strings.TrimSpace(line[5:])
+			if dataContent == "[DONE]" {
+				break
+			}
+			
+			var openAiResp struct {
+				Choices []struct {
+					Delta struct {
+						Content string `json:"content"`
+					} `json:"delta"`
+				} `json:"choices"`
+			}
+			if err := json.Unmarshal([]byte(dataContent), &openAiResp); err == nil {
+				if len(openAiResp.Choices) > 0 {
+					txt := openAiResp.Choices[0].Delta.Content
+					if txt != "" {
+						accumulatedText.WriteString(txt)
+						p.Send(wsStreamDeltaMsg{delta: txt})
+					}
+				}
+			}
+		}
+	}
+	
+	p.Send(wsStreamEndMsg{text: accumulatedText.String()})
 }

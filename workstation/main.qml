@@ -21,19 +21,19 @@ ApplicationWindow {
 
     Connections {
         target: llm
-        onStreamStarted: {
+        function onStreamStarted() {
             isStreaming = true
             streamText = ""
             currentStatus = "Thinking..."
         }
-        onTokenReceived: {
+        function onTokenReceived(token) {
             streamText += token
         }
-        onStreamFinished: {
+        function onStreamFinished() {
             isStreaming = false
             currentStatus = "Ready"
         }
-        onErrorOccurred: {
+        function onErrorOccurred(error) {
             isStreaming = false
             streamText += "\n\n[Error]: " + error
             currentStatus = "Error"
