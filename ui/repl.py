@@ -635,13 +635,21 @@ async def start_axon(headless: bool = False) -> None:
                 tx.rollback(checkpoint)
                 await emit("[bold red]❌ Agent failed to complete the task successfully. Transaction rolled back to last working checkpoint.[/]\n")
 
-        full_text = result.content if result.ok else result.display_text
+        if not result.ok:
+            if not streaming_active["value"]:
+                await bridge.broadcast_stream_start(stream_id, source=source)
+            if not background:
+                await emit(f"\n{DEFAULT_THEME.assistant_label}\n[bold red]❌ Error:[/] {result.display_text}\n")
+            await bridge.broadcast_stream_end(stream_id, result.display_text, source=source)
+            return
+
+        full_text = result.content
         await bridge.broadcast_stream_end(stream_id, full_text, source=source)
 
         if not streaming_active["value"] and not stream_buffer:
             await emit(f"\n{DEFAULT_THEME.assistant_label}")
 
-        if result.ok and result.content:
+        if result.content:
             if not stream_buffer:
                 await emit(Markdown(result.content, code_theme="monokai"))
         else:
