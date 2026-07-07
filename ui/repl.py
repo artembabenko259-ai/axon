@@ -1539,6 +1539,13 @@ async def start_axon(headless: bool = False) -> None:
         if quick_reply:
             llm_manager.messages.append({"role": "user", "content": stripped})
             llm_manager.messages.append({"role": "assistant", "content": quick_reply})
+            
+            # Stream events for TUI clients (Go, Dart) to transition them out of THINKING state
+            stream_id = f"{source}-stream-{uuid.uuid4().hex[:8]}"
+            await bridge.broadcast_stream_start(stream_id, source=source)
+            await bridge.broadcast_stream_delta(stream_id, quick_reply)
+            await bridge.broadcast_stream_end(stream_id, quick_reply, source=source)
+
             await emit(f"\n{DEFAULT_THEME.assistant_label}")
             await emit(quick_reply)
             await emit(
