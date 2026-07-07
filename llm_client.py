@@ -1251,92 +1251,215 @@ class LLMManager:
             "content": message.content or "",
         }
 
+
     async def _complete_text_antigravity(self, system: str, user: str) -> LLMResult:
         try:
-            import google.antigravity as agy
+            from google import genai
+            from google.genai import types
         except ImportError:
             return LLMResult(
                 content="",
                 model=self.model,
-                error="AXON: google-antigravity SDK is not installed. Please run: pip install google-antigravity",
+                error="AXON: google-genai SDK is not installed. Please run: pip install google-genai",
             )
             
         try:
             from config_store import get_antigravity_api_key
             key = get_antigravity_api_key()
-            if key:
-                os.environ["ANTIGRAVITY_API_KEY"] = key
-            config = agy.LocalAgentConfig(
-                system_instructions=system,
-                capabilities=agy.CapabilitiesConfig(
-                    read_file=True,
-                    write_file=False,
-                    run_command=False,
-                    web_search=False
-                )
+            client = genai.Client(api_key=key if key else None)
+            
+            model_name = self.model or "gemini-2.5-flash"
+            if "/" in model_name:
+                model_name = model_name.split("/")[-1]
+            if model_name.startswith("google/"):
+                model_name = model_name[7:]
+            if not model_name.startswith("gemini-"):
+                model_name = "gemini-2.5-flash"
+
+            config = types.GenerateContentConfig(
+                system_instruction=system,
             )
-            async with agy.Agent(config) as agent:
-                resp = await agent.chat(user)
-                content_parts = []
-                async for token in resp:
-                    content_parts.append(token)
-                content = "".join(content_parts).strip()
-                return LLMResult(content=content, model="google-antigravity-sdk")
+            response = await client.aio.models.generate_content(
+                model=model_name,
+                contents=user,
+                config=config
+            )
+            return LLMResult(content=response.text or "", model=model_name)
         except Exception as exc:
-            return LLMResult(content="", model=self.model, error=f"AXON: Antigravity SDK error — {exc}")
+            return LLMResult(content="", model=self.model, error=f"AXON: Gemini API error — {exc}")
 
     async def _agent_loop_antigravity(self, user_text: str) -> LLMResult:
         try:
-            import google.antigravity as agy
+            from google import genai
+            from google.genai import types
         except ImportError:
             return LLMResult(
                 content="",
                 model=self.model,
-                error="AXON: google-antigravity SDK is not installed. Please run: pip install google-antigravity",
+                error="AXON: google-genai SDK is not installed. Please run: pip install google-genai",
             )
-            
-        try:
-            from config_store import get_antigravity_api_key
-            key = get_antigravity_api_key()
-            if key:
-                os.environ["ANTIGRAVITY_API_KEY"] = key
-            config = agy.LocalAgentConfig(
-                system_instructions=self._build_system_prompt(),
-                capabilities=agy.CapabilitiesConfig(
-                    read_file=True,
-                    write_file=True,
-                    run_command=True,
-                    web_search=True
-                )
-            )
-            
-            if self._on_stream_start:
-                await self._on_stream_start()
 
-            if self.auto_compact_enabled and should_auto_compact(self.messages):
-                await self.compact_context()
+        self.clear_cancel()
+        from ui.explore_stats import reset_turn_explore_stats
+        reset_turn_explore_stats()
+        clear_read_file_cache()
+
+        if self.auto_compact_enabled and should_auto_compact(self.messages):
+            await self.compact_context()
+
+        self.messages.append({"role": "user", "content": user_text})
+        
+        from config_store import get_antigravity_api_key
+        key = get_antigravity_api_key()
+        client = genai.Client(api_key=key if key else None)
+
+        model_name = self.model or "gemini-2.5-flash"
+        if "/" in model_name:
+            model_name = model_name.split("/")[-1]
+        if model_name.startswith("google/"):
+            model_name = model_name[7:]
+        if not model_name.startswith("gemini-"):
+            model_name = "gemini-2.5-flash"
+
+        from autopilot_mode import is_autopilot_active
+        from runtime_policy import load_runtime_policy
+        policy = load_runtime_policy()
+        max_rounds = 40 if (is_autopilot_active() or policy.autonomy_enabled) else MAX_TOOL_ROUNDS
+
+        tool_steps = 0
+
+        try:
+            for round_index in range(max_rounds):
+                if self._is_cancelled():
+                    self._rollback_last_user_message()
+                    return LLMResult(
+                        content="",
+                        model=self.model,
+                        error="AXON: Generation cancelled.",
+                        tool_steps=tool_steps,
+                    )
+
+                use_tools = round_index < max_rounds - 1
+                contents = _openai_to_gemini_contents(self.messages)
                 
-            self.messages.append({"role": "user", "content": user_text})
-            
-            async with agy.Agent(config) as agent:
-                resp = await agent.chat(user_text)
-                
+                g_tools = []
+                if use_tools:
+                    openai_tools = self._get_all_tool_schemas()
+                    declarations = []
+                    for ot in openai_tools:
+                        gfn = _openai_to_gemini_tool(ot)
+                        declarations.append(types.FunctionDeclaration(**gfn))
+                    if declarations:
+                        g_tools = [types.Tool(function_declarations=declarations)]
+
+                system_prompt = self._build_system_prompt()
+                config = types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    tools=g_tools if use_tools else None,
+                )
+
+                if self._on_stream_start:
+                    await self._on_stream_start()
+
                 content_parts = []
-                async for token in resp:
-                    content_parts.append(token)
-                    if self._on_stream_token:
-                        await self._on_stream_token(token)
-                        
+                accumulated_tool_calls = []
+
+                response_stream = await client.aio.models.generate_content_stream(
+                    model=model_name,
+                    contents=contents,
+                    config=config
+                )
+
+                async for chunk in response_stream:
+                    if self._is_cancelled():
+                        if self._on_stream_end:
+                            await self._on_stream_end()
+                        self._rollback_last_user_message()
+                        return LLMResult(
+                            content="",
+                            model=self.model,
+                            error="AXON: Generation cancelled.",
+                            tool_steps=tool_steps,
+                        )
+
+                    if chunk.text:
+                        content_parts.append(chunk.text)
+                        if self._on_stream_token:
+                            await self._on_stream_token(chunk.text)
+
+                    if chunk.function_calls:
+                        for fc in chunk.function_calls:
+                            accumulated_tool_calls.append(fc)
+
                 if self._on_stream_end:
                     await self._on_stream_end()
-                    
+
                 content = "".join(content_parts).strip()
-                self.messages.append({"role": "assistant", "content": content})
-                return LLMResult(content=content, model="google-antigravity-sdk")
+                
+                import uuid
+                import json
+                tool_calls = []
+                for fc in accumulated_tool_calls:
+                    call_id = fc.id or f"call_{uuid.uuid4().hex[:12]}"
+                    tool_calls.append({
+                        "id": call_id,
+                        "type": "function",
+                        "function": {
+                            "name": fc.name,
+                            "arguments": json.dumps(fc.args or {})
+                        }
+                    })
+
+                if tool_calls:
+                    self.messages.append(
+                        {
+                            "role": "assistant",
+                            "content": content or None,
+                            "tool_calls": tool_calls,
+                        }
+                    )
+                    for tool_call in tool_calls:
+                        if self._is_cancelled():
+                            self._rollback_last_user_message()
+                            return LLMResult(
+                                content="",
+                                model=self.model,
+                                error="AXON: Generation cancelled.",
+                                tool_steps=tool_steps,
+                            )
+                        tool_steps += 1
+                        tool_name = tool_call["function"]["name"]
+                        arguments = parse_tool_arguments(
+                            tool_call["function"].get("arguments") or "{}"
+                        )
+                        if self._on_tool is not None:
+                            detail = tool_activity_detail(tool_name, arguments)
+                            await self._on_tool(tool_name, detail)
+                        result = await self._dispatch_tool(tool_name, arguments)
+                        self.messages.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": tool_call["id"],
+                                "content": result,
+                            }
+                        )
+                    continue
+
+                if content:
+                    self.messages.append({"role": "assistant", "content": content})
+                    return LLMResult(content=content, model=model_name, tool_steps=tool_steps)
+
+            return LLMResult(
+                content="AXON: Max tool execution rounds reached.",
+                model=model_name,
+                tool_steps=tool_steps,
+            )
+
         except Exception as exc:
             if self._on_stream_end:
                 await self._on_stream_end()
-            return LLMResult(content="", model=self.model, error=f"AXON: Antigravity SDK error — {exc}")
+            return LLMResult(content="", model=self.model, error=f"AXON: Gemini API error — {exc}")
+
 
     def _rollback_last_user_message(self) -> None:
         if self.messages and self.messages[-1].get("role") == "user":
@@ -1392,3 +1515,94 @@ class LLMManager:
             completion_tokens=completion_i,
             total_tokens=total_i,
         )
+
+
+def _upper_type(val: Any) -> Any:
+    if isinstance(val, dict):
+        new_d = {}
+        for k, v in val.items():
+            if k == "type" and isinstance(v, str):
+                new_d[k] = v.upper()
+            else:
+                new_d[k] = _upper_type(v)
+        return new_d
+    elif isinstance(val, list):
+        return [_upper_type(item) for item in val]
+    return val
+
+
+def _openai_to_gemini_tool(openai_tool: dict) -> dict:
+    fn = openai_tool.get("function", {})
+    params = fn.get("parameters", {})
+    params_upper = _upper_type(params)
+    return {
+        "name": fn.get("name"),
+        "description": fn.get("description"),
+        "parameters": params_upper
+    }
+
+
+def _openai_to_gemini_contents(messages: list[dict]) -> list[Any]:
+    from google.genai import types
+    gemini_contents = []
+    for msg in messages:
+        role = msg.get("role")
+        if role == "system":
+            continue
+            
+        parts = []
+        if msg.get("content"):
+            parts.append(types.Part.from_text(text=msg["content"]))
+            
+        if role == "assistant":
+            tool_calls = msg.get("tool_calls")
+            if tool_calls:
+                g_calls = []
+                for tc in tool_calls:
+                    fn = tc.get("function", {})
+                    import json
+                    args = fn.get("arguments", {})
+                    if isinstance(args, str):
+                        try:
+                            args = json.loads(args)
+                        except Exception:
+                            args = {}
+                    g_calls.append(types.FunctionCall(
+                        name=fn.get("name"),
+                        args=args,
+                        id=tc.get("id")
+                    ))
+                parts.extend(types.Part(function_call=c) for c in g_calls)
+            
+            gemini_contents.append(types.Content(role="model", parts=parts))
+            
+        elif role == "user":
+            gemini_contents.append(types.Content(role="user", parts=parts))
+            
+        elif role == "tool":
+            content_str = msg.get("content", "")
+            import json
+            try:
+                response_dict = json.loads(content_str)
+                if not isinstance(response_dict, dict):
+                    response_dict = {"result": response_dict}
+            except Exception:
+                response_dict = {"response": content_str}
+                
+            fn_resp = types.FunctionResponse(
+                name=msg.get("name", "unknown_tool"),
+                response=response_dict,
+                id=msg.get("tool_call_id")
+            )
+            for prev_msg in reversed(messages):
+                if prev_msg.get("role") == "assistant" and prev_msg.get("tool_calls"):
+                    for tc in prev_msg["tool_calls"]:
+                        if tc.get("id") == msg.get("tool_call_id"):
+                            fn_resp.name = tc["function"]["name"]
+                            break
+            
+            parts.append(types.Part(function_response=fn_resp))
+            gemini_contents.append(types.Content(role="user", parts=parts))
+            
+    return gemini_contents
+
