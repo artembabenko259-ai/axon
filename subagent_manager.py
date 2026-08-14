@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import os
 import shutil
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
-from llm_client import LLMManager, LLMResult
+from llm_client import LLMManager
 from agent_manager import create_agent, load_agent_prompt, sanitize_agent_name
 
 logger = logging.getLogger(__name__)
@@ -116,8 +115,11 @@ class SubagentManager:
         sub_workspace = self._setup_workspace(workspace_mode, conversation_id)
 
         # Build subagent LLMManager
+        from runtime_policy import load_runtime_policy
+
+        policy = load_runtime_policy()
         api_key = parent_llm._api_key if parent_llm else None
-        model = parent_llm.model if parent_llm else None
+        model = policy.subagent_model.strip() or (parent_llm.model if parent_llm else None)
         approve = parent_llm._approve if parent_llm else None
 
         sub_llm = LLMManager(

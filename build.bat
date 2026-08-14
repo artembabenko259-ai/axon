@@ -10,7 +10,7 @@ set "ROOT=%~dp0"
 if "%ROOT:~-1%"=="\" set "ROOT=%ROOT:~0,-1%"
 cd /d "%ROOT%"
 
-set "VERSION=1.0.1"
+set "VERSION=2.0.0"
 set "SETUP_NAME=AXON_Setup_v%VERSION%.exe"
 set "RELEASE_DIR=%ROOT%\release"
 set "VENV_PY=%ROOT%\.venv-build\Scripts\python.exe"

@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from agent_manager import list_agents, sanitize_agent_name
-from llm_client import LLMManager, LLMResult
+from llm_client import LLMManager
 
 MAX_SUBTASKS = 5
 MAX_PARALLEL = 3

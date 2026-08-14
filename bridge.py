@@ -17,6 +17,7 @@ from runtime_policy import (
     save_runtime_policy,
     verify_bridge_token,
     RuntimePolicy,
+    SECURITY_MODES,
 )
 import logging
 logging.getLogger("websockets").setLevel(logging.CRITICAL)
@@ -321,6 +322,16 @@ class AxonBridge:
                     model = (data.get("model") or "").strip()
                     if model and self._set_model is not None:
                         asyncio.create_task(self._set_model(model))
+
+                elif msg_type == "set_security_mode":
+                    mode = data.get("content", "").strip()
+                    if mode in SECURITY_MODES:
+                        policy = load_runtime_policy()
+                        policy.apply_security_mode(mode)
+                        save_runtime_policy(policy)
+                        if self._refresh_ui is not None:
+                            asyncio.create_task(self._refresh_ui())
+
 
         finally:
             connected_clients.discard(websocket)

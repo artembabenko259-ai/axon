@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shlex
 import shutil
@@ -740,6 +741,12 @@ def tool_activity_detail(tool_name: str, args: dict[str, Any]) -> str:
         return f"{args.get('category', 'fact')}: {args.get('key', '')}"
     if tool_name == "write_artifact":
         return _display_path(str(args.get("filename", "")))
+    if tool_name == "browser_goto":
+        return _browser_goto(str(args.get("url", "")))
+    if tool_name == "browser_click":
+        return _browser_click(str(args.get("selector", "")))
+    if tool_name == "browser_type":
+        return _browser_type(str(args.get("selector", "")), str(args.get("text", "")))
     if tool_name == "web_search":
         return _quote_activity(str(args.get("query", "")))
     if tool_name == "take_screenshot":
@@ -1325,6 +1332,12 @@ def execute_shell(command: str) -> str:
         if re.search(pattern, cmd, re.IGNORECASE):
             return f"Error: blocked command pattern ({label})"
 
+    env = os.environ.copy()
+    github_token = load_runtime_policy().github_token.strip()
+    if github_token:
+        env["GITHUB_TOKEN"] = github_token
+        env["GH_TOKEN"] = github_token
+
     try:
         if sys.platform == "win32":
             proc = subprocess.run(
@@ -1333,6 +1346,7 @@ def execute_shell(command: str) -> str:
                 capture_output=True,
                 text=True,
                 timeout=SHELL_TIMEOUT_SECONDS,
+                env=env,
             )
         else:
             proc = subprocess.run(
@@ -1340,6 +1354,7 @@ def execute_shell(command: str) -> str:
                 capture_output=True,
                 text=True,
                 timeout=SHELL_TIMEOUT_SECONDS,
+                env=env,
             )
 
         parts: list[str] = []
@@ -1384,6 +1399,12 @@ def _run_tool_sync(tool_name: str, args: dict[str, Any]) -> str:
         from ui.observe_mode import take_screenshot_tool
 
         return take_screenshot_tool(str(args.get("path", "")))
+    if tool_name == "browser_goto":
+        return _browser_goto(str(args.get("url", "")))
+    if tool_name == "browser_click":
+        return _browser_click(str(args.get("selector", "")))
+    if tool_name == "browser_type":
+        return _browser_type(str(args.get("selector", "")), str(args.get("text", "")))
     if tool_name == "web_search":
         return web_search(str(args.get("query", "")))
     if tool_name == "list_dir":
@@ -1698,10 +1719,8 @@ async def execute_tool(
         outcome="ok" if not result.startswith("Error") else "error",
     )
 
-    observe_note: str | None = None
     if tool_name in {"take_screenshot", "inspect_image"} and not result.startswith("Error"):
         from ui.observe_mode import enrich_screenshot_result, _resolve_screenshot_path
-        from runtime_policy import load_runtime_policy
         from axon_telegram import send_telegram_photo
 
         policy = load_runtime_policy()
@@ -1735,3 +1754,49 @@ def parse_tool_arguments(raw: str) -> dict[str, Any]:
         return parsed if isinstance(parsed, dict) else {}
     except json.JSONDecodeError:
         return {}
+
+
+# --- Browser Tools ---
+_pw_state = {"pw": None, "browser": None, "page": None}
+
+def _get_browser_page():
+    if _pw_state["page"] is not None and not _pw_state["page"].is_closed():
+        return _pw_state["page"]
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        return None
+        
+    if _pw_state["pw"] is None:
+        _pw_state["pw"] = sync_playwright().start()
+        _pw_state["browser"] = _pw_state["pw"].chromium.launch(headless=False)
+    _pw_state["page"] = _pw_state["browser"].new_page()
+    return _pw_state["page"]
+
+def _browser_goto(url: str) -> str:
+    page = _get_browser_page()
+    if not page: return "Error: playwright not installed"
+    try:
+        page.goto(url, timeout=30000)
+        page.wait_for_load_state("networkidle", timeout=5000)
+        return f"Navigated to {url}. Title: {page.title()}"
+    except Exception as e:
+        return f"Error: {e}"
+
+def _browser_click(selector: str) -> str:
+    page = _get_browser_page()
+    if not page: return "Error: playwright not installed"
+    try:
+        page.click(selector, timeout=5000)
+        return f"Clicked {selector}"
+    except Exception as e:
+        return f"Error: {e}"
+
+def _browser_type(selector: str, text: str) -> str:
+    page = _get_browser_page()
+    if not page: return "Error: playwright not installed"
+    try:
+        page.fill(selector, text, timeout=5000)
+        return f"Typed text into {selector}"
+    except Exception as e:
+        return f"Error: {e}"

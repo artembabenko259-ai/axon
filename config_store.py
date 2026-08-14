@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import os
 import shutil
-from pathlib import Path
 
 from axon_runtime import install_root, user_data_dir
 

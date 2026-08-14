@@ -178,7 +178,7 @@ type model struct {
 	textInput           textinput.Model
 	viewport            viewport.Model
 	messages            []chatMessage
-	currentMsg          strings.Builder
+	currentMsg          string
 	currentModel        string
 	status              string
 	width               int
@@ -189,6 +189,7 @@ type model struct {
 	suggestionIdx       int
 	autopilotActive     bool
 	autonomyEnabled     bool
+	securityMode        int // 0 = def, 1 = accept edit, 2 = bypass
 	totalTokens         int
 	totalCost           float64
 	splitPanes          bool
@@ -218,6 +219,7 @@ func initialModel(conn *websocket.Conn) model {
 		connected:        false,
 		splitPanes:       true, // enabled by default to showcase layout
 		expandedThinking: false,
+		securityMode:     0,
 		activeFiles:      []fileActivity{},
 	}
 }
@@ -444,6 +446,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyCtrlC:
 			return m, tea.Quit
+		case tea.KeyShiftTab:
+			m.securityMode = (m.securityMode + 1) % 3
+			modeStr := "def"
+			if m.securityMode == 1 {
+				modeStr = "accept_edit"
+			} else if m.securityMode == 2 {
+				modeStr = "bypass"
+			}
+			chatMsg := wsMsg{Type: "set_security_mode", Content: modeStr}
+			data, _ := json.Marshal(chatMsg)
+			if m.conn != nil {
+				m.conn.WriteMessage(websocket.TextMessage, data)
+			}
+			return m, nil
 		case tea.KeyEsc:
 			if m.status == "THINKING" || m.status == "RUNNING TOOL" {
 				chatMsg := wsMsg{Type: "abort"}
@@ -495,26 +511,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
-			isSlash := strings.HasPrefix(input, "/")
-			cfg, err := loadAxonConfig()
-			
-			if !isSlash && err == nil && (cfg.Provider == "openrouter" || cfg.Provider == "custom" || cfg.Provider == "ollama") {
-				// Record user message
-				m.messages = append(m.messages, chatMessage{
-					Type:    msgUser,
-					Content: input,
-				})
-				m.viewport.SetContent(m.renderMessages())
-				m.viewport.GotoBottom()
-				
-				m.textInput.SetValue("")
-				m.status = "THINKING"
-				m.showSuggestions = false
-				
-				// Make direct HTTP request to API in background goroutine
-				go makeDirectLLMRequest(attachedText.String(), cfg, globalProgram)
-			} else {
-				// Send to websocket (fallback to python daemon for slash commands / agent tasks)
+			if true {
+				// Send to websocket (always use python daemon for tools and history)
 				chatMsg := wsMsg{
 					Type: "chat",
 					Text: attachedText.String(),
@@ -529,6 +527,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				})
 				m.viewport.SetContent(m.renderMessages())
 				m.viewport.GotoBottom()
+
 
 				m.textInput.SetValue("")
 				m.status = "THINKING"
@@ -613,7 +612,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.currentModel = msg.model
 
 	case wsStreamStartMsg:
-		m.currentMsg.Reset()
+		m.currentMsg = ""
 		m.messages = append(m.messages, chatMessage{
 			Type:    msgAxonText,
 			Content: "",
@@ -623,10 +622,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case wsStreamDeltaMsg:
 		m.tickCount++
-		m.currentMsg.WriteString(msg.delta)
+		m.currentMsg += msg.delta
 		for i := len(m.messages) - 1; i >= 0; i-- {
 			if m.messages[i].Type == msgAxonText {
-				m.messages[i].Content = m.currentMsg.String()
+				m.messages[i].Content = m.currentMsg
 				break
 			}
 		}
@@ -1167,7 +1166,15 @@ func (m model) renderAutopilotStatus(width int, height int) string {
 	header := lipgloss.NewStyle().Foreground(accentColor).Bold(true).Render("Autopilot Panel")
 	statusLabel := lipgloss.NewStyle().Foreground(statusColor).Bold(true).Render(status)
 
-	body := fmt.Sprintf("\n%s\n\nStatus: %s\n\n· auto-approves runs\n· auto-writes files\n· safe approval bridge\n· F5 to collapse panels", header, statusLabel)
+	modeText := "DEF (Спрашивать всё)"
+	if m.securityMode == 1 {
+		modeText = "EDIT (Файлы без спроса)"
+	} else if m.securityMode == 2 {
+		modeText = "BYPASS (Полное доверие)"
+	}
+	modeLabel := lipgloss.NewStyle().Foreground(lipgloss.Color("#fbbf24")).Bold(true).Render("🛡 Security: " + modeText + " [Shift+Tab]")
+
+	body := fmt.Sprintf("\n%s\n\nStatus: %s\n\n%s\n\n• auto-approves runs\n• auto-writes files\n• safe approval bridge\n• F5 to collapse panels", header, statusLabel, modeLabel)
 	return body
 }
 

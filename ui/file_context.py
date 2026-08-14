@@ -81,7 +81,6 @@ def build_file_context(text: str, cwd: Path | None = None) -> tuple[str, str]:
     for match in reversed(matches):
         raw = match.group(1)
         resolved = _resolve_mention(raw, root)
-        tag = f"@{raw}"
 
         if resolved is None or not resolved.exists():
             replacement = f"[missing:@{raw}]"

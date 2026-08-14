@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
-from rich.align import Align
 from rich.box import HORIZONTALS
 from rich.console import Console, Group, RenderableType
 from rich.layout import Layout
@@ -14,7 +13,7 @@ from rich.rule import Rule
 from rich.style import Style
 from rich.text import Text
 
-from ui.branding import APP_NAME, VERSION, build_header
+from ui.branding import APP_NAME, build_header
 from ui.theme import CLITheme, DEFAULT_THEME
 
 MessageRole = Literal["user", "assistant", "system"]

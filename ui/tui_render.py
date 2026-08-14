@@ -329,7 +329,7 @@ def render_change_preview(
         for raw in body_lines:
             lines_out.append(_format_diff_line(raw, width))
         if expanded and hidden > 0:
-            lines_out.append(f"  ▲ свернуть — V")
+            lines_out.append("  ▲ свернуть — V")
     else:
         for raw in countable[:peek_lines]:
             lines_out.append(_format_diff_line(raw, width))

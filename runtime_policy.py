@@ -20,6 +20,12 @@ DEFAULT_TOOL_POLICY: dict[str, str] = {
     "apply_patch": "ask",
 }
 
+# Security modes cycled via Shift+Tab / `/setup` / `/config set security_mode <mode>`.
+#   def         — ask before every write/patch/shell call (default, safest)
+#   accept_edit — auto-approve file writes/patches, still ask before shell commands
+#   bypass      — full autonomy, nothing requires approval
+SECURITY_MODES = ("def", "accept_edit", "bypass")
+
 
 @dataclass
 class RuntimePolicy:
@@ -59,6 +65,11 @@ class RuntimePolicy:
     discord_channel_id: str = ""
     slack_bot_token: str = ""
     slack_channel_id: str = ""
+    # Model used for spawned subagents. Empty = inherit the parent's model.
+    subagent_model: str = ""
+    # Personal access token for `gh`/git-over-HTTPS — exported as GITHUB_TOKEN/GH_TOKEN
+    # to shell tool calls when set. Optional.
+    github_token: str = ""
 
     def resolved_tool_policy(self) -> dict[str, str]:
         merged = dict(DEFAULT_TOOL_POLICY)
@@ -73,6 +84,29 @@ class RuntimePolicy:
             self.bridge_token = secrets.token_urlsafe(24)
         if not self.bridge_pin:
             self.bridge_pin = f"{secrets.randbelow(900000) + 100000:06d}"
+
+    def security_mode(self) -> str:
+        """Return the current coarse security mode: def / accept_edit / bypass."""
+        if self.autonomy_enabled:
+            return "bypass"
+        if self.resolved_tool_policy().get("write_file") == "auto":
+            return "accept_edit"
+        return "def"
+
+    def apply_security_mode(self, mode: str) -> None:
+        """Set autonomy_enabled + write_file/apply_patch policy for a named mode."""
+        if mode not in SECURITY_MODES:
+            raise ValueError(f"Unknown security mode: {mode!r}")
+        if mode == "bypass":
+            self.autonomy_enabled = True
+        elif mode == "accept_edit":
+            self.autonomy_enabled = False
+            self.tool_policy["write_file"] = "auto"
+            self.tool_policy["apply_patch"] = "auto"
+        else:  # "def"
+            self.autonomy_enabled = False
+            self.tool_policy["write_file"] = "ask"
+            self.tool_policy["apply_patch"] = "ask"
 
 
 def _default_policy() -> RuntimePolicy:
@@ -124,6 +158,8 @@ def load_runtime_policy() -> RuntimePolicy:
         discord_channel_id=str(raw.get("discord_channel_id", "")),
         slack_bot_token=str(raw.get("slack_bot_token", "")),
         slack_channel_id=str(raw.get("slack_channel_id", "")),
+        subagent_model=str(raw.get("subagent_model", "")),
+        github_token=str(raw.get("github_token", "")),
     )
     if policy.bridge_auth_enabled:
         policy.ensure_secrets()
@@ -171,6 +207,9 @@ def policy_for_client() -> dict[str, object]:
         "discord_channel_id": policy.discord_channel_id,
         "slack_bot_token": policy.slack_bot_token,
         "slack_channel_id": policy.slack_channel_id,
+        "subagent_model": policy.subagent_model,
+        "github_token": policy.github_token,
+        "security_mode": policy.security_mode(),
     }
 
 

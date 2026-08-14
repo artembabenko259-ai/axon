@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 import html.parser
-import json
 import urllib.request
 import urllib.parse
 import re
-from pathlib import Path
 
 
 class HTMLToTextParser(html.parser.HTMLParser):

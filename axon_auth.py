@@ -4,13 +4,11 @@ from __future__ import annotations
 
 import json
 import os
-import sys
 import time
 import urllib.error
 import urllib.request
 import webbrowser
 from dataclasses import dataclass
-from pathlib import Path
 
 from axon_runtime import user_data_dir
 

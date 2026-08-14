@@ -2,7 +2,7 @@
 ; Built automatically by build.bat (PyInstaller + ISCC)
 
 #define MyAppName "AXON"
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "2.0.0"
 #define MyAppPublisher "AXON Core Team"
 #define MyAppExeName "axon.exe"
 #define MyAppId "{{A7F3E2B1-4C8D-4E9A-9F1B-2D8E6C5A4F30}"

@@ -8,6 +8,7 @@ from typing import Any
 from runtime_policy import (
     POLICY_PATH,
     RuntimePolicy,
+    SECURITY_MODES,
     load_runtime_policy,
     save_runtime_policy,
 )
@@ -67,9 +68,15 @@ def _format_policy(policy: RuntimePolicy) -> str:
         f"  terminal_control_enabled      {policy.terminal_control_enabled}",
         f"  require_desktop_confirmation  {policy.require_desktop_confirmation}",
         f"  bridge_auth_enabled           {policy.bridge_auth_enabled}",
+        f"  security_mode                 {policy.security_mode()}  [dim](def / accept_edit / bypass)[/]",
         f"  telegram_bot_token            {policy.telegram_bot_token or '(empty)'}",
         f"  telegram_chat_id              {policy.telegram_chat_id or '(empty)'}",
+        f"  discord_bot_token             {policy.discord_bot_token or '(empty)'}",
+        f"  slack_bot_token               {policy.slack_bot_token or '(empty)'}",
+        f"  github_token                  {'(set)' if policy.github_token else '(empty)'}",
+        f"  subagent_model                {policy.subagent_model or '(inherit parent model)'}",
         "",
+        "[dim]/setup — guided wizard for provider, security mode & integrations[/]",
         "[dim]/config set <key> <value>  ·  /autopilot on|off  ·  /config path[/]",
     ]
     return "\n".join(lines)
@@ -107,6 +114,15 @@ async def handle_config_command(stripped: str, *, emit: Emit) -> bool:
             return True
         value_raw = parts[3].strip()
         policy = load_runtime_policy()
+        if key == "security_mode":
+            mode = value_raw.strip().lower()
+            if mode not in SECURITY_MODES:
+                await emit(f"[red]Expected one of {', '.join(SECURITY_MODES)}[/]\n")
+                return True
+            policy.apply_security_mode(mode)
+            save_runtime_policy(policy)
+            await emit(f"[green][✓] security_mode = {mode}[/]\n")
+            return True
         if not hasattr(policy, key):
             await emit(f"[red]Unknown policy key: {key}[/]\n")
             return True

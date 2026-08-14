@@ -43,7 +43,6 @@ from skills_manager import (
 )
 from skills.tools import (
     ApprovalDecision,
-    format_tool_activity_line,
     set_tool_result_callback,
     tool_display_label,
 )
@@ -1137,8 +1136,6 @@ class AxonTUI:
         return result.synthesis or "(empty)"
 
     async def _run_multitask(self, goal: str, *, from_tool: bool = False):
-        from orchestrator import OrchestratorResult
-
         app = get_app()
         w = self._width()
         policy = load_runtime_policy()

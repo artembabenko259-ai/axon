@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from axon_runtime import user_data_dir
-from session_store import SessionData, load_session
+from session_store import load_session
 
 EXPORTS_DIR = user_data_dir() / "exports"
 

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import os
-
 from config_store import (
     get_custom_api_key,
     get_custom_base_url,

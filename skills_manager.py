@@ -441,7 +441,7 @@ def _parse_simple_yaml(block: str) -> dict[str, Any]:
 
         if value.lower() in {"true", "false"}:
             result[key] = value.lower() == "true"
-        elif "," in value:
+        elif key == "allowed-tools" and "," in value:
             result[key] = [part.strip() for part in value.split(",") if part.strip()]
         else:
             result[key] = value

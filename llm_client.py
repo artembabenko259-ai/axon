@@ -1410,7 +1410,6 @@ class LLMManager:
                 content = "".join(content_parts).strip()
                 
                 import uuid
-                import json
                 tool_calls = []
                 for fc in accumulated_tool_calls:
                     call_id = fc.id or f"call_{uuid.uuid4().hex[:12]}"
@@ -1575,7 +1574,6 @@ def _openai_to_gemini_contents(messages: list[dict]) -> list[Any]:
                 g_calls = []
                 for tc in tool_calls:
                     fn = tc.get("function", {})
-                    import json
                     args = fn.get("arguments", {})
                     if isinstance(args, str):
                         try:

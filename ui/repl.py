@@ -52,11 +52,10 @@ from skills.tools import (
     clear_session_approvals,
     set_tool_result_callback,
     tool_display_label,
-    format_tool_activity,
     format_tool_activity_line,
-    tool_activity_detail,
 )
 from ui.axon_completer import build_axon_completer
+from ui.completer import AXON_COMMANDS
 from ui.agent_intent import detect_intent
 from ui.branding import INSTRUCTIONS, VERSION, build_gradient_logo
 from ui.explore_stats import get_turn_explore_summary
@@ -67,10 +66,16 @@ from message_router import try_chitchat_reply
 from orchestrator import Orchestrator
 from plugins.loader import discover_plugins, list_plugin_commands
 from request_context import get_request_source, reset_request_source, set_request_source
-from runtime_policy import load_runtime_policy
-from mcp_client import load_mcp_servers, save_mcp_servers, McpServer
+from runtime_policy import load_runtime_policy, save_runtime_policy
+from mcp_client import (
+    load_mcp_servers,
+    save_mcp_servers,
+    McpServer,
+    list_all_mcp_servers,
+    add_temporary_mcp_server,
+    remove_any_mcp_server,
+)
 from session_store import list_sessions, load_session, save_session
-from config_store import get_model
 from provider_config import is_llm_configured, provider_config_hint
 from zenith_server import config_url, has_bundled_zenith, panel_url
 from ui.system_prompt_cmd import handle_system_command
@@ -87,6 +92,13 @@ colorama.just_fix_windows_console()
 
 if os.name == "nt":
     os.system("")  # Enable VT100 ANSI processing on Windows PowerShell/CMD
+
+SECURITY_MODE_LABELS = {
+    "def": "DEF (Спрашивать всё)",
+    "accept_edit": "EDIT (Файлы без спроса)",
+    "bypass": "BYPASS (Полное доверие)",
+}
+SECURITY_MODE_SHORT = {"def": "DEF", "accept_edit": "EDIT", "bypass": "BYPASS"}
 
 console = Console(force_terminal=True, color_system="truecolor")
 _string_io = io.StringIO()
@@ -336,25 +348,21 @@ async def start_axon(headless: bool = False) -> None:
     kb = KeyBindings()
 
     @kb.add("s-tab")
-    def _(event):
-        """Show recent tool history when Shift+Tab is pressed."""
-        if not tool_history:
-            return
+    def _(event: Any):
+        """Cycle security modes: def -> accept_edit -> bypass -> def."""
+        from runtime_policy import SECURITY_MODES
+        policy = load_runtime_policy()
 
-        def _show_history():
-            console.print(Rule("Tool Execution History", style="dim"))
-            for name, detail, output in tool_history[-5:]:
-                label = tool_display_label(name)
-                activity = format_tool_activity_line(label, detail)
-                console.print(f"[bold cyan]{activity}[/]")
-                if output:
-                    body = output.strip()
-                    if len(body) > 500:
-                        body = f"{body[:500]}\n[dim]... (truncated)[/]"
-                    console.print(Panel(body, border_style="dim", padding=(0, 1)))
-            console.print(Rule(style="dim"))
+        next_mode = SECURITY_MODES[(SECURITY_MODES.index(policy.security_mode()) + 1) % len(SECURITY_MODES)]
+        policy.apply_security_mode(next_mode)
+        save_runtime_policy(policy)
 
-        asyncio.create_task(run_in_terminal(_show_history))
+        mode_text = SECURITY_MODE_LABELS[next_mode]
+
+        def _show_mode():
+            console.print(f"\n[bold yellow]🛡 Security Mode Changed:[/] {mode_text}\n")
+
+        asyncio.create_task(run_in_terminal(_show_mode))
 
     session = None
     if not headless:
@@ -392,6 +400,10 @@ async def start_axon(headless: bool = False) -> None:
 
         if source == "web" and not policy.web_control_enabled:
             return "deny"
+
+        if headless:
+            return "session"
+
 
         from autopilot_mode import is_autopilot_active
 
@@ -804,7 +816,6 @@ async def start_axon(headless: bool = False) -> None:
             ).strip()
             return name, description, shell_cmd
 
-        app = get_app_or_none()
         if _prompt_is_active():
             name, description, shell_cmd = await run_in_terminal(_prompt_fields)
         else:
@@ -841,7 +852,6 @@ async def start_axon(headless: bool = False) -> None:
             mission = input("Mission (optional, Enter to skip): ").strip()
             return name, focus, mission
 
-        app = get_app_or_none()
         if _prompt_is_active():
             name, focus, mission = await run_in_terminal(_prompt_fields)
         else:
@@ -862,6 +872,178 @@ async def start_axon(headless: bool = False) -> None:
             )
         except OSError as exc:
             await emit(f"[red]Failed to create agent — {exc}[/]\n")
+
+    async def run_setup_wizard() -> None:
+        """Guided, one-shot setup: provider, security mode, optional integrations."""
+        from provider_config import PROVIDERS, normalize_base_url
+        from config_store import (
+            get_provider,
+            get_model,
+            get_openrouter_api_key,
+            get_ollama_base_url,
+            get_custom_base_url,
+            get_custom_api_key,
+            get_antigravity_api_key,
+            save_provider_settings,
+            save_model,
+        )
+
+        def _mask(value: str) -> str:
+            value = value.strip()
+            if not value:
+                return "not set"
+            if len(value) <= 8:
+                return "***"
+            return f"{value[:4]}…{value[-4:]}"
+
+        await emit(
+            "[bold magenta]⚙ AXON Setup[/]\n"
+            "[dim]Enter to keep the current value / skip an optional field.[/]\n"
+        )
+
+        # --- 1. Provider ---
+        current_provider = get_provider()
+        await emit(
+            f"\n[bold]1. LLM provider[/] [dim](current: {current_provider} · "
+            f"options: {', '.join(PROVIDERS)})[/]"
+        )
+
+        def _prompt_provider() -> tuple[str, str, str]:
+            provider = (
+                input(f"Provider [{current_provider}]: ").strip().lower()
+                or current_provider
+            )
+            key = ""
+            url = ""
+            if provider == "openrouter":
+                key = input(
+                    f"OpenRouter API key [{_mask(get_openrouter_api_key())}]: "
+                ).strip()
+            elif provider == "ollama":
+                url = input(f"Ollama base URL [{get_ollama_base_url()}]: ").strip()
+            elif provider == "antigravity":
+                key = input(
+                    "Antigravity API key (optional — SDK login also works) "
+                    f"[{_mask(get_antigravity_api_key())}]: "
+                ).strip()
+            elif provider == "custom":
+                url = input(
+                    f"Custom base URL [{get_custom_base_url() or 'not set'}]: "
+                ).strip()
+                key = input(
+                    f"Custom API key [{_mask(get_custom_api_key())}]: "
+                ).strip()
+            return provider, key, url
+
+        if _prompt_is_active():
+            provider, prov_key, prov_url = await run_in_terminal(_prompt_provider)
+        else:
+            provider, prov_key, prov_url = _prompt_provider()
+
+        if provider not in PROVIDERS:
+            await emit(
+                f"[red]Unknown provider '{provider}', keeping '{current_provider}'.[/]\n"
+            )
+            provider = current_provider
+
+        prov_kwargs: dict[str, str] = {"provider": provider}
+        if provider == "openrouter" and prov_key:
+            prov_kwargs["openrouter_api_key"] = prov_key
+        elif provider == "ollama" and prov_url:
+            prov_kwargs["ollama_base_url"] = normalize_base_url(prov_url)
+        elif provider == "antigravity" and prov_key:
+            prov_kwargs["antigravity_api_key"] = prov_key
+        elif provider == "custom":
+            if prov_url:
+                prov_kwargs["custom_base_url"] = normalize_base_url(prov_url)
+            if prov_key:
+                prov_kwargs["custom_api_key"] = prov_key
+        save_provider_settings(**prov_kwargs)
+        await emit(f"[green][✓] Provider set to {provider}[/]\n")
+
+        def _prompt_model() -> str:
+            return input(
+                f"Model override (Enter to keep '{get_model()}'): "
+            ).strip()
+
+        if _prompt_is_active():
+            model = await run_in_terminal(_prompt_model)
+        else:
+            model = _prompt_model()
+        if model:
+            save_model(model)
+            await emit(f"[green][✓] Model set to {model}[/]\n")
+
+        # --- 2. Security mode ---
+        policy = load_runtime_policy()
+        await emit(
+            f"\n[bold]2. Security mode[/] [dim](current: {policy.security_mode()})[/]\n"
+            "[dim]  1) def          — ask before every write/patch/shell call[/]\n"
+            "[dim]  2) accept_edit  — auto-approve file writes, still ask before shell[/]\n"
+            "[dim]  3) bypass       — full autonomy, nothing requires approval[/]"
+        )
+
+        def _prompt_mode() -> str:
+            choice = input("Choose 1/2/3 (Enter to keep current): ").strip()
+            return {"1": "def", "2": "accept_edit", "3": "bypass"}.get(choice, "")
+
+        if _prompt_is_active():
+            mode = await run_in_terminal(_prompt_mode)
+        else:
+            mode = _prompt_mode()
+        if mode:
+            policy.apply_security_mode(mode)
+            save_runtime_policy(policy)
+            await emit(f"[green][✓] Security mode set to {mode}[/]\n")
+
+        # --- 3. Optional integrations ---
+        await emit(
+            "\n[bold]3. Optional integrations[/] [dim](Enter to skip any of these)[/]"
+        )
+
+        def _prompt_integrations() -> dict[str, str]:
+            return {
+                "telegram_bot_token": input(
+                    f"Telegram bot token [{_mask(policy.telegram_bot_token)}]: "
+                ).strip(),
+                "telegram_chat_id": input(
+                    f"Telegram chat id [{policy.telegram_chat_id or 'not set'}]: "
+                ).strip(),
+                "github_token": input(
+                    "GitHub token, for git/gh shell commands "
+                    f"[{_mask(policy.github_token)}]: "
+                ).strip(),
+                "discord_bot_token": input(
+                    f"Discord bot token [{_mask(policy.discord_bot_token)}]: "
+                ).strip(),
+                "discord_channel_id": input(
+                    f"Discord channel id [{policy.discord_channel_id or 'not set'}]: "
+                ).strip(),
+                "slack_bot_token": input(
+                    f"Slack bot token [{_mask(policy.slack_bot_token)}]: "
+                ).strip(),
+                "slack_channel_id": input(
+                    f"Slack channel id [{policy.slack_channel_id or 'not set'}]: "
+                ).strip(),
+            }
+
+        if _prompt_is_active():
+            updates = await run_in_terminal(_prompt_integrations)
+        else:
+            updates = _prompt_integrations()
+
+        policy = load_runtime_policy()
+        changed = [name for name, value in updates.items() if value]
+        for name in changed:
+            setattr(policy, name, updates[name])
+        if changed:
+            save_runtime_policy(policy)
+            await emit(f"[green][✓] Updated: {', '.join(changed)}[/]\n")
+
+        await emit(
+            "\n[bold green]Setup complete.[/] Review anytime with [cyan]/config[/] "
+            "or [cyan]/provider[/].\n"
+        )
 
     async def run_delegate(
         agent_name: str,
@@ -1326,34 +1508,58 @@ async def start_axon(headless: bool = False) -> None:
             parts = stripped.split(maxsplit=2)
             sub = (parts[1].lower() if len(parts) > 1 else "list")
             if sub == "list":
-                servers = load_mcp_servers()
-                if not servers:
+                merged = list_all_mcp_servers()
+                if not merged:
                     await emit("[dim]No MCP servers configured.[/]\n")
                 else:
                     lines = [
-                        f"  [cyan]{s.name}[/] {'on' if s.enabled else 'off'} — {s.command} {' '.join(s.args)}"
-                        for s in servers
+                        f"  [cyan]{s.name}[/] {'on' if s.enabled else 'off'} "
+                        f"[{'temp' if is_temp else 'permanent'}] — {s.command} {' '.join(s.args)}"
+                        for s, is_temp in merged
                     ]
                     await emit("[bold]MCP servers[/bold]\n" + "\n".join(lines) + "\n")
             elif sub == "add" and len(parts) >= 3:
                 rest = parts[2].strip()
+                temporary = False
+                if rest.lower().startswith("--temp "):
+                    temporary = True
+                    rest = rest[len("--temp "):].strip()
+                elif rest.lower().startswith("--permanent "):
+                    rest = rest[len("--permanent "):].strip()
                 name, _, command_line = rest.partition(" ")
                 if not name or not command_line:
                     await emit(
-                        "[yellow]Usage: /mcp add <name> <command> [args...][/]\n"
+                        "[yellow]Usage: /mcp add [--temp] <name> <command> [args...][/]\n"
                     )
                     return True
                 cmd_parts = command_line.split()
-                servers = load_mcp_servers()
-                servers = [s for s in servers if s.name != name]
-                servers.append(
-                    McpServer(name=name, command=cmd_parts[0], args=cmd_parts[1:])
-                )
-                save_mcp_servers(servers)
-                await emit(f"[green][✓] MCP server [cyan]{name}[/] saved.[/]\n")
+                server = McpServer(name=name, command=cmd_parts[0], args=cmd_parts[1:])
+                if temporary:
+                    add_temporary_mcp_server(server)
+                    await emit(
+                        f"[green][✓] MCP server [cyan]{name}[/] added for this "
+                        f"session only — lost on restart.[/]\n"
+                    )
+                else:
+                    servers = [s for s in load_mcp_servers() if s.name != name]
+                    servers.append(server)
+                    save_mcp_servers(servers)
+                    await emit(
+                        f"[green][✓] MCP server [cyan]{name}[/] saved permanently.[/]\n"
+                    )
+            elif sub == "remove" and len(parts) >= 3:
+                name = parts[2].strip().split(maxsplit=1)[0]
+                scope = remove_any_mcp_server(name)
+                if scope:
+                    await emit(
+                        f"[green][✓] Removed {scope} MCP server [cyan]{name}[/].[/]\n"
+                    )
+                else:
+                    await emit(f"[red]No MCP server named '{name}'.[/]\n")
             else:
                 await emit(
-                    "[yellow]Usage: /mcp list | /mcp add <name> <command>[/]\n"
+                    "[yellow]Usage: /mcp list | /mcp add [--temp] <name> <command> "
+                    "| /mcp remove <name>[/]\n"
                 )
             return True
 
@@ -1414,6 +1620,10 @@ async def start_axon(headless: bool = False) -> None:
 
         if cmd == "/create-agent":
             await run_create_agent()
+            return True
+
+        if cmd == "/setup":
+            await run_setup_wizard()
             return True
 
         if cmd == "/delegate":
@@ -1561,7 +1771,7 @@ async def start_axon(headless: bool = False) -> None:
 
         async with agent_slot():
             try:
-                result = await run_llm(
+                await run_llm(
                     stripped,
                     background=background,
                     file_context=file_context,
@@ -1662,9 +1872,10 @@ async def start_axon(headless: bool = False) -> None:
         autopilot_line = f" · autopilot [cyan]{autopilot_state}[/cyan]"
 
     if not headless:
+        sec_mode = SECURITY_MODE_SHORT[runtime.security_mode()]
         console.print(
             f"[dim]Bridge ws://127.0.0.1:8765 · PIN [cyan]{runtime.bridge_pin}[/cyan] · "
-            f"autonomy [cyan]{'on' if runtime.autonomy_enabled else 'off'}[/cyan] · "
+            f"security [cyan]{sec_mode}[/cyan] [Shift+Tab] · "
             f"web [cyan]{'on' if runtime.web_control_enabled else 'off'}[/cyan]"
             f"{autopilot_line}[/dim]"
         )
@@ -1680,7 +1891,8 @@ async def start_axon(headless: bool = False) -> None:
             )
             if not is_llm_configured():
                 console.print(
-                    f"[yellow]LLM not configured — {provider_config_hint()}[/yellow]"
+                    f"[yellow]LLM not configured — {provider_config_hint()} "
+                    f"or run [cyan]/setup[/cyan][/yellow]"
                 )
             console.print(
                 "[dim]If the panel is not open yet, run [cyan]axon web --open[/cyan] in another terminal.[/dim]\n"
@@ -1689,6 +1901,11 @@ async def start_axon(headless: bool = False) -> None:
             console.print(
                 f"[dim]Control panel: [cyan]{panel_url()}[/cyan] · "
                 f"start with [cyan]axon web --open[/cyan][/dim]\n"
+            )
+        if not is_llm_configured() and not has_bundled_zenith():
+            console.print(
+                f"[yellow]LLM not configured — {provider_config_hint()} "
+                f"or run [cyan]/setup[/cyan][/yellow]\n"
             )
 
     async def chat_loop() -> None:

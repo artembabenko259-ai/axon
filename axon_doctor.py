@@ -7,7 +7,6 @@ import shutil
 import socket
 import sys
 from dataclasses import asdict, dataclass
-from pathlib import Path
 
 from config_store import CONFIG_PATH, get_model
 from provider_config import is_llm_configured, provider_config_hint, provider_label
@@ -49,8 +48,6 @@ def _check_api_key() -> CheckResult:
     if is_llm_configured():
         return CheckResult("llm_provider", True, f"{provider_label()} configured")
     if has_zenith_web():
-        from zenith_server import config_url
-
         return CheckResult(
             "llm_provider",
             False,

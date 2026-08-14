@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import subprocess
 import sys
 from pathlib import Path
 
@@ -196,7 +195,6 @@ def _run_update(*, json_output: bool) -> int:
 
 def _run_web(port: int, *, open_browser: bool) -> int:
     from zenith_server import (
-        DEFAULT_ZENITH_PORT,
         has_bundled_zenith,
         panel_url,
         run_zenith_dev,
@@ -282,8 +280,8 @@ def _run_dart(target: str | None) -> int:
 
 
 def _run_export(session_id: str | None, output: str | None) -> int:
-    from session_export import export_messages_markdown, export_session_markdown
-    from session_store import list_sessions, load_session
+    from session_export import export_session_markdown
+    from session_store import list_sessions
 
     if session_id:
         try:
@@ -578,7 +576,21 @@ def _run_shard(*, dev: bool = False) -> int:
                 web_daemon.kill()
 
 
+def _ensure_utf8_streams() -> None:
+    """Some Windows consoles default to a legacy codepage (e.g. cp1251) that
+    can't encode emoji used throughout AXON's output — reconfigure stdout/
+    stderr to UTF-8 so those prints degrade gracefully instead of crashing."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (OSError, ValueError):
+                pass
+
+
 def main(argv: list[str] | None = None) -> int:
+    _ensure_utf8_streams()
     parser = _build_parser()
     args = parser.parse_args(argv)
 
