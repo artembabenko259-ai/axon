@@ -30,8 +30,6 @@ from rich.rule import Rule
 
 from agent_manager import create_agent, list_agents
 from backup_manager import backup_manager
-from approval_bridge import create_approval_waiter
-from bridge import AxonBridge
 from command_parser import is_command_chain, split_command_chain
 from skills_manager import (
     create_skill_file,
@@ -77,7 +75,6 @@ from mcp_client import (
 )
 from session_store import list_sessions, load_session, save_session
 from provider_config import is_llm_configured, provider_config_hint
-from zenith_server import config_url, has_bundled_zenith, panel_url
 from ui.system_prompt_cmd import handle_system_command
 from ui.welcome import build_welcome_screen, should_show_welcome
 from ui.file_context import build_file_context
@@ -249,7 +246,6 @@ async def start_axon(headless: bool = False) -> None:
 
 
     llm_manager = LLMManager(workspace=workspace)
-    bridge = AxonBridge()
     agent_lock = asyncio.Lock()
     agent_semaphore = asyncio.Semaphore(3)
     shutdown = asyncio.Event()
@@ -1874,9 +1870,7 @@ async def start_axon(headless: bool = False) -> None:
     if not headless:
         sec_mode = SECURITY_MODE_SHORT[runtime.security_mode()]
         console.print(
-            f"[dim]Bridge ws://127.0.0.1:8765 · PIN [cyan]{runtime.bridge_pin}[/cyan] · "
-            f"security [cyan]{sec_mode}[/cyan] [Shift+Tab] · "
-            f"web [cyan]{'on' if runtime.web_control_enabled else 'off'}[/cyan]"
+            f"[dim]Security [cyan]{sec_mode}[/cyan] [Shift+Tab]"
             f"{autopilot_line}[/dim]"
         )
         if runtime.autopilot_enabled and not is_process_elevated():
@@ -1884,28 +1878,10 @@ async def start_axon(headless: bool = False) -> None:
                 "[yellow]Autopilot is enabled in policy but this terminal is not elevated — "
                 "run as Administrator or use /autopilot off.[/yellow]"
             )
-        if has_bundled_zenith():
-            console.print(
-                f"[dim]Control panel: [cyan]{panel_url()}[/cyan] · "
-                f"settings: [cyan]{config_url()}[/cyan][/dim]"
-            )
-            if not is_llm_configured():
-                console.print(
-                    f"[yellow]LLM not configured — {provider_config_hint()} "
-                    f"or run [cyan]/setup[/cyan][/yellow]"
-                )
-            console.print(
-                "[dim]If the panel is not open yet, run [cyan]axon web --open[/cyan] in another terminal.[/dim]\n"
-            )
-        else:
-            console.print(
-                f"[dim]Control panel: [cyan]{panel_url()}[/cyan] · "
-                f"start with [cyan]axon web --open[/cyan][/dim]\n"
-            )
-        if not is_llm_configured() and not has_bundled_zenith():
+        if not is_llm_configured():
             console.print(
                 f"[yellow]LLM not configured — {provider_config_hint()} "
-                f"or run [cyan]/setup[/cyan][/yellow]\n"
+                f"or run [cyan]/provider[/cyan] to configure API key[/yellow]\n"
             )
 
     async def chat_loop() -> None:

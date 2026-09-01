@@ -37,8 +37,6 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Auto-approve dangerous tools",
     )
 
-    sub.add_parser("tray", help="System tray icon (Windows)")
-
     autopilot_p = sub.add_parser("autopilot", help="Autopilot full autonomy (admin terminal)")
     autopilot_sub = autopilot_p.add_subparsers(dest="autopilot_cmd")
     autopilot_sub.add_parser("status", help="Show Autopilot state")
@@ -54,11 +52,6 @@ def _build_parser() -> argparse.ArgumentParser:
         "--once",
         action="store_true",
         help="Process pending tasks once and exit",
-    )
-    serve_p.add_argument(
-        "--tray",
-        action="store_true",
-        help="Show system tray icon while serving (Windows)",
     )
 
     queue_p = sub.add_parser("queue", help="Background task queue")
@@ -91,45 +84,10 @@ def _build_parser() -> argparse.ArgumentParser:
     sched_sub.add_parser("list", help="List scheduled tasks")
     sched_sub.add_parser("run", help="Run tasks due now (for Task Scheduler)")
 
-    shard_p = sub.add_parser("shard", help="Bubble Tea Go-based TUI client")
-    shard_p.add_argument("--dev", action="store_true", help="Enable dev mode: verbose logs written to %%APPDATA%%\\AXON\\logs\\")
     doctor = sub.add_parser("doctor", help="Check local AXON environment")
     doctor.add_argument("--json", action="store_true", help="JSON output")
-    doctor.add_argument(
-        "--check-updates",
-        action="store_true",
-        help="Check runaxon.xyz for a newer release",
-    )
 
     sub.add_parser("version", help="Print AXON version")
-
-    update = sub.add_parser("update", help="Check for AXON updates")
-    update.add_argument("--json", action="store_true", help="JSON output")
-
-    web = sub.add_parser("web", help="Start Zenith web dashboard (dev server)")
-    web.add_argument("--port", type=int, default=3000)
-    web.add_argument(
-        "--open",
-        action="store_true",
-        help="Open http://localhost:<port> in the default browser",
-    )
-
-    login = sub.add_parser("login", help="Sign in via runaxon.xyz (email)")
-    login.add_argument(
-        "--force",
-        action="store_true",
-        help="Sign out and start a new browser login flow",
-    )
-    login.add_argument(
-        "--no-open",
-        action="store_true",
-        help="Do not open the browser automatically",
-    )
-
-    sub.add_parser("logout", help="Sign out of AXON account on this machine")
-
-    dart_p = sub.add_parser("dart", help="Start AXON Dart AI-assisted reverse engineering TUI")
-    dart_p.add_argument("binary", nargs="?", help="Path to the binary file to analyze")
 
     # Headless flags (Phase 4) — attached to root for `axon -p "..."`
     parser.add_argument(
@@ -193,45 +151,6 @@ def _run_update(*, json_output: bool) -> int:
     return 0 if not available else 2
 
 
-def _run_web(port: int, *, open_browser: bool) -> int:
-    from zenith_server import (
-        has_bundled_zenith,
-        panel_url,
-        run_zenith_dev,
-        run_zenith_foreground,
-    )
-
-    if open_browser:
-        import threading
-        import time
-        import webbrowser
-
-        def _open() -> None:
-            time.sleep(2.5)
-            webbrowser.open(panel_url(port))
-
-        threading.Thread(target=_open, daemon=True).start()
-
-    if has_bundled_zenith():
-        return run_zenith_foreground(port)
-
-    web_dir = ROOT / "zenith-web"
-    if (web_dir / "package.json").is_file():
-        return run_zenith_dev(port)
-
-    print("AXON: Zenith panel not found.", file=sys.stderr)
-    print("AXON: Reinstall AXON or run from the development repository.", file=sys.stderr)
-    return 1
-
-
-def _run_logout() -> int:
-    from axon_auth import logout
-
-    logout()
-    print("Signed out.")
-    return 0
-
-
 def _run_tui() -> int:
     from ui.axon_tui import run_tui
 
@@ -240,43 +159,6 @@ def _run_tui() -> int:
     except KeyboardInterrupt:
         pass
     return 0
-
-
-def _run_dart(target: str | None) -> int:
-    from config_store import load_config, save_config
-    config = load_config()
-    disabled = list(config.get("disabled_skills", []) or [])
-    if "axon-dart" in disabled:
-        disabled.remove("axon-dart")
-        save_config({"disabled_skills": disabled})
-        
-    import os
-    os.environ["AXON_DART_MODE"] = "1"
-    scan_path = os.path.abspath(target or ".")
-    
-    binary_exts = {".exe", ".dll", ".sys", ".bin", ".elf", ".so", ".dylib"}
-    found_binaries = []
-    
-    if os.path.isfile(scan_path):
-        found_binaries.append(scan_path)
-    elif os.path.isdir(scan_path):
-        for entry in os.scandir(scan_path):
-            if entry.is_file() and not entry.name.startswith("."):
-                ext = os.path.splitext(entry.name)[1].lower()
-                if ext in binary_exts:
-                    found_binaries.append(entry.path)
-                    
-    if found_binaries:
-        os.environ["AXON_DART_BINARIES"] = ";".join(found_binaries)
-        print(f"[AXON DART] Detected {len(found_binaries)} binary targets in {scan_path}:")
-        for b in found_binaries[:5]:
-            print(f"  - {os.path.basename(b)}")
-        if len(found_binaries) > 5:
-            print(f"  ... and {len(found_binaries)-5} more files")
-    else:
-        print(f"[AXON DART] No binaries found in {scan_path}.")
-        
-    return _run_shard()
 
 
 def _run_export(session_id: str | None, output: str | None) -> int:
@@ -307,10 +189,10 @@ def _run_export(session_id: str | None, output: str | None) -> int:
     return 0
 
 
-def _run_serve(*, once: bool, tray: bool = False) -> int:
+def _run_serve(*, once: bool) -> int:
     from axon_serve import run_serve
 
-    return run_serve(once=once, tray=tray)
+    return run_serve(once=once)
 
 
 def _run_autopilot(action: str) -> int:
@@ -341,16 +223,6 @@ def _run_multitask(
         json_output=json_output,
         auto_approve=auto_approve,
     )
-
-
-def _run_tray() -> int:
-    from axon_tray import run_tray_blocking
-
-    try:
-        run_tray_blocking()
-    except KeyboardInterrupt:
-        pass
-    return 0
 
 
 def _run_queue(command: str, *, prompt: str = "", cwd: str | None = None) -> int:
@@ -424,158 +296,6 @@ def _run_schedule(command: str, **kwargs) -> int:
     return 1
 
 
-def _run_login(*, force: bool, open_browser: bool) -> int:
-    from axon_auth import load_session, logout, run_login_flow, session_summary
-
-    if force:
-        logout()
-    else:
-        existing = load_session()
-        if existing:
-            print(session_summary())
-            print("Use: axon login --force   or   axon logout")
-            return 0
-
-    try:
-        session = run_login_flow(open_browser=open_browser)
-        print(f"Signed in as {session.email}")
-        return 0
-    except RuntimeError as exc:
-        print(f"AXON: {exc}", file=sys.stderr)
-        return 1
-
-
-def _run_shard(*, dev: bool = False) -> int:
-    import os
-    import sys
-    import time
-    import socket
-    import subprocess
-    import shutil
-    from pathlib import Path
-
-    executable_name = "axon-shard.exe" if os.name == "nt" else "axon-shard"
-    
-    # 1. Search in the installation/root directory
-    local_path = Path(__file__).parent / executable_name
-    if local_path.exists():
-        exe_path = str(local_path)
-    else:
-        # 2. Try looking in dist/
-        dist_path = Path(__file__).parent / "dist" / "shard" / executable_name
-        if dist_path.exists():
-            exe_path = str(dist_path)
-        else:
-            # 3. Check system PATH
-            found_path = shutil.which(executable_name)
-            if found_path:
-                exe_path = found_path
-            else:
-                print("AXON: Go-based TUI client 'axon-shard' not found.")
-                print("Please build it first: cd shard && go build -o ../axon-shard.exe")
-                return 1
-
-    def is_port_open(port: int) -> bool:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.settimeout(0.5)
-            return s.connect_ex(('127.0.0.1', port)) == 0
-
-    # Start backend serve daemon in the background if not already running
-    daemon = None
-    env = os.environ.copy()
-    
-    if getattr(sys, 'frozen', False):
-        cwd_path = Path(sys.executable).parent
-    else:
-        cwd_path = Path(__file__).resolve().parent
-        
-    env["PYTHONPATH"] = str(cwd_path)
-    if dev:
-        env["AXON_DEV"] = "1"
-
-    if not is_port_open(8765):
-        from axon_runtime import user_data_dir
-        if dev:
-            import axon_devlog as _dl
-            _log_path = _dl.log_path() or user_data_dir() / "daemon.log"
-            print(f"[AXON DEV] Starting backend daemon (logs → {_log_path})")
-            _daemon_log = open(str(_log_path), "a", encoding="utf-8")
-        else:
-            print("[AXON] Starting backend daemon...")
-            _daemon_log = open(str(user_data_dir() / "daemon.log"), "w", encoding="utf-8")
-
-        if getattr(sys, 'frozen', False):
-            cmd = [sys.executable, "repl", "--headless"] + (["--dev"] if dev else [])
-        else:
-            cli_path = str(Path(__file__).resolve())
-            cmd = [sys.executable, "-u", cli_path, "repl", "--headless"] + (["--dev"] if dev else [])
-
-        daemon = subprocess.Popen(
-            cmd,
-            cwd=str(cwd_path),
-            env=env,
-            stdout=_daemon_log,
-            stderr=_daemon_log
-        )
-        
-        # Wait up to 15 seconds for the port to open
-        start_time = time.time()
-        while time.time() - start_time < 15.0:
-            if is_port_open(8765):
-                break
-            time.sleep(0.1)
-
-    # Start web dashboard server in background if not already running
-    web_daemon = None
-    if not is_port_open(3000):
-        from axon_runtime import user_data_dir
-        if dev:
-            import axon_devlog as _dl
-            _web_log_path = _dl.log_path() or user_data_dir() / "web.log"
-            print(f"[AXON DEV] Starting web dashboard daemon (logs → {_web_log_path})")
-            _web_log = open(str(_web_log_path), "a", encoding="utf-8")
-        else:
-            print("[AXON] Starting web dashboard daemon...")
-            _web_log = subprocess.DEVNULL
-
-        if getattr(sys, 'frozen', False):
-            web_cmd = [sys.executable, "web"]
-        else:
-            cli_path = str(Path(__file__).resolve())
-            web_cmd = [sys.executable, cli_path, "web"]
-
-        web_daemon = subprocess.Popen(
-            web_cmd,
-            cwd=str(cwd_path),
-            env=env,
-            stdout=_web_log,
-            stderr=_web_log,
-        )
-
-    try:
-        result = subprocess.run([exe_path], check=True)
-        return result.returncode
-    except subprocess.CalledProcessError as exc:
-        return exc.returncode
-    except KeyboardInterrupt:
-        return 0
-    finally:
-        if daemon is not None:
-            print("\n[AXON] Stopping backend daemon...")
-            daemon.terminate()
-            try:
-                daemon.wait(timeout=2.0)
-            except subprocess.TimeoutExpired:
-                daemon.kill()
-        if web_daemon is not None:
-            print("[AXON] Stopping web dashboard daemon...")
-            web_daemon.terminate()
-            try:
-                web_daemon.wait(timeout=2.0)
-            except subprocess.TimeoutExpired:
-                web_daemon.kill()
-
-
 def _ensure_utf8_streams() -> None:
     """Some Windows consoles default to a legacy codepage (e.g. cp1251) that
     can't encode emoji used throughout AXON's output — reconfigure stdout/
@@ -644,29 +364,8 @@ def main(argv: list[str] | None = None) -> int:
             check_updates=getattr(args, "check_updates", False),
         )
 
-    if command == "shard":
-        return _run_shard(dev=getattr(args, "dev", False))
-
     if command == "version":
         return _run_version()
-
-    if command == "update":
-        return _run_update(json_output=args.json)
-
-    if command == "web":
-        return _run_web(args.port, open_browser=getattr(args, "open", False))
-
-    if command == "login":
-        return _run_login(
-            force=getattr(args, "force", False),
-            open_browser=not getattr(args, "no_open", False),
-        )
-
-    if command == "logout":
-        return _run_logout()
-
-    if command == "dart":
-        return _run_dart(getattr(args, "binary", None))
 
     if command == "tui":
         return _run_tui()
@@ -678,9 +377,6 @@ def main(argv: list[str] | None = None) -> int:
             json_output=getattr(args, "json", False),
             auto_approve=getattr(args, "yes", False),
         )
-
-    if command == "tray":
-        return _run_tray()
 
     if command == "autopilot":
         autopilot_cmd = getattr(args, "autopilot_cmd", None) or "status"
@@ -695,7 +391,6 @@ def main(argv: list[str] | None = None) -> int:
     if command == "serve":
         return _run_serve(
             once=getattr(args, "once", False),
-            tray=getattr(args, "tray", False),
         )
 
     if command == "queue":

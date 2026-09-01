@@ -1,49 +1,44 @@
 # AXON CLI
 
-Agentic terminal REPL with OpenRouter tool-calling, markdown skills, plan mode, sub-agents, git helpers, and a Zenith web control panel.
+Agentic command-line AI assistant with multi-provider tool-calling, markdown skills, plan mode, sub-agents, and git helpers.
 
-**Version:** 1.0.0
+**Version:** 2.0.1  
+**License:** GLWT (Good Luck With That) Public License
 
 ## Quick start
 
 ```bash
 pip install -r requirements.txt
 cp .env.example .env
-# Set OPENROUTER_API_KEY in .env or via http://localhost:3000/config
+# Set OPENROUTER_API_KEY (or ANTHROPIC_API_KEY / OPENAI_API_KEY) in .env or config.json
 
 axon          # fullscreen TUI (default)
-axon repl     # classic Rich REPL
-python cli.py # equivalent
-python main.py # backward-compatible
+axon repl     # Rich interactive REPL
+python cli.py # direct invocation
 ```
 
 ## CLI commands
 
 | Command | Description |
 |---------|-------------|
-| `axon` / `axon tui` | Fullscreen TUI (default) |
-| `axon repl` | Interactive REPL with WebSocket bridge |
-| `axon -p "task"` | Headless single prompt (CI/scripts) |
-| `axon doctor` | Environment checks |
+| `axon` / `axon tui` | Fullscreen terminal UI (default) |
+| `axon repl` | Interactive REPL with rich syntax highlighting and diffs |
+| `axon -p "task"` | Headless single prompt execution (CI/scripts) |
+| `axon doctor` | Environment diagnostics & hardware check |
 | `axon version` | Print version |
-| `axon update` | Check runaxon.xyz for updates |
-| `axon doctor --check-updates` | Doctor + update check |
-| `axon web --open` | Dashboard and open browser |
-| `axon tui` | Fullscreen terminal UI (alias for default) |
 | `axon multitask "goal"` | Orchestrator headless (parallel sub-agents) |
-| `axon tray` | System tray icon (Windows) |
-| `axon export [id]` | Export session to Markdown |
+| `axon autopilot [on\|off\|status]` | Autopilot autonomous mode |
+| `axon export [id]` | Export saved session to Markdown |
 | `axon queue add "…"` | Queue background task |
-| `axon serve` | Run background queue |
-| `axon serve --tray` | Queue worker + tray icon (Windows) |
-| `axon watch [dir]` | Run AXON when files change |
-| `axon schedule` | Daily scheduled headless tasks |
+| `axon serve` | Process background task queue |
+| `axon watch [dir]` | Watch directory and run AXON on file changes |
+| `axon schedule` | Scheduled tasks / timers |
 
-### Headless
+### Headless execution
 
 ```bash
 axon -p "summarize README.md" --cwd ./project
-echo "task" | axon -p --json
+echo "refactor login.py" | axon -p --json
 ```
 
 ## Slash commands (REPL)
@@ -53,7 +48,8 @@ echo "task" | axon -p --json
 | `/help` | List commands |
 | `/exit` | Quit |
 | `/clear` | Clear context |
-| `/model <name>` | Switch model |
+| `/model <name>` | Switch active model |
+| `/provider` | Configure LLM provider & API keys |
 | `/cost` `/usage` | Session tokens and cost |
 | `/compact` | Summarize old context |
 | `/plan <desc>` | Plan mode |
@@ -62,62 +58,26 @@ echo "task" | axon -p --json
 | `/create-skill` `/gen-skill` | Create markdown skills |
 | `/create-agent` `/delegate` | Sub-agents |
 | `/multitask <goal>` | Orchestrator — parallel subtasks + synthesis |
-| `/config` | View/edit runtime_policy (parallel, auto-save, sounds) |
+| `/config` | View/edit runtime_policy |
 | `/review` `/commit` `/undo` | Git workflows |
-| `/docs` | Generate live docs |
 | `/system` | Session/global system prompts |
 | `/sessions` `/resume` `/save` | Session persistence |
 | `/export` | Export chat to Markdown |
 
 Chain commands with `&`: `/clear & /plan refactor auth`
 
-## Tools
+## Built-in Tools
 
-Built-in agent tools: `read_file`, `write_file`, `execute_shell`, `web_search`, `list_dir`, `search_code`, `glob_files`, `apply_patch`, plus plan tools and markdown skills.
-
-## Web dashboard
-
-```bash
-axon web
-# or: cd zenith-web && npm install && npm run dev
-```
-
-Open http://localhost:3000 — chat, dashboard, config, runtime policy (autonomy, bridge token).
-
-Bridge: `ws://127.0.0.1:8765` (localhost only).
-
-## Project layout
-
-```
-CLI/
-├── cli.py              # Unified entrypoint
-├── main.py             # Backward-compatible shim
-├── ui/repl.py          # Interactive REPL
-├── llm_client.py       # Agent loop + OpenRouter
-├── bridge.py           # WebSocket hub
-├── runtime_policy.py   # Autonomy & security
-├── skills/             # Built-in tools
-├── zenith-web/         # Next.js control panel
-└── .axon/skills/       # User markdown skills
-```
+- **File Operations**: `read_file`, `write_file`, `list_dir`, `glob_files`
+- **Code Search & Editing**: `search_code` (ripgrep/python fallback), `apply_patch`, `view_diff`
+- **Terminal Execution**: `execute_shell` (with safety policy & timeouts)
+- **Web & Research**: `web_search`, `fetch_url`
+- **Extensibility**: Custom Markdown skills (`.axon/skills/`) and MCP servers.
 
 ## Configuration
 
-- `config.json` — API key, model (also editable in web UI)
-- `%APPDATA%\AXON\runtime_policy.json` — autonomy, web control, bridge token
-- `%APPDATA%\AXON\system_prompt.md` — global system prompt
-- `.axon/memory.md` — project memory
+- `config.json` — Active provider, API keys, default model
+- `%APPDATA%\AXON\runtime_policy.json` — Autonomy modes & safety limits
+- `%APPDATA%\AXON\system_prompt.md` — Global system prompt
+- `.axon/memory.md` — Project memory
 
-## Build (Windows)
-
-```bash
-build.bat
-```
-
-See [INSTALL.md](INSTALL.md) for end-user setup.
-
-Produces standalone `axon.exe` via PyInstaller + Inno Setup.
-
-## Legacy
-
-Legacy `controller.py` / `commands.py` stacks were removed — use `axon` / `ui/repl.py`.

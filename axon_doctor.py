@@ -4,15 +4,12 @@ from __future__ import annotations
 
 import json
 import shutil
-import socket
 import sys
 from dataclasses import asdict, dataclass
 
 from config_store import CONFIG_PATH, get_model
 from provider_config import is_llm_configured, provider_config_hint, provider_label
-from axon_runtime import has_zenith_web, user_data_dir
-
-WS_PORT = 8765
+from axon_runtime import user_data_dir
 
 
 @dataclass
@@ -32,27 +29,9 @@ def _check_python() -> CheckResult:
     )
 
 
-def _check_account() -> CheckResult:
-    try:
-        from axon_auth import load_session
-
-        session = load_session()
-    except Exception:
-        session = None
-    if session:
-        return CheckResult("account", True, session.email)
-    return CheckResult("account", False, "not signed in — run /login in axon")
-
-
 def _check_api_key() -> CheckResult:
     if is_llm_configured():
         return CheckResult("llm_provider", True, f"{provider_label()} configured")
-    if has_zenith_web():
-        return CheckResult(
-            "llm_provider",
-            False,
-            f"missing — {provider_config_hint()}",
-        )
     return CheckResult(
         "llm_provider",
         False,
@@ -71,19 +50,6 @@ def _check_rg() -> CheckResult:
         "ripgrep",
         rg is not None,
         rg or "not on PATH (search_code will use Python fallback)",
-    )
-
-
-def _check_bridge_port() -> CheckResult:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.settimeout(0.3)
-        in_use = sock.connect_ex(("127.0.0.1", WS_PORT)) == 0
-    return CheckResult(
-        "bridge_port",
-        True,
-        f"127.0.0.1:{WS_PORT} in use (AXON likely running)"
-        if in_use
-        else f"127.0.0.1:{WS_PORT} free",
     )
 
 
@@ -112,30 +78,15 @@ def _check_hardware() -> CheckResult:
 def run_doctor(*, json_output: bool = False, check_updates: bool = False) -> int:
     checks = [
         _check_python(),
-        _check_account(),
         _check_api_key(),
         _check_model(),
         _check_config_path(),
         _check_rg(),
-        _check_bridge_port(),
         _check_data_dir(),
         _check_hardware(),
     ]
 
-    update_line = ""
-    if check_updates:
-        from version_check import check_for_update
-
-        available, message, _ = check_for_update()
-        update_line = message
-        if available:
-            checks.append(
-                CheckResult("update", False, message.replace("\n", " · "))
-            )
-        else:
-            checks.append(CheckResult("update", True, message))
-
-    all_ok = all(c.ok or c.name in {"ripgrep", "update", "account"} for c in checks)
+    all_ok = all(c.ok or c.name in {"ripgrep"} for c in checks)
 
     if json_output:
         print(json.dumps({"ok": all_ok, "checks": [asdict(c) for c in checks]}, indent=2))
@@ -145,29 +96,12 @@ def run_doctor(*, json_output: bool = False, check_updates: bool = False) -> int
             mark = "[OK]" if c.ok else "[!!]"
             print(f"  {mark} {c.name}: {c.detail}")
         print()
-        if update_line:
-            print(update_line)
-            print()
         print("All critical checks passed." if all_ok else "Some checks failed.")
         print()
         print("Next steps:")
-        if has_zenith_web():
-            from zenith_server import config_url, panel_url
-
-            if not is_llm_configured():
-                print(f"  axon web --open              Open panel → {panel_url()}")
-                print(f"  {config_url()}               Provider & API key")
-            else:
-                print(f"  axon web --open              Control panel → {panel_url()}")
-                print(f"  {config_url()}               Runtime policy & models")
-        else:
-            print(f"  {CONFIG_PATH}   Provider, API key & model")
-            print("  axon web --open              Zenith panel (not bundled in this build)")
-        print("  axon                         Start the assistant (CLI)")
-        print("  axon login                   Sign in at runaxon.xyz (or /login in REPL)")
-        if is_llm_configured():
-            print(f"  {CONFIG_PATH}   Advanced config")
-        print("  axon /provider               LLM provider & API key")
-        print("  axon /help                   All slash commands")
+        print(f"  {CONFIG_PATH}   Provider, API key & model")
+        print("  axon                         Start interactive assistant (TUI)")
+        print("  axon repl                    Start Rich REPL")
+        print("  axon -p \"<prompt>\"           Headless task execution")
 
     return 0 if all_ok else 1

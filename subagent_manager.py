@@ -170,15 +170,6 @@ class SubagentManager:
             # First message
             response = await instance.llm.send_message_async(initial_prompt)
             instance.status = "completed"
-            
-            # Broadcast the result back to parent/user
-            import bridge
-            await bridge.AxonBridge().broadcast({
-                "type": "subagent_message",
-                "conversation_id": instance.conversation_id,
-                "sender": instance.name,
-                "content": response.content or response.error or "Task completed"
-            })
 
             # Keep listening to the inbox for further instructions
             while instance.status == "completed":
@@ -186,12 +177,6 @@ class SubagentManager:
                 instance.status = "running"
                 resp = await instance.llm.send_message_async(msg)
                 instance.status = "completed"
-                await bridge.AxonBridge().broadcast({
-                    "type": "subagent_message",
-                    "conversation_id": instance.conversation_id,
-                    "sender": instance.name,
-                    "content": resp.content or resp.error or "Processed message"
-                })
         except asyncio.CancelledError:
             instance.status = "killed"
         except Exception as e:
